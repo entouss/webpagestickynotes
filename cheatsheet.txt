@@ -1,0 +1,348 @@
+<!--TOC-->
+
+# Basic writing and formatting syntax
+Create sophisticated formatting for your prose with simple syntax.
+
+---
+## Headings
+To create a heading, add one to six `#` symbols before your heading text. The number of `#` you use will determine the size of the heading.
+
+`## The second heading`
+`#### The fourth largest heading`
+`###### The smallest heading`
+
+## The second heading
+#### The fourth largest heading
+###### The smallest heading
+
+Alternatively, add `===` or `---` after your heading text instead of `#` or `##` respectively.
+
+`Heading 1`
+`===`
+
+Heading 1
+===
+
+`Heading 2`
+`---`
+
+Heading 2
+---
+
+---
+## Table of content
+
+To add a dynamic table of content, add the following to the top of the note:
+
+`<!--TOC-->`
+
+This will dynamically retrieve the headings and create links for them like those found on top of this cheatsheet.
+(This is not a markdown syntax but a feature of WebPageStickyNotes.com)
+
+---
+## Styling Text
+You can indicate emphasis with **bold**, _italic_, or ~~strikethrough~~ text.
+
+|Style|Syntax|Example|Output|
+|---|---|---|---|
+|Bold|`** **` or `__ __`|`**This is bold text**`|**This is bold text**|
+|Italic|`* *` or `_ _`|`*This text is italicized*`|*This text is italicized*|
+|Strikethrough|`~~ ~~`|`~~This was mistaken text~~`|~~This was mistaken text~~|
+|Bold and italic|`** **` and `_ _`|`**This text is _extremely_ important**`|**This text is _extremely_ important**|
+
+---
+## Quoting text
+You can quote text with a `>` and nest quotes with `>>`
+
+`In the words of Abraham Lincoln:`
+`> Pardon my `
+`>> french`
+
+In the words of Abraham Lincoln:
+> Pardon my
+>> french
+
+---
+## Quoting code
+You can call out code or a command within a sentence with single backticks. The text within the backticks will not be formatted.
+
+``Use `git status` to list all new or modified files that haven't yet been committed.``
+
+Use `git status` to list all new or modified files that haven't yet been committed.
+
+
+To write a backtick inside inline code, wrap the inline code with double backticks instead.
+
+````Use git status` to list all new or modified files that haven't yet been committed.  ``\``
+
+``Use git status` to list all new or modified files that haven't yet been committed.  ``
+
+
+To write a block of code, wrap the code with triple backticks.
+
+\```
+var code = 'test';
+alert(code);
+\```
+
+```
+var code = 'test';
+alert(code);
+```
+---
+## Links
+
+`[I'm an inline-style link](https://www.google.com)`
+
+`[I'm an inline-style link with title](https://www.google.com "Google's Homepage")`
+
+`[I'm a reference-style link][Arbitrary case-insensitive reference text]`
+
+`[I'm a relative reference to a repository file](../blob/master/LICENSE)`
+
+`[You can use numbers for reference-style link definitions][1]`
+
+`Or leave it empty and use the [link text itself].`
+
+`URLs and URLs in angle brackets will automatically get turned into links.`
+`http://www.example.com or <http://www.example.com>.`
+
+`Some text to show that the reference links can follow later.`
+
+`[arbitrary case-insensitive reference text]: https://www.mozilla.org`
+`[1]: http://slashdot.org`
+`[link text itself]: http://www.reddit.com`
+
+
+[I'm an inline-style link](https://www.google.com)
+
+[I'm an inline-style link with title](https://www.google.com "Google's Homepage")
+
+[I'm a reference-style link][Arbitrary case-insensitive reference text]
+
+[I'm a relative reference to a repository file](../blob/master/LICENSE)
+
+[You can use numbers for reference-style link definitions][1]
+
+Or leave it empty and use the [link text itself].
+
+URLs and URLs in angle brackets will automatically get turned into links.
+http://www.example.com or <http://www.example.com>.
+
+Some text to show that the reference links can follow later.
+
+[arbitrary case-insensitive reference text]: https://www.mozilla.org
+[1]: http://slashdot.org
+[link text itself]: http://www.reddit.com
+
+---
+## Anchor Links or Links within a page
+(similar to the links at the top of the document)
+
+Add the following where you want the anchor to be:
+`<a id="anchor-name"></a>`
+
+Create a link pointing to this anchor:
+`[Link Text](#anchor-name)`
+
+---
+## Links with (parenthesis)
+
+Use Reference links, instead of standard markdown links.:
+`[NotARealLink][1]`
+`[1]: http://notareallink/link(1).html`
+[NotARealLink][1]
+[1]: http://notareallink/link(1).html
+
+Use html inline links.:
+`<a href="http://notareallink/link(1).html">NotARealLink</a>`
+<a href="http://notareallink/link(1).html">NotARealLink</a>
+
+---
+## images
+
+`![Alt text](/logo/wpsn.png "Optional title")`
+
+![Alt text](chrome-extension://gkacjobhokgjihpjbhhjjlhgkpabbokl/logo/wpsn.png "Optional title")
+
+`[![Alt Text](/logo/wpsn.png "Optional title")](http://webpagestickynotes.com)`
+
+[![Alt Text](chrome-extension://gkacjobhokgjihpjbhhjjlhgkpabbokl/logo/wpsn.png "Optional title")](http://webpagestickynotes.com)
+
+---
+## Lists
+You can make a list by preceding one or more lines of text with `-` or `*`.
+
+`- George Washington`
+`- John Adams`
+`- Thomas Jefferson`
+
+- George Washington
+- John Adams
+- Thomas Jefferson
+
+To order your list, precede each line with a number.
+
+`1.  James Madison`
+`2. James Monroe`
+`3. John Quincy Adams`
+
+1. James Madison
+2. James Monroe
+3. John Quincy Adams
+
+You can create nested lists by indenting lines by two spaces.
+
+`1. Make my changes`
+&nbsp;&nbsp;`1. Fix bug`
+&nbsp;&nbsp;&nbsp;&nbsp;`2. Improve formatting`
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`* Make the headings bigger`
+&nbsp;&nbsp;`2. Push my commits to GitHub`
+&nbsp;&nbsp;`3. Open a pull request`
+&nbsp;&nbsp;&nbsp;&nbsp;`* Describe my changes`
+&nbsp;&nbsp;&nbsp;&nbsp;`* Mention all the members of my team`
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`* Ask for feedback`
+
+1. Make my changes
+  1. Fix bug
+  2. Improve formatting
+    * Make the headings bigger
+2. Push my commits to GitHub
+3. Open a pull request
+  * Describe my changes
+  * Mention all the members of my team
+    * Ask for feedback
+
+---
+## Paragraphs and line breaks
+
+You can create a new paragraph by leaving a blank line between lines of text.
+
+For more than one line break, use `<br/>`
+
+`More than one <br/><br/><br/> line break`
+
+More than one <br/><br/><br/> line break
+
+---
+## Spaces
+
+Markdown will ignore multiple spaces. You can force spaces with the `&nbsp;` notation.
+
+`Multiple &nbsp;&nbsp;&nbsp; Spaces`
+
+Multiple &nbsp;&nbsp;&nbsp; Spaces
+
+---
+## Centering text
+
+You can center text using some of the following:
+
+`<p align="center">Centered Text</p>`
+`<center>Centered Text 2</center>`
+
+<p align="center">Centered Text</p>
+<center>Centered Text 2</center>
+
+---
+## Horizontal Lines
+
+You can create horizontal lines as above and below with `---`, `- - -`, `___`, `_ _ _`, `***` or `* * *`.
+
+---
+## Ignoring Markdown formatting
+You can ignore (or escape) Markdown formatting by using `\` before the Markdown character
+
+`Let's rename \*our-new-project\* to \*our-old-project\*`
+
+Let's rename \*our-new-project\* to \*our-old-project\*
+
+---
+## Comments only visible in edit mode
+
+`[//]: # (This comment will only be visible in edit mode)`
+
+---
+# Organizing information with tables
+
+You can build tables to organize information.
+
+---
+## Creating a table
+
+You can create tables with pipes `|` and hyphens `-`. Hyphens are used to create each column's header, while pipes separate each column.
+
+<pre>
+| First Header | Second Header |
+|--------------|---------------|
+| Content Cell | Content Cell  |
+| Content Cell | Content Cell  |
+</pre>
+
+| First Header | Second Header |
+|--------------|---------------|
+| Content Cell | Content Cell  |
+| Content Cell | Content Cell  |
+
+The pipes on either end of the table are optional.
+
+Cells can vary in width and do not need to be perfectly aligned within columns. There must be at least three hyphens in each column of the header row.
+
+<pre>
+| Command | Description |
+| --- | --- |
+| git status | List all new or modified files |
+| git diff | Show file differences that haven't been staged |
+</pre>
+
+| Command | Description |
+| --- | --- |
+| git status | List all new or modified files |
+| git diff | Show file differences that haven't been staged |
+
+---
+## Formatting content within your table
+
+You can use formatting such as links, inline code blocks, and text styling within your table.
+
+<pre>
+| Command | Description |
+| --- | --- |
+| `git status` | List all *new or modified* files |
+| `git diff` | Show file differences that **haven't been** staged |
+</pre>
+
+| Command | Description |
+| --- | --- |
+| `git status` | List all *new or modified* files |
+| `git diff` | Show file differences that **haven't been** staged |
+
+<br/>
+You can align text to the left, right, or center of a column by including colons : to the left, right, or on both sides of the hyphens within the header row.
+
+<pre>
+| Left-aligned | Center-aligned | Right-aligned |
+| :---         |     :---:      |          ---: |
+| git status   | git status     | git status    |
+| git diff     | git diff       | git diff      |
+</pre>
+
+| Left-aligned | Center-aligned | Right-aligned |
+| :---         |     :---:      |          ---: |
+| git status   | git status     | git status    |
+| git diff     | git diff       | git diff      |
+
+<br/>
+To include a pipe `|` as content within your cell, use a `\` before the pipe:
+
+<pre>
+| Name     | Character |
+| ---      | ---       |
+| Backtick | `         |
+| Pipe     | \|        |
+</pre>
+
+| Name     | Character |
+| ---      | ---       |
+| Backtick | `         |
+| Pipe     | \|        |

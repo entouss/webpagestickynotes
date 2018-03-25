@@ -1,0 +1,17 @@
+<svg width="12" height="12" xmlns="http://www.w3.org/2000/svg">
+ <style>
+    /* <![CDATA[ */
+    rect,line {
+      fill: none;
+      stroke: #fff;
+      stroke-width: 1; // Note that the value of a pixel depend on the viewBox
+    }
+    rect { fill : rgb(170, 255, 170) }
+    /* ]]> */
+ </style>
+ <g>
+  <rect x="0" y="0" width="12" height="12"/>
+  <line x1="4" x2="12" y1="4" y2="4"/>
+  <line x1="0" x2="8" y1="8" y2="8"/>
+ </g>
+</svg>

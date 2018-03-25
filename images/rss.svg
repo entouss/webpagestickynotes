@@ -1,0 +1,11 @@
+<svg width="14" height="14" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <g>
+  <title>Layer 1</title>
+  <rect width="14" height="14" fill="#FF7200" fill-opacity="0.9" id="svg_5" y="0" x="0"/>
+  <g id="svg_6">
+   <path stroke="#FFFFFF" stroke-width="2" fill="none" d="m11.27352,12.21222c0.70646,-5.61366 -3.38306,-9.87366 -9.14343,-9.52445" id="svg_1"/>
+   <path stroke="#FFFFFF" stroke-width="2" fill="none" d="m8.54678,11.90055c0.50001,-3.73468 -2.32063,-6.56393 -6.3062,-6.32547" id="svg_2"/>
+   <circle stroke="#FFFFFF" stroke-width="2" fill="#ffffff" cx="4.44412" cy="9.78166" r="0.96015" id="svg_3"/>
+  </g>
+ </g>
+</svg>

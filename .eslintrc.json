@@ -1,0 +1,40 @@
+{
+    "parser": "babel-eslint",
+    "env": {
+        "browser": true,
+        "es6": true
+    },
+    "globals" : {
+        "jQuery":true,
+        "chrome":true,
+        "google":true,
+        "steg":true,
+        "vkbeautify":true,
+        "PNGlib":true,
+        "ImageTracer":true,
+        "Papa":true,
+        "d3":true,
+        "flowchart":true,
+        "mermaid":true,
+        "tinymce":true
+    },
+    "extends": "eslint:recommended",
+    "rules": {
+        "indent": [
+            "error",
+            "tab"
+        ],
+        "linebreak-style": [
+            "error",
+            "windows"
+        ],
+        "quotes": [
+            "error",
+            "single"
+        ],
+        "semi": [
+            "error",
+            "always"
+        ]
+    }
+}

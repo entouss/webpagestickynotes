@@ -1,0 +1,719 @@
+/*Reset Start*/
+.wpsn-frame div, .wpsn-frame span, .wpsn-frame applet, .wpsn-frame object, .wpsn-frame iframe,
+.wpsn-frame h1, .wpsn-frame h2, .wpsn-frame h3, .wpsn-frame h4, .wpsn-frame h5, .wpsn-frame h6, 
+.wpsn-frame p, .wpsn-frame blockquote, .wpsn-frame pre,
+.wpsn-frame a, .wpsn-frame abbr, .wpsn-frame acronym, .wpsn-frame address, .wpsn-frame big, .wpsn-frame cite, .wpsn-frame code,
+.wpsn-frame del, .wpsn-frame dfn, .wpsn-frame em, .wpsn-frame img, .wpsn-frame ins, .wpsn-frame kbd, .wpsn-frame q, .wpsn-frame s, .wpsn-frame samp,
+.wpsn-frame small, .wpsn-frame strike, .wpsn-frame strong, .wpsn-frame sub, .wpsn-frame sup, .wpsn-frame tt, .wpsn-frame var,
+.wpsn-frame b, .wpsn-frame u, .wpsn-frame i, .wpsn-frame center,
+.wpsn-frame dl, .wpsn-frame dt, .wpsn-frame dd, .wpsn-frame ol, .wpsn-frame ul, .wpsn-frame li,
+.wpsn-frame fieldset, .wpsn-frame form, .wpsn-frame label, .wpsn-frame legend,
+.wpsn-frame table, .wpsn-frame caption, .wpsn-frame tbody, .wpsn-frame tfoot, .wpsn-frame thead, .wpsn-frame tr, .wpsn-frame th, .wpsn-frame td,
+.wpsn-frame article, .wpsn-frame aside, .wpsn-frame canvas, .wpsn-frame details, .wpsn-frame embed, 
+.wpsn-frame figure, .wpsn-frame figcaption, .wpsn-frame footer, .wpsn-frame header, .wpsn-frame hgroup, 
+.wpsn-frame menu, .wpsn-frame nav, .wpsn-frame output, .wpsn-frame ruby, .wpsn-frame section, .wpsn-frame summary,
+.wpsn-frame time, .wpsn-frame mark, .wpsn-frame audio, .wpsn-frame video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	/*font-size: inherit;*/
+	/*font: inherit;*/
+	line-height: inherit;
+	vertical-align: inherit;
+	font-size:inherit;
+}
+/*Reset End*/
+
+.wpsn-frame {
+  /* heading elements */
+  /* tables */
+  /* for tables without table section elements (can happen with XHTML or dynamically created tables) */
+  /* lists */
+  /* form elements */
+  /* Form controls don't go vertical. */
+  /* form validation message bubble */
+  /* inline elements */
+  /* states */
+  /* Read-only text fields do not show a focus ring but do still receive focus */
+  /* HTML5 ruby elements */
+  /* other elements */
+  text-align: left;
+}
+.wpsn-frame p {
+  display: block;
+  -webkit-margin-before: 0;
+  -webkit-margin-after: 0;
+  -webkit-margin-start: 0;
+  -webkit-margin-end: 0;
+}
+.wpsn-frame p:first-child {
+  -webkit-margin-before: 0;
+}
+.wpsn-frame p:last-child {
+  -webkit-margin-after: 0;
+}
+.wpsn-frame div {
+  display: block;
+}
+.wpsn-frame layer {
+  display: block;
+}
+.wpsn-frame article, .wpsn-frame aside, .wpsn-frame footer, .wpsn-frame header, .wpsn-frame hgroup, .wpsn-frame main, .wpsn-frame nav, .wpsn-frame section {
+  display: block;
+}
+.wpsn-frame marquee {
+  display: inline-block;
+  overflow: -webkit-marquee;
+}
+.wpsn-frame address {
+  display: block;
+}
+.wpsn-frame blockquote {
+  display: block;
+  -webkit-margin-before: 1__qem;
+  -webkit-margin-after: 1em;
+  -webkit-margin-start: 40px;
+  -webkit-margin-end: 40px;
+}
+.wpsn-frame figcaption {
+  display: block;
+}
+.wpsn-frame figure {
+  display: block;
+  -webkit-margin-before: 1em;
+  -webkit-margin-after: 1em;
+  -webkit-margin-start: 40px;
+  -webkit-margin-end: 40px;
+}
+.wpsn-frame q {
+  display: inline;
+}
+.wpsn-frame q:before {
+  content: open-quote;
+}
+.wpsn-frame q:after {
+  content: close-quote;
+}
+.wpsn-frame center {
+  display: block;
+  /* special centering to be able to emulate the html4/netscape behaviour */
+  text-align: -webkit-center;
+}
+.wpsn-frame hr {
+  display: block;
+  -webkit-margin-before: 0.5em;
+  -webkit-margin-after: 0.5em;
+  -webkit-margin-start: auto;
+  -webkit-margin-end: auto;
+  border-style: inset;
+  border-width: 1px;
+}
+.wpsn-frame map {
+  display: inline;
+}
+.wpsn-frame video {
+  object-fit: contain;
+}
+.wpsn-frame :-webkit-any(article,aside,nav,section) h1 {
+  font-size: 1.5em;
+  -webkit-margin-before: 0.83__qem;
+  -webkit-margin-after: 0.83em;
+}
+.wpsn-frame :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) h1 {
+  font-size: 1.17em;
+  -webkit-margin-before: 1__qem;
+  -webkit-margin-after: 1em;
+}
+.wpsn-frame :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) h1 {
+  font-size: 1.00em;
+  -webkit-margin-before: 1.33__qem;
+  -webkit-margin-after: 1.33em;
+}
+.wpsn-frame :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) h1 {
+  font-size: .83em;
+  -webkit-margin-before: 1.67__qem;
+  -webkit-margin-after: 1.67em;
+}
+.wpsn-frame :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) :-webkit-any(article,aside,nav,section) h1 {
+  font-size: .67em;
+  -webkit-margin-before: 2.33__qem;
+  -webkit-margin-after: 2.33em;
+}
+.wpsn-frame h1 {
+  display: block;
+  font-size: 2em;
+  -webkit-margin-before: 0.67em;
+  -webkit-margin-after: 0.33em;
+  -webkit-margin-start: 0;
+  -webkit-margin-end: 0;
+  font-weight: bold;
+}
+.wpsn-frame h2 {
+  display: block;
+  font-size: 1.5em;
+  -webkit-margin-before: 0.83em;
+  -webkit-margin-after: 0.41em;
+  -webkit-margin-start: 0;
+  -webkit-margin-end: 0;
+  font-weight: bold;
+}
+.wpsn-frame h3 {
+  display: block;
+  font-size: 1.17em;
+  -webkit-margin-before: 1em;
+  -webkit-margin-after: 0.5em;
+  -webkit-margin-start: 0;
+  -webkit-margin-end: 0;
+  font-weight: bold;
+}
+.wpsn-frame h4 {
+  display: block;
+  -webkit-margin-before: 1.33em;
+  -webkit-margin-after: 0.67em;
+  -webkit-margin-start: 0;
+  -webkit-margin-end: 0;
+  font-weight: bold;
+}
+.wpsn-frame h5 {
+  display: block;
+  font-size: .83em;
+  -webkit-margin-before: 1.67em;
+  -webkit-margin-after: 10.83em;
+  -webkit-margin-start: 0;
+  -webkit-margin-end: 0;
+  font-weight: bold;
+}
+.wpsn-frame h6 {
+  display: block;
+  font-size: .67em;
+  -webkit-margin-before: 2.33em;
+  -webkit-margin-after: 1.16em;
+  -webkit-margin-start: 0;
+  -webkit-margin-end: 0;
+  font-weight: bold;
+}
+.wpsn-frame table {
+  display: table;
+  border-collapse: separate;
+  border-spacing: 2px;
+  border-color: gray;
+}
+.wpsn-frame thead {
+  display: table-header-group;
+  vertical-align: middle;
+  border-color: inherit;
+}
+.wpsn-frame tbody {
+  display: table-row-group;
+  vertical-align: middle;
+  border-color: inherit;
+}
+.wpsn-frame tfoot {
+  display: table-footer-group;
+  vertical-align: middle;
+  border-color: inherit;
+}
+.wpsn-frame table > tr {
+  vertical-align: middle;
+}
+.wpsn-frame col {
+  display: table-column;
+}
+.wpsn-frame colgroup {
+  display: table-column-group;
+}
+.wpsn-frame tr {
+  display: table-row;
+  vertical-align: inherit;
+  border-color: inherit;
+}
+.wpsn-frame td, .wpsn-frame th {
+  display: table-cell;
+  vertical-align: inherit;
+}
+.wpsn-frame th {
+  font-weight: bold;
+}
+.wpsn-frame caption {
+  display: table-caption;
+  text-align: -webkit-center;
+}
+.wpsn-frame ul, .wpsn-frame menu, .wpsn-frame dir {
+  display: block;
+  list-style-type: disc;
+  -webkit-margin-before: 1__qem;
+  -webkit-margin-after: 1em;
+  -webkit-margin-start: 0;
+  -webkit-margin-end: 0;
+  -webkit-padding-start: 20px;
+}
+.wpsn-frame ol {
+  display: block;
+  list-style-type: decimal;
+  -webkit-margin-before: 1__qem;
+  -webkit-margin-after: 1em;
+  -webkit-margin-start: 0;
+  -webkit-margin-end: 0;
+  -webkit-padding-start: 20px;
+}
+.wpsn-frame li {
+  display: list-item;
+  text-align: -webkit-match-parent;
+}
+.wpsn-frame ul ul, .wpsn-frame ol ul {
+  list-style-type: circle;
+}
+.wpsn-frame ol ol ul, .wpsn-frame ol ul ul, .wpsn-frame ul ol ul, .wpsn-frame ul ul ul {
+  list-style-type: square;
+}
+.wpsn-frame dd {
+  display: block;
+  -webkit-margin-start: 40px;
+}
+.wpsn-frame dl {
+  display: block;
+  -webkit-margin-before: 1__qem;
+  -webkit-margin-after: 1em;
+  -webkit-margin-start: 0;
+  -webkit-margin-end: 0;
+}
+.wpsn-frame dt {
+  display: block;
+}
+.wpsn-frame ol ul, .wpsn-frame ul ol, .wpsn-frame ul ul, .wpsn-frame ol ol {
+  -webkit-margin-before: 0;
+  -webkit-margin-after: 0;
+}
+.wpsn-frame form {
+  display: block;
+  margin-top: 0__qem;
+}
+.wpsn-frame label {
+  cursor: default;
+  display: inline;
+}
+.wpsn-frame legend {
+  display: block;
+  -webkit-padding-start: 2px;
+  -webkit-padding-end: 2px;
+  border: none;
+}
+.wpsn-frame fieldset {
+  display: block;
+  -webkit-margin-start: 2px;
+  -webkit-margin-end: 2px;
+  -webkit-padding-before: 0.35em;
+  -webkit-padding-start: 0.75em;
+  -webkit-padding-end: 0.75em;
+  -webkit-padding-after: 0.625em;
+  border: 2px groove ThreeDFace;
+  min-width: -webkit-min-content;
+}
+.wpsn-frame button {
+  -webkit-appearance: button;
+}
+.wpsn-frame input, .wpsn-frame textarea, .wpsn-frame keygen, .wpsn-frame select, .wpsn-frame button, .wpsn-frame isindex, .wpsn-frame meter, .wpsn-frame progress {
+  -webkit-writing-mode: horizontal-tb !important;
+  font-size: 14px;
+}
+.wpsn-frame input, .wpsn-frame textarea, .wpsn-frame keygen, .wpsn-frame select, .wpsn-frame button, .wpsn-frame isindex {
+  margin: 3px;
+  /*color: initial;*/
+  letter-spacing: normal;
+  word-spacing: normal;
+  line-height: normal;
+  text-transform: none;
+  text-indent: 0;
+  text-shadow: none;
+  display: inline-block;
+  text-align: start;
+}
+.wpsn-frame input {
+  line-height: normal !important;
+  padding: 5px;
+}
+.wpsn-frame input[type="hidden"] {
+  display: none;
+}
+.wpsn-frame input,
+.wpsn-frame input[type="password"],
+.wpsn-frame input[type="search"],
+.wpsn-frame isindex {
+  -webkit-appearance: textfield;
+  background-color: white;
+  -webkit-rtl-ordering: logical;
+  -webkit-user-select: text;
+  cursor: auto;
+}
+
+.wpsn-frame input[type="search"] {
+  -webkit-appearance: searchfield;
+  box-sizing: border-box;
+}
+.wpsn-frame input::-webkit-textfield-decoration-container {
+  display: -webkit-flex;
+  -webkit-align-items: center;
+  -webkit-user-modify: read-only !important;
+  content: none !important;
+}
+.wpsn-frame input[type="search"]::-webkit-textfield-decoration-container {
+  direction: ltr;
+}
+.wpsn-frame input::-webkit-clear-button {
+  -webkit-appearance: searchfield-cancel-button;
+  display: inline-block;
+  -webkit-flex: none;
+  -webkit-user-modify: read-only !important;
+  margin-left: 2px;
+}
+.wpsn-frame input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: searchfield-cancel-button;
+  display: block;
+  -webkit-flex: none;
+  -webkit-user-modify: read-only !important;
+  -webkit-align-self: flex-start;
+  margin: auto 0;
+}
+.wpsn-frame input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: searchfield-decoration;
+  display: block;
+  -webkit-flex: none;
+  -webkit-user-modify: read-only !important;
+  -webkit-align-self: flex-start;
+  margin: auto 0;
+}
+.wpsn-frame input[type="search"]::-webkit-search-results-decoration {
+  -webkit-appearance: searchfield-results-decoration;
+  display: block;
+  -webkit-flex: none;
+  -webkit-user-modify: read-only !important;
+  -webkit-align-self: flex-start;
+  margin: auto 0;
+}
+.wpsn-frame input[type="search"]::-webkit-search-results-button {
+  -webkit-appearance: searchfield-results-button;
+  display: block;
+  -webkit-flex: none;
+  -webkit-user-modify: read-only !important;
+}
+.wpsn-frame input::-webkit-inner-spin-button {
+  -webkit-appearance: inner-spin-button;
+  display: block;
+  position: relative;
+  cursor: default;
+  /* This height property is ignored for input type "number" and others which
+   * use RenderTextControlSingleLine as renderer which sets height of spin
+   * button in layout(). */
+  height: 1.5em;
+  vertical-align: top;
+  -webkit-flex: none;
+  -webkit-user-select: none;
+  -webkit-user-modify: read-only !important;
+}
+.wpsn-frame keygen, .wpsn-frame select {
+  border-radius: 5px;
+}
+.wpsn-frame keygen::-webkit-keygen-select {
+  margin: 0px;
+}
+.wpsn-frame textarea {
+  -webkit-appearance: textarea;
+  -webkit-flex-direction: column;
+  resize: auto;
+  cursor: auto;
+  padding: 2px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.wpsn-frame ::-webkit-input-placeholder {
+  -webkit-text-security: none;
+  color: darkGray;
+  display: block !important;
+  pointer-events: none !important;
+}
+.wpsn-frame input::-webkit-input-placeholder, .wpsn-frame isindex::-webkit-input-placeholder {
+  white-space: pre;
+  word-wrap: normal;
+  overflow: hidden;
+  -webkit-user-modify: read-only !important;
+}
+.wpsn-frame input[type="password"] {
+  -webkit-text-security: disc !important;
+}
+.wpsn-frame input[type="hidden"], .wpsn-frame input[type="image"], .wpsn-frame input[type="file"] {
+  -webkit-appearance: initial;
+  padding: initial;
+  background-color: initial;
+  border: initial;
+}
+.wpsn-frame input[type="file"] {
+  -webkit-align-items: baseline;
+  color: inherit;
+  text-align: start !important;
+}
+.wpsn-frame input:-webkit-autofill {
+  background-image: none !important;
+  color: black !important;
+}
+.wpsn-frame input[type="radio"], .wpsn-frame input[type="checkbox"] {
+  margin: 3px 0.5ex;
+}
+.wpsn-frame input[type="button"], .wpsn-frame input[type="submit"], .wpsn-frame input[type="reset"] {
+  -webkit-appearance: push-button;
+  white-space: pre;
+}
+.wpsn-frame input[type="file"]::-webkit-file-upload-button {
+  -webkit-appearance: push-button;
+  -webkit-user-modify: read-only !important;
+  white-space: nowrap;
+  margin: 0;
+  font-size: inherit;
+}
+.wpsn-frame input[type="button"], .wpsn-frame input[type="submit"], .wpsn-frame input[type="reset"], .wpsn-frame input[type="file"]::-webkit-file-upload-button, .wpsn-frame button {
+  -webkit-align-items: flex-start;
+  text-align: center;
+  cursor: pointer;
+  /*color: ButtonText;*/
+  box-sizing: border-box;
+}
+.wpsn-frame input[type="range"] {
+  -webkit-appearance: slider-horizontal;
+  padding: initial;
+  border: initial;
+  margin: 2px;
+  color: #909090;
+}
+.wpsn-frame input[type="range"]::-webkit-slider-container, .wpsn-frame input[type="range"]::-webkit-media-slider-container {
+  -webkit-flex: 1;
+  box-sizing: border-box;
+  -webkit-user-modify: read-only !important;
+  display: -webkit-flex;
+  -webkit-align-contents: center;
+}
+.wpsn-frame input[type="range"]::-webkit-slider-runnable-track {
+  -webkit-flex: 1;
+  -webkit-align-self: center;
+  box-sizing: border-box;
+  -webkit-user-modify: read-only !important;
+  display: block;
+}
+.wpsn-frame input[type="range"]::-webkit-slider-thumb, .wpsn-frame input[type="range"]::-webkit-media-slider-thumb {
+  -webkit-appearance: sliderthumb-horizontal;
+  box-sizing: border-box;
+  -webkit-user-modify: read-only !important;
+  display: block;
+}
+.wpsn-frame input[type="button"]:disabled, .wpsn-frame input[type="submit"]:disabled, .wpsn-frame input[type="reset"]:disabled,
+.wpsn-frame input[type="file"]:disabled::-webkit-file-upload-button, .wpsn-frame button:disabled,
+.wpsn-frame select:disabled, .wpsn-frame keygen:disabled, .wpsn-frame optgroup:disabled, .wpsn-frame option:disabled,
+.wpsn-frame select[disabled] > option {
+  color: GrayText;
+}
+.wpsn-frame area, .wpsn-frame param {
+  display: none;
+}
+.wpsn-frame input[type="checkbox"] {
+  -webkit-appearance: checkbox;
+}
+.wpsn-frame input[type="radio"] {
+  -webkit-appearance: radio;
+}
+.wpsn-frame select {
+  box-sizing: border-box;
+  -webkit-align-items: center;
+  white-space: pre;
+  -webkit-rtl-ordering: logical;
+  cursor: default;
+}
+.wpsn-frame optgroup {
+  font-weight: bolder;
+}
+.wpsn-frame option {
+  font-weight: normal;
+}
+.wpsn-frame output {
+  display: inline;
+}
+.wpsn-frame ::-webkit-validation-bubble {
+  display: inline-block;
+  z-index: 2147483647;
+  position: absolute;
+  opacity: 0.95;
+  line-height: 0;
+  margin: 0;
+  -webkit-text-security: none;
+  -webkit-transition: opacity 5.5s ease;
+  -webkit-user-modify: read-only !important;
+}
+.wpsn-frame ::-webkit-validation-bubble-message {
+  display: -webkit-flex;
+  position: relative;
+  top: -4px;
+  font: message-box;
+  color: black;
+  min-width: 50px;
+  max-width: 200px;
+  border: solid 2px #440000;
+  background: -webkit-gradient(linear, left top, left bottom, from(#f8ecec), to(#e8cccc));
+  padding: 8px;
+  border-radius: 8px;
+  -webkit-box-shadow: 4px 4px 4px rgba(100, 100, 100, 0.6), inset -2px -2px 1px #d0c4c4, inset 2px 2px 1px white;
+  -webkit-user-modify: read-only !important;
+  line-height: normal;
+  white-space: normal;
+  z-index: 2147483644;
+}
+.wpsn-frame ::-webkit-validation-bubble-text-block {
+  -webkit-flex: 1;
+  -webkit-user-modify: read-only !important;
+}
+.wpsn-frame ::-webkit-validation-bubble-heading {
+  font-weight: bold;
+  -webkit-user-modify: read-only !important;
+}
+.wpsn-frame ::-webkit-validation-bubble-arrow {
+  display: inline-block;
+  position: relative;
+  left: 32px;
+  width: 16px;
+  height: 16px;
+  background-color: #f8ecec;
+  border-width: 2px 0 0 2px;
+  border-style: solid;
+  border-color: #400;
+  box-shadow: inset 2px 2px 1px white;
+  -webkit-transform-origin: 0 0;
+  -webkit-transform: rotate(45deg);
+  -webkit-user-modify: read-only !important;
+  z-index: 2147483645;
+}
+.wpsn-frame ::-webkit-validation-bubble-arrow-clipper {
+  display: block;
+  overflow: hidden;
+  height: 16px;
+  -webkit-user-modify: read-only !important;
+}
+.wpsn-frame u, .wpsn-frame ins {
+  text-decoration: underline;
+}
+.wpsn-frame strong, .wpsn-frame b {
+  font-weight: bold !important;
+}
+.wpsn-frame i, .wpsn-frame cite, .wpsn-frame em, .wpsn-frame var, .wpsn-frame address, .wpsn-frame dfn {
+  font-style: italic !important;
+}
+.wpsn-frame tt, .wpsn-frame code, .wpsn-frame kbd, .wpsn-frame samp {
+  font-family: monospace;
+}
+.wpsn-frame pre, .wpsn-frame xmp, .wpsn-frame plaintext, .wpsn-frame listing {
+  display: block;
+  font-family: monospace;
+  white-space: pre;
+  margin: 1 __qem 0;
+}
+.wpsn-frame mark {
+  background-color: yellow;
+  color: black;
+}
+.wpsn-frame big {
+  font-size: larger;
+}
+.wpsn-frame small {
+  font-size: smaller;
+}
+.wpsn-frame s, .wpsn-frame strike, .wpsn-frame del {
+  text-decoration: line-through !important;
+}
+.wpsn-frame sub {
+  vertical-align: sub;
+  font-size: smaller;
+}
+.wpsn-frame sup {
+  vertical-align: super;
+  font-size: smaller;
+}
+.wpsn-frame nobr {
+  white-space: nowrap;
+}
+.wpsn-frame :focus {
+  outline: auto 5px -webkit-focus-ring-color;
+}
+.wpsn-frame html:focus, .wpsn-frame body:focus, .wpsn-frame input[readonly]:focus {
+  outline: none;
+}
+.wpsn-frame applet:focus, .wpsn-frame embed:focus, .wpsn-frame iframe:focus, .wpsn-frame object:focus {
+  outline: none;
+}
+.wpsn-frame input:focus, .wpsn-frame textarea:focus, .wpsn-frame isindex:focus, .wpsn-frame keygen:focus, .wpsn-frame select:focus {
+  outline-offset: -2px;
+}
+.wpsn-frame input[type="button"]:focus,
+.wpsn-frame input[type="checkbox"]:focus,
+.wpsn-frame input[type="file"]:focus,
+.wpsn-frame input[type="hidden"]:focus,
+.wpsn-frame input[type="image"]:focus,
+.wpsn-frame input[type="radio"]:focus,
+.wpsn-frame input[type="reset"]:focus,
+.wpsn-frame input[type="search"]:focus,
+.wpsn-frame input[type="submit"]:focus,
+.wpsn-frame input[type="file"]:focus::-webkit-file-upload-button {
+  outline-offset: 0;
+}
+.wpsn-frame a:-webkit-any-link {
+  color: -webkit-link;
+  text-decoration: underline;
+  cursor: auto;
+}
+.wpsn-frame a:-webkit-any-link:active {
+  color: -webkit-activelink;
+}
+.wpsn-frame a:hover {
+	cursor: pointer;
+}
+.wpsn-frame ruby, .wpsn-frame rt {
+  text-indent: 0;
+  /* blocks used for ruby rendering should not trigger this */
+}
+.wpsn-frame rt {
+  line-height: normal;
+  -webkit-text-emphasis: none;
+}
+.wpsn-frame ruby > rt {
+  display: block;
+  font-size: 50%;
+  text-align: start;
+}
+.wpsn-frame ruby > rp {
+  display: none;
+}
+.wpsn-frame noframes {
+  display: none;
+}
+.wpsn-frame frameset, .wpsn-frame frame {
+  display: block;
+}
+.wpsn-frame frameset {
+  border-color: inherit;
+}
+
+.wpsn-frame iframe[seamless] {
+  display: block;
+}
+.wpsn-frame details {
+  display: block;
+}
+.wpsn-frame summary {
+  display: block;
+}
+.wpsn-frame summary::-webkit-details-marker {
+  display: inline-block;
+  width: 0.66em;
+  height: 0.66em;
+  margin-right: 0.4em;
+}
+.wpsn-frame bdi, .wpsn-frame output {
+  unicode-bidi: -webkit-isolate;
+}
+.wpsn-frame bdo {
+  unicode-bidi: bidi-override;
+}

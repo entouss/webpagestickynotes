@@ -1,0 +1,107 @@
+<svg  viewBox="-1 -1 50 50" width="50" height="50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <style>
+    /* <![CDATA[ */
+    line {
+      fill: none;
+      stroke: #000;
+      stroke-width: 4;
+    }
+	
+    #p2 { stroke-width: 48 }
+
+    #w rect.box { fill : #ff8; mask:url(#wmask); }
+    #p rect.box { fill : #f88; mask:url(#pmask); }
+    #s rect.box { fill : #8f8; mask:url(#smask); }
+    #n rect.box { fill : #88f; mask:url(#nmask); }
+	
+	#p rect.box, #s rect.box, #n rect.box { fill : #fff;  }
+	
+	svg g mask rect { fill : #fff; }
+	
+	@keyframes draw {
+	  to {
+		stroke-dashoffset: 0;
+	  }
+	}
+
+	#w line,#p line#p1, #s line, #n line { 
+		stroke-dasharray: 400px;
+		stroke-dashoffset: 400px;
+		animation-name: draw;
+		animation-duration: 5s;
+		animation-fill-mode: forwards;
+		animation-iteration-count: 1;
+		animation-timing-function: linear;
+	}
+	text {
+	    font-family: 'Impact';
+		font-variant: small-caps;
+		fill: #fff;
+	}
+	svg {
+		filter: url(#drop-shadow);
+	}
+	svg * {filter: none; }
+    /* ]]> */
+ </style>
+ <svg height="0" width="0" xmlns="http://www.w3.org/2000/svg">
+	<filter id="drop-shadow">
+		<feMorphology operator="dilate" radius="1" in="SourceGraphic" result="BEVEL_10" />
+		<feComposite operator="over" in2="SourceGraphic" in="BEVEL_10" result="BEVEL_30"/>
+		<feFlood flood-color="#aaa" result="COLOR" />
+		<feComposite in="COLOR" in2="BEVEL_30" operator="in" result="BEVEL_40" />
+		<feMerge result="BEVEL_50">
+		   <feMergeNode in="BEVEL_40" />
+		   <feMergeNode in="SourceGraphic" />
+		</feMerge>
+	</filter>
+ </svg>
+ 
+ <svg id="w" x="0" y="0" width="48" height="48">
+     <g>
+      <rect class="box" id="wrect" x="0" y="0" width="48" height="48"/>
+	  <mask id="wmask" x="0" y="0" width="48" height="48">
+		  <rect x="0" y="0" width="48" height="48"/>
+		  <line id="w1" x1="16" x2="16" y1="-2" y2="16"/>
+		  <line id="w2" x1="32" x2="32" y1="-2" y2="16"/>
+		  <line id="w3" x1="24" x2="24" y1="50" y2="36"/>
+	  </mask>
+     </g>
+ </svg>
+ <!-- 
+ <text x="0.25" y="58" textLength="48"  lengthAdjust="spacingAndGlyphs" font-size="8">WebPageStickyNotes.com</text>
+   
+ <svg id="p" x="52" y="4" width="48" height="48"> 
+     <g>
+      <rect class="box" x="0" y="0" width="48" height="48"/>
+	  <mask id="pmask"  x="0" y="0" width="48" height="48">
+	    <rect x="0" y="0" width="48" height="48"/>
+		<line id="p1" x1="16" x2="32" y1="16" y2="16"/>
+		<line id="p2" x1="40" x2="40" y1="30" y2="50"/>
+	  </mask>
+     </g>
+ </svg>
+    
+ <svg id="s" x="104" y="4" width="48" height="48">   
+     <g>
+      <rect class="box" x="0" y="0" width="48" height="48"/>
+	  <mask id="smask"  x="0" y="0" width="48" height="48">
+	    <rect x="0" y="0" width="48" height="48"/>
+		<line id="s1" x1="16" x2="50" y1="16" y2="16"/>
+		<line id="s2" x1="-2" x2="32" y1="32" y2="32"/>
+	  </mask>
+     </g>
+ </svg>
+ 
+ <svg id="n" x="156" y="4" width="48" height="48">
+     <g>
+      <rect class="box" x="0" y="0" width="48" height="48"/>
+	  <mask id="nmask"  x="0" y="0" width="48" height="48">
+	    <rect x="0" y="0" width="48" height="48"/>
+		<line id="n1" x1="16" x2="16" y1="16" y2="50"/>
+		<line id="n2" x1="32" x2="32" y1="-2" y2="32"/>
+	  </mask>
+     </g>
+ </svg>
+ -->
+</svg>

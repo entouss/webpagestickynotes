@@ -1,0 +1,61 @@
+<!--TOC-->
+# Tips & Tricks
+---
+## Customize Shortcuts
+In prior versions, shortcuts were hard coded and couldn't be customized. Those shortcuts won't work until they are customized per below.
+
+Type the following in your address bar `chrome://extensions/configureCommands`
+or click the Chrome menu > More tools > Extensions > Keyboard shortcuts at the bottom of the page.
+
+Some suggested shortcuts:
+
+| Command | Shortcut |
+|---|---|
+|`Add note` | `Ctrl+Shift+N`|
+|`Go to Noteboard` | `Ctrl+Shift+B`|
+|`Undo` | `Ctrl+Shift+Z`|
+|`Redo` | `Ctrl+Shift+Y`|
+|`Copy note(s)` | `Ctrl+Shift+C`|
+|`Cut note(s)` | `Ctrl+Shift+X`|
+|`Paste copied note(s)` | `Ctrl+Shift+V`|
+|`Select all notes` | `Ctrl+Shift+A`|
+|`Delete note(s)` | `Ctrl+Shift+Del`|
+|`Zoom in note(s)` | `Ctrl+Shift+I`|
+|`Zoom out note(s)` | `Ctrl+Shift+O`|
+|`Zoom note(s) to 100%` | `Ctrl+Shift+U`|
+|`Auto fit note(s)` | `Ctrl+Shift+F`|
+
+---
+## Paste formatted VS plain text
+When pasting text from the web to a note, by default the formatting will be kept. To paste as plain text, right click the mouse while editing the note and select "Paste as plain text"
+
+---
+## Take snapshots
+1. Double click <img src="chrome-extension://{@@extension_id}/images/camera.svg"> until the note becomes transparent with a border
+2. Resize note around area to capture in snapshot
+3. Click <img src="chrome-extension://{@@extension_id}/images/camera.svg"> to take snapshot
+---
+## Persist note across multiple pages
+1. Click <img src="chrome-extension://{@@extension_id}/images/circle.svg">
+<img src="chrome-extension://{@@extension_id}/images/tips/1.png"/>
+The note will show on any page matching the selected criteria.
+In this example, the note will show on https://www.google.com/ but also on https://www.google.com/?page=1 but not on
+https://www.google.com/blank.html since the path name here is `/blank.html` instead of `/`. 
+In the example above, `?page=1` is a query string.
+---
+## Keep note fixed while scrolling page
+1. Click <img src="chrome-extension://{@@extension_id}/images/position.svg">
+<img src="chrome-extension://{@@extension_id}/images/tips/2.png"/>
+2. Select either Top/Right/Bottom/Left
+3. Click OK
+---
+## Create dynamic table of content
+By adding the following text  `<!--TOC-->` in the note, any header will be considered for the table of content dynamically, like the one at the top of this note
+
+---
+## Preview note dynamically
+Click <img src="chrome-extension://{@@extension_id}/images/right_arrow.svg"/> when editing a note
+
+---
+## Note board
+Use <a href=\"http://www.google.com/blank.html\">http://www.google.com/blank.html</a> as a note board. <br/> Use <a href=\"http://www.google.com/blank.html\">http://www.google.com/blank.html?BoardNameHere</a> for different boards.
