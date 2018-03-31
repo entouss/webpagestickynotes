@@ -618,7 +618,9 @@
 	wpsn.cloneNote = function (note, updateScopeToCurrentScope, keepOriginalCoordinates) {
 		let newNote = JSON.parse(JSON.stringify(note));//clone
 		if (updateScopeToCurrentScope) {
-			newNote.scope = wpsn.getScope();
+			newNote.scope = newNote.scope || [];
+			newNote.scope = [].concat(newNote.scope);
+			newNote.scope.push(wpsn.getScope());
 		}
 		newNote.id = Math.floor((Math.random() * 1000000000) + 1);
 		wpsn.renderNote(newNote);
@@ -697,10 +699,13 @@
 				anchorNote = JSON.parse(JSON.stringify(effective.notes[0]));
 			}
 			if (!confirmForAll && (!confirmationPrompt || effective.type == 'current' || effective.type == 'notes' || effective.type == 'hovered' || effective.type == 'edited')) {
+				wpsn.saveNoteStateForUndo(effective.notes);
 				if (noLoopNotes) {
-					func(effective.notes, { anchorNote, effectiveNotes: effective });
+					await func(effective.notes, { anchorNote, effectiveNotes: effective });
 				} else {
-					for (let enote of effective.notes) { func(enote, { anchorNote, effectiveNotes: effective }); }
+					for (let enote of effective.notes) { 
+						await func(enote, { anchorNote, effectiveNotes: effective }); 
+					}
 				}
 			} else {
 				await wpsn.confirm(
@@ -724,6 +729,7 @@
 		let effectiveNotes = await wpsn.getEffectiveNotes(note);
 		if (!confirmationPrompt || effectiveNotes.type == 'current' || effectiveNotes.type == 'notes') {
 			let form = await promptFunc();
+			wpsn.saveNoteStateForUndo(effectiveNotes.notes);
 			for (let enote of effectiveNotes.notes) {
 				await formCallback(enote, form);
 			}
@@ -2611,21 +2617,25 @@
 	wpsn.getHash = function () {
 		return location.hash.replace('#', '');
 	};
-	wpsn.loadHash = function () {
+	wpsn.loadHash = async function () {
 		try {
-			let hash = wpsn.getHash();
+			let hash = unescape(wpsn.getHash());
 			if (hash.indexOf('[') > -1 && hash.indexOf('{') > -1 && hash.indexOf('"') > -1 && hash.indexOf('id') > -1) {
-				wpsn.notes = JSON.parse(hash);
+				let data = JSON.parse(hash);
+				await wpsn.confirm({}, '<div class="alert alert-warning">Are you sure you want to import the note(s)?</div>');
+				let importedNotes = await wpsn.saveNotes(data);
+				let message = '<div class="alert alert-success">The following note(s) have been imported</div>';
+				await wpsn.manager.renderManagerNotes(null, importedNotes, message);
 			}
 		} catch (err) { wpsn.error(err); }
 	};
 
 	wpsn.load = function () {
 		$('.wpsn-sticky').remove();
-		return new Promise(function (resolve) {
+		return new Promise(async function (resolve) {
 			wpsn.notes = [];
 			wpsn.allNotes = {};
-			wpsn.loadHash();
+			await wpsn.loadHash();
 			chrome.storage.sync.get(null, function (result) {
 				if (result) {
 					wpsn.settings = result['wpsn.settings'] || {};
@@ -4376,6 +4386,7 @@
 		let isCurrentNote = label == 'current note';
 
 		let notesToExportString = JSON.stringify(effectiveNotes.notes);
+		let escapedNotesToExportString = escape(notesToExportString);
 		wpsn.prompt(
 			{
 				width: 1000,
@@ -4404,6 +4415,11 @@
 				'</ol>' +
 				(isCurrentNote ? '<br/>Any changes made in the field above will be saved when you click OK.' : '') + '</div></div>'
 			) +
+			(escapedNotesToExportString.length < 200000 ?
+			'<div class="panel panel-default"><div class="panel-heading">Link ' + label + ':</div><div class="panel-body form-inline">' +
+			'Copy <a href="#'+escapedNotesToExportString+'">link</a> and share it. On opening link, ' + label + ' can be seamlessly imported by others.' +
+			'</div></div>' : ''
+		    ) +
 			'<div class="panel panel-default"><div class="panel-heading">' + (options.downloadlabel || 'Download') + ' ' + label + ':</div><div class="panel-body form-inline">' +
 			'<input type="text" class="wpsn-download-name form-control" placeholder="Download As"/><a class="wpsn-download btn btn-default" download="webpagestickynotes.wpsn">' + (options.downloadlabel || 'Download') + '</a>' +
 			'<br/>On another computer...' +
@@ -8743,6 +8759,10 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'2.6.13': [
+			'FEATURE: On cloning note with <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/copy.svg"/>, append current scope to original scope.',
+			'FEATURE: Option of copying link (under 200k characters) to seamlessly share note(s) by using export feature <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/up.svg"/>.',
+		],
 		'2.6.12': [
 			'FEATURE: A note can now have different positions on different pages if scoped to many pages. This can be enabled via <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/circle.svg"/> or <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/settings.svg"/>',
 			'FEATURE: Notes can now snap to outer edges of window',

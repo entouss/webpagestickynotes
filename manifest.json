@@ -1,7 +1,7 @@
 {
   "name": "Web Page Sticky Notes",
   "short_name": "WPSN",
-  "version": "2.6.12",
+  "version": "2.6.13",
   "manifest_version": 2,
   "description": "Sticky Notes For Web Pages",
   "icons": { "16":"icon16.png","48":"icon48.png","128":"icon128.png" },
