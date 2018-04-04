@@ -617,7 +617,7 @@
 
 	wpsn.cloneNote = function (note, updateScopeToCurrentScope, keepOriginalCoordinates) {
 		let newNote = JSON.parse(JSON.stringify(note));//clone
-		if (updateScopeToCurrentScope) {
+		if (updateScopeToCurrentScope && !wpsn.inScope(note)) {
 			newNote.scope = newNote.scope || [];
 			newNote.scope = [].concat(newNote.scope);
 			newNote.scope.push(wpsn.getScope());
@@ -8759,6 +8759,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'2.6.14': [
+			'FIX: Current scope was being appended on cloned and pasted notes. This caused unintuitive behavior. Current scope will now be appended on cloning an out of scope note. Old scope(s) will be replaced with current scope for pasted notes.',
+		],
 		'2.6.13': [
 			'FEATURE: On cloning note with <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/copy.svg"/>, append current scope to original scope.',
 			'FEATURE: Option of copying link (under 200k characters) to seamlessly share note(s) by using export feature <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/up.svg"/>.',
@@ -9306,6 +9309,7 @@ wpsn.menu.calculator = {
 		if (pasteText != null) {
 			try {
 				let selectedNotes = JSON.parse(pasteText);
+				for (let note of selectedNotes) { delete note.scope; }
 				wpsn.cloneNotes(selectedNotes, true, keepOriginalCoordinates);
 			} catch (err) { wpsn.error(err); }
 		} else {
