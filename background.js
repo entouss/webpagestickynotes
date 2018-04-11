@@ -610,6 +610,7 @@ let shortcutConfig = {
 	'a-b-redo'										: { context : ['browser_action', 'page'] },
 	'a-g-backup'									: { context : ['browser_action', 'page'] },
 	'a-a-add-note'									: { context : ['page'] },
+	'a-g-goto-url'									: { context : ['page'] },
 	'a-markdown-cheatsheet'							: { context : ['page'] },
 	'a-tips-and-tricks'								: { context : ['page'] },
 	'a-menu-cheatsheet'								: { context : ['page'] },

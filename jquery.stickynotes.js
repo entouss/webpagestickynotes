@@ -3696,6 +3696,7 @@
 		'a-g-backup': async function () { await wpsn.backup(); },
 		'a-a-undo': async function () { await wpsn.undo(); },
 		'a-b-redo': async function () { await wpsn.redo(); },
+		'a-g-goto-url': async function () { await wpsn.gotoUrl(); },
 		'share': async function (commandName, info) { await wpsn.command_actions[commandName](commandName, info); },
 		'b-select-all-notes': async function () { await wpsn.selectAllNotes(); },
 		'b-export-note': async function (commandName, info) { await wpsn.exportEffectiveNotes(info.note); },
@@ -7642,109 +7643,20 @@
 		},
 		rightClick: {
 			description: 'Add parameterized RSS feed. Great for job searches & more...',
-			prompt: {
-				mode: 6382746823,
-				popup: {
-					minWidth: 700,
-					onloadCallback: function (form, note) {
-						let props = note[wpsn.menu.rss.modes.rssparam.id];
-						props = props || {};
-						let checked = false;
-						let $rss = $('input[name="rss"]', form);
-						$rss.change(function () {
-							let rss = $(this).val();
-							let evaledRss = $(this).val();
-							$('.fielddiv', form).hide();
-							if (rss) {
-								let validFields = rss.match(/{.*?}/g);
-								if (validFields) {
-									let $fieldsDiv = $('.fields', form);
-									for (let i = 0; i < validFields.length; i++) {
-										let validField = validFields[i].substring(1, validFields[i].length - 1);
-										let $validField = $('.fielddiv.' + validField, form);
-										let formFieldName = validField.toLowerCase().replace(' ', '_');
-										let $formField = $('[name="' + formFieldName + '"]', form);
-										if ($validField.size() > 0) {
-											$('.' + validField, form).show();
-										} else {
-											let formFieldExists = true;
-											if ($formField.size() == 0) {
-												formFieldExists = false;
-												$formField = $('<input type="text" name="' + formFieldName + '" class="field" style="width:100%" placeholder="{' + formFieldName + '}"/>');
-											}
-											if (!formFieldExists) {
-												$fieldsDiv.append($formField);
-											}
-										} 
-										evaledRss = evaledRss.replace('{' + validField + '}', $formField.val());
-										evaledRss = evaledRss.replace('{' + validField + '}', '');
-										$formField.off('keyup').on('keyup',function(){
-											$rss.change();
-										});
-									}
-								}
-							}
-							$('.field', form).each(function () {
-								let $this = $(this);
-								if ($this.closest('.fielddiv').size() == 0) {
-									let $formFieldDiv = $('<div class="' + $this.attr('name') + ' fielddiv">' + $this.attr('name') + ':<br/><span class="fieldspot"></span><br/></div>');
-									$this.before($formFieldDiv);
-									$('.fieldspot', $formFieldDiv).append($this);
-								}
-							});
-							$('.wpsn_link').empty().append($('<a href="'+evaledRss+'" target="_blank" style="margin-top:14px;">'+evaledRss+'</a>'));
-						}).each(function () {
-							let $this = $(this);
-							$this.attr('value', $this.closest('td').next('td').find('input[name="rssText"]').val());
-							if (props.rss === wpsn.htmlEncode($this.val())) {
-								$this.attr('checked', 'checked').change();
-								checked = true;
-							}
-						});
-						if (!checked) {
-							$rss.eq(0).attr('checked', 'checked').change();
-						}
-						$('input[name="rssText"]', form).each(function () {
-							let $this = $(this);
-							$this.change(function () {
-								$this.closest('td').prev('td').find('input[name="rss"]').val($this.val()).change();
-							});
-						});
-					}
-				},
-				autoResize: 'height',
-				form: function (note) {
-					let props = note[wpsn.menu.rss.modes.rssparam.id] || {};
-					props.rssText = props.rssText || [];
-					if (props.rssText.constructor !== Array) {
-						props.rssText = [props.rssText];
-					}
-					wpsn.settings.RSSParams = wpsn.settings.RSSParams || ['http://rss.indeed.com/rss?q={keywords}&l={location}', 'http://rss.jobsearch.monster.com/rssquery.ashx?q={keywords}&where={location}', 'http://{city}.craigslist.org/search/jjj?query={keywords}&format=rss'];
-					let RSSParams = [''].concat(wpsn.settings.RSSParams);
-					RSSParams = wpsn.removeDuplicates(RSSParams.concat(props.rssText));
-					delete props.rssText;
-					let formText =
-						'<div class="fields"></div>' +
-						'<div class="wpsn_link"></div>'+
-						'<div class="panel panel-default"><div class="panel-heading">RSS Feed:</div><div class="panel-body"><table>';
-					'</div>';
-					for (let i = 0; i < RSSParams.length; i++) {
-						let thisRSSParam = RSSParams[i];
-						formText += '<tr><td style="border:0"><input type="radio" name="rss" /></td><td style="border:0;width:100%"><input style="width:100%" type="text" name="rssText" value="' + thisRSSParam + '"/></td></tr>';
+			action : async function(note, menuButton, noteDiv) {
+				let props = Object.assign({},note[wpsn.menu.rss.modes.rssparam.id]);
+				props.template = props.rss;
+				wpsn.settings.RSSParams = wpsn.settings.RSSParams || ['http://rss.indeed.com/rss?q={keywords}&l={location}', 'http://rss.jobsearch.monster.com/rssquery.ashx?q={keywords}&where={location}', 'http://{city}.craigslist.org/search/jjj?query={keywords}&format=rss'];
 
-					}
-					formText += '</table><br/><br/>Add RSS feed and set parameters to {parameter_name}<br/>(i.e. http://rss.indeed.com/rss?q={keywords}&l={location})</div></div>';
-					return formText;
-				},
-				callback: function (note) {
-					let props = note[wpsn.menu.rss.modes.rssparam.id];
-					props.rssText = props.rssText || [];
-					if (props.rssText.constructor !== Array) {
-						props.rssText = [props.rssText];
-					}
-					wpsn.settings.RSSParams = props.rssText;
-					wpsn.saveSettings();
-				}
+				let form = await wpsn.template.prompt(props, wpsn.settings.RSSParams, 'RSS Feed', 'http://rss.indeed.com/rss?q={keywords}&l={location}');
+				
+				form.rss = form.template;
+				delete form.template;
+				wpsn.settings.RSSParams = form.templates;
+				wpsn.saveSettings();
+				note[wpsn.menu.rss.modes.rssparam.id] = form;
+				note.mode = wpsn.menu.rss.modes.rssparam.id; 
+				wpsn.refreshNote(note);
 			}
 		}
 	};
@@ -8199,7 +8111,7 @@
 		try { text = JSON.stringify(JSON.parse(jsonXML), null, 2); } catch (err) {
 			try {
 				if (text.indexOf('<') != -1) {
-					text = vkbeautify.xml(text.replace(/</g,'&lt;')); 
+					text = vkbeautify.xml(text).replace(/</g,'&lt;'); 
 				} else {
 					text = wpsn.csvToFlatFile(text);
 				}
@@ -8759,6 +8671,10 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'2.6.16': [
+			'FEATURE: You can now open a parameterized URL by right clicking page and selecting "Go To URL" (Works best with shortcut which can be set by opening chrome://extensions/configureCommands)',
+			'FIX: Indent/Prettify was broken for XML'
+		],
 		'2.6.15': [
 			'FIX: Current scope was being appended on cloned and pasted notes. This caused unintuitive behavior. Current scope will now be appended on cloning an out of scope note. Old scope(s) will be replaced with current scope for pasted notes.',
 		],
@@ -8775,7 +8691,7 @@ wpsn.menu.calculator = {
 			'FIX: <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/more.svg"/> menu was showing up too early',
 		],
 		'2.6.9': [
-			'FEATURE: Add Noteboard shortcut when right clicking <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/layers.svg"/> (Works best with shortcut)'
+			'FEATURE: Add Noteboard shortcut when right clicking <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/layers.svg"/> (Works best with shortcut which can be set by opening chrome://extensions/configureCommands)'
 		],
 		'2.6.8': [
 			'FIX: Correct "Select All" menu in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/settings.svg"/>'
@@ -8961,6 +8877,132 @@ wpsn.menu.calculator = {
 			url: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/' + relativePath,
 			async: false
 		}).responseText;
+	};
+
+	wpsn.gotoUrl = async function() {
+		let example = 'https://www.google.com/search?q={query}';
+		wpsn.settings.GotoURLTemplates = wpsn.settings.GotoURLTemplates || [example];
+		wpsn.settings.GotoURLTemplate = wpsn.settings.GotoURLTemplate || example;
+
+		let form = await wpsn.template.prompt({template:wpsn.settings.GotoURLTemplate}, wpsn.settings.GotoURLTemplates, 'URL', example);
+		
+		wpsn.settings.GotoURLTemplates = form.templates;
+		wpsn.settings.GotoURLTemplate = form.template;
+		wpsn.saveSettings();
+		
+		window.open(form.evaluated, '_blank');
+	};
+
+	wpsn.template = {
+		promptHTML : function(templates=[], header, example) {
+			templates = wpsn.removeDuplicates([''].concat(templates));
+			let formText = `
+			<div>
+				<div class="panel panel-default"><div class="panel-heading">Template:</div><div class="panel-body"><table>
+			</div>
+			`;
+			for (let template of templates) {
+				formText += `<tr><td style="border:0"><input type="radio" name="template" /></td><td style="border:0;width:100%"><input style="width:100%" type="text" name="templates" value="${template}"/></td></tr>`;
+			}
+			formText += `</table><br/>i.e. ${example}</div></div>`;
+			formText += `
+			<div>
+				<div class="panel panel-default"><div class="panel-heading">Parameter(s):</div><div class="panel-body">
+				<div class="fields"></div>
+				</div>
+			</div>
+			<div>
+				<div class="panel panel-default"><div class="panel-heading">${header}:</div><div class="panel-body">
+				<div class="wpsn_link"></div>
+				</div>
+			</div>
+			`;
+			return formText;
+		},
+		evaluate : function(template, params) {
+			let evaledTemplate = template;
+			let validFields = template.match(/{.*?}/g);
+			if (validFields) {
+				for (let i = 0; i < validFields.length; i++) {
+					let validField = validFields[i].substring(1, validFields[i].length - 1);
+					evaledTemplate = evaledTemplate.replace('{' + validField + '}', (params[validField]||''));
+					evaledTemplate = evaledTemplate.replace('{' + validField + '}', '');
+				}
+			}
+			return evaledTemplate;
+		},
+		prompt : async function(props={},templates=[], header, example) {
+			let form = await wpsn.prompt({
+				minWidth: 700, minHeight: 700, load: function () {
+					let checked = false;
+					let $templateRB = $('input[name="template"]');
+					$templateRB.change(function () {
+						let template = $(this).val();
+						var params = {};
+						$.each($(this).closest('form').serializeArray(), function(i, param) {
+							params[param.name] = param.value;
+						});
+						let evaledTemplate = wpsn.template.evaluate(template, params);
+						$('.fielddiv').hide();
+						if (template) {
+							let validFields = template.match(/{.*?}/g);
+							if (validFields) {
+								let $fieldsDiv = $('.fields');
+								for (let i = 0; i < validFields.length; i++) {
+									let validField = validFields[i].substring(1, validFields[i].length - 1);
+									let $validField = $('.fielddiv.' + validField);
+									let formFieldName = validField.toLowerCase().replace(' ', '_');
+									let $formField = $('[name="' + formFieldName + '"]');
+									if ($validField.size() > 0) {
+										$('.' + validField).show();
+									} else {
+										let formFieldExists = true;
+										if ($formField.size() == 0) {
+											formFieldExists = false;
+											$formField = $('<input type="text" name="' + formFieldName + '" class="field" style="width:100%" placeholder="{' + formFieldName + '}" value="'+(props[formFieldName]||'')+'" autocomplete="on"/>');
+										}
+										if (!formFieldExists) {
+											$fieldsDiv.append($formField);
+										}
+									} 
+									$formField.off('keyup').on('keyup',function(){
+										$templateRB.filter(':checked').change();
+									});
+								}
+							}
+						}
+						$('.field').each(function () {
+							let $this = $(this);
+							if ($this.closest('.fielddiv').size() == 0) {
+								let $formFieldDiv = $('<div class="' + $this.attr('name') + ' fielddiv">' + $this.attr('name') + ':<br/><span class="fieldspot"></span><br/></div>');
+								$this.before($formFieldDiv);
+								$('.fieldspot', $formFieldDiv).append($this);
+							}
+						}).filter(':visible').eq(0).focus();
+						$('.wpsn_link').empty().append($('<a href="'+evaledTemplate+'" target="_blank" style="margin-top:14px;">'+evaledTemplate+'</a>'));
+					}).each(function () {
+						let $this = $(this);
+						$this.attr('value', $this.closest('td').next('td').find('input[name="templates"]').val());
+						if (wpsn.htmlEncode(props.template) === wpsn.htmlEncode($this.val())) {
+							$this.attr('checked', 'checked').change();
+							checked = true;
+						}
+					});
+					if (!checked) {
+						$templateRB.eq(0).attr('checked', 'checked').change();
+					}
+					$('input[name="templates"]').each(function () {
+						let $this = $(this);
+						$this.change(function () {
+							$this.closest('td').prev('td').find('input[name="template"]').val($this.val()).change();
+						});
+					});
+				}
+			}, wpsn.template.promptHTML(templates, header, example));
+
+			form.evaluated = wpsn.template.evaluate(form.template, form);
+			return form;
+		}
 	};
 
 	wpsn.menuIllustration = async function (menu, action, note, menuDiv) {
