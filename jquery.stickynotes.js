@@ -2656,7 +2656,7 @@
 	};
 
 	wpsn.updateNoteboardTab = function() {
-		if (wpsn.settings.noteboard_url && location.href.indexOf(wpsn.settings.noteboard_url) > -1) {
+		if (wpsn.settings.noteboard_url && location.href.indexOf(wpsn.settings.noteboard_url.replace(/{.*}/g,'')) > -1) {
 			document.title = location.hash.replace('#','');
 			let link = document.querySelector('link[rel*=\'icon\']') || document.createElement('link');
 			link.type = 'image/x-icon';
@@ -6347,67 +6347,35 @@
 
 	wpsn.noteboard = {
 		openBoard: async function() {
-			let html = `
-			<div class="panel panel-default">
-				<div class="panel-heading"><b>Go to Noteboard</b></div>
-				<div>
-					<table style="width:100%">
-						<tr style="display:${!wpsn.settings.noteboard_url?'block':'none'}">
-							<td><label>URL:</label></td>
-							<td style="width:100%">
-								First set Noteboard URL in <a href="#" id="wpsn_settings">Settings <img  src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/settings.svg" width="14"/></a> and try again.
-							</td>
-						</tr>
-						<tr style="display:${wpsn.settings.noteboard_url?'block':'none'}">
-							<td><label>Name:</label></td>
-							<td style="width:100%">
-								<input type="text" name="wpsn_noteboard_name" id="wpsn_noteboard_name" style="width:100% "list="wpsn_noteboard_name_list"/>
-								<datalist id="wpsn_noteboard_name_list">
-								<optgroup label="Noteboard names">
-								</optgroup>
-								</datalist>
-							</td>
-						</tr>
-					</table>
-				</div>
-			</div>
-		`;
+			let example = 'https://www.google.com/blank.html#{name}';
+			wpsn.settings.noteboard_url = wpsn.settings.noteboard_url || example;
+			if (wpsn.settings.noteboard_url.indexOf('{')==-1){
+				wpsn.settings.noteboard_url+= '#{name}';
+			}
+			let notesInScope = wpsn.getNotesInScope(Object.values(wpsn.allNotes), wpsn.settings.noteboard_url, {
+				protocol : {include:false},
+				hostname : {include:true},
+				port : {include:true},
+				pathname : {include:true},
+				search : {include:true},
+				hash : {include:false},
+				title : {include:false}
+			});
+			let noteboardNameList = '';
+			let names = new Set();
+			for (let note of notesInScope) {
+				let hash = note.scope && note.scope.hash;
+				if (!hash) continue;
+				names.add(hash.replace('#',''));
+			}
+			names = Array.from(names).sort();
 
-			let form = await wpsn.prompt({
-				minWidth: 500,
-				load: function () { 
-					$('#wpsn_noteboard_name').focus();
-					$('#wpsn_settings').click(function(){
-						wpsn.menu.settings.leftClick.action();
-					});
-					
-					let notesInScope = wpsn.getNotesInScope(Object.values(wpsn.allNotes), wpsn.settings.noteboard_url, {
-						protocol : {include:false},
-						hostname : {include:true},
-						port : {include:true},
-						pathname : {include:true},
-						search : {include:true},
-						hash : {include:false},
-						title : {include:false}
-					});
-					let noteboardNameList = '';
-					let names = new Set();
-					for (let note of notesInScope) {
-						let hash = note.scope && note.scope.hash;
-						if (!hash) continue;
-						names.add(hash.replace('#',''));
-					}
-					names = Array.from(names).sort();
-					for(let name of names) {
-						noteboardNameList += '<option>'+name+'</option>';
-					}
-					$('datalist#wpsn_noteboard_name_list optgroup').html(noteboardNameList);
-				} 
-			}, 
-			html,
-			{});
-
-			chrome.extension.sendMessage({ gotourl:  wpsn.settings.noteboard_url + '#' + form.wpsn_noteboard_name, title: form.wpsn_noteboard_name });
+			let form = await wpsn.template.prompt({template:wpsn.settings.noteboard_url}, [wpsn.settings.noteboard_url], 'Go to Noteboard', example, {name:names}, true);
+			
+			wpsn.settings.noteboard_url = form.template;
+			wpsn.saveSettings();
+		
+			chrome.extension.sendMessage({ gotourl:  form.evaluated, title: form.board_name });
 		}
 	};
 
@@ -8402,12 +8370,6 @@ wpsn.menu.calculator = {
 					'<tr><td>Page title</td>	<td><input type="checkbox" name="wpsn_scope_title" class="wpsn_scope_title" value="true"/></td></tr>' +
 					'</table>' +
 					'</div></div>';
-				
-				promptHTML +=
-					'<div class="panel panel-default"><div class="panel-heading">Noteboard URL</div><div class="panel-body">' +
-					'<input type="text" name="wpsn_noteboard_url" id="wpsn_noteboard_url" style="width:100%"/><br/>'+
-					'<span style="color:#666;font-size:small">(i.e. https://www.google.com/blank.html)</span>'+
-					'</div></div>';
 					
 				promptHTML +=
 					`
@@ -8503,7 +8465,6 @@ wpsn.menu.calculator = {
 							'wpsn_scope_title': wpsn.settings.scope ? wpsn.settings.scope.title == true ? 'true' : 'false' : 'false',
 							'wpsn_font_family': wpsn.settings.font ? wpsn.settings.font.family : '',
 							'wpsn_font_size': wpsn.settings.font ? wpsn.settings.font.size || '0' : '0',
-							'wpsn_noteboard_url': wpsn.settings.noteboard_url || '',
 							'multiPosition': wpsn.settings.multiPosition ? 'true' : 'false' || 'false',
 							'disableAutoresize': wpsn.settings.disableAutoresize ? 'true' : 'false' || 'false',
 							'disableMemeModeByDefault': wpsn.settings.disableMemeModeByDefault ? 'true' : 'false' || 'false',
@@ -8547,7 +8508,6 @@ wpsn.menu.calculator = {
 							wpsn.settings.font.family = form.wpsn_font_family;
 							wpsn.loadFonts([form.wpsn_font_family]);
 							wpsn.settings.font.size = parseInt(form.wpsn_font_size) || null;
-							wpsn.settings.noteboard_url = form.wpsn_noteboard_url || '';
 							wpsn.settings.disableAutoresize = form.disableAutoresize === 'true';
 							wpsn.settings.multiPosition = form.multiPosition === 'true';
 							wpsn.settings.disableMemeModeByDefault = form.disableMemeModeByDefault === 'true';
@@ -8894,15 +8854,21 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.template = {
-		promptHTML : function(templates=[], header, example) {
-			templates = wpsn.removeDuplicates([''].concat(templates));
+		promptHTML : function(oneTemplate, templates=[], header, example, formFieldName) {
+			templates = wpsn.removeDuplicates(templates);
+			if (!oneTemplate) {
+				templates = [''].concat(templates);
+			}
 			let formText = `
 			<div>
-				<div class="panel panel-default"><div class="panel-heading">Template:</div><div class="panel-body"><table>
-			</div>
+				<div class="panel panel-default"><div class="panel-heading">Template:</div><div class="panel-body"><table style="width:100%">
 			`;
 			for (let template of templates) {
-				formText += `<tr><td style="border:0"><input type="radio" name="template" /></td><td style="border:0;width:100%"><input style="width:100%" type="text" name="templates" value="${template}"/></td></tr>`;
+				formText += `
+				<tr><td style="border:0;display:${oneTemplate?'none':'block'}"><input type="radio" name="template"/></td><td style="padding:5px 0;border:0;width:100%">
+					<input style="width:100%" type="text" name="templates" value="${template}"/>
+				</td></tr>
+				`;
 			}
 			formText += `</table><br/>i.e. ${example}</div></div>`;
 			formText += `
@@ -8931,9 +8897,9 @@ wpsn.menu.calculator = {
 			}
 			return evaledTemplate;
 		},
-		prompt : async function(props={},templates=[], header, example) {
+		prompt : async function(props={},templates=[], header, example, fieldNames={}, oneTemplate) {
 			let form = await wpsn.prompt({
-				minWidth: 700, minHeight: 700, load: function () {
+				minWidth: 700, load: function () {
 					let checked = false;
 					let $templateRB = $('input[name="template"]');
 					$templateRB.change(function () {
@@ -8959,7 +8925,20 @@ wpsn.menu.calculator = {
 										let formFieldExists = true;
 										if ($formField.size() == 0) {
 											formFieldExists = false;
-											$formField = $('<input type="text" name="' + formFieldName + '" class="field" style="width:100%" placeholder="{' + formFieldName + '}" value="'+(props[formFieldName]||'')+'" autocomplete="on"/>');
+											let options = '';
+											let names = fieldNames[formFieldName] || [];
+											for (let name of names) {
+												options += `<option>${name}</option>`;
+											}
+											$formField = $(`
+												<div>
+													<input type="text" class="field" name="${formFieldName}" id="${formFieldName}" placeholder="{${formFieldName}}" value="${(props[formFieldName]||'')}" style="width:100% "list="${formFieldName}List" autocomplete="on"/>
+													<datalist id="${formFieldName}List">
+														<optgroup label="Template Names"></optgroup>
+														${options}
+													</datalist>
+												</div>
+											`);
 										}
 										if (!formFieldExists) {
 											$fieldsDiv.append($formField);
@@ -8978,7 +8957,10 @@ wpsn.menu.calculator = {
 								$this.before($formFieldDiv);
 								$('.fieldspot', $formFieldDiv).append($this);
 							}
-						}).filter(':visible').eq(0).focus();
+						})
+						if(!$(document.activeElement).is('.field')) {
+							$('.field:visible').eq(0).focus();
+						}
 						$('.wpsn_link').empty().append($('<a href="'+evaledTemplate+'" target="_blank" style="margin-top:14px;">'+evaledTemplate+'</a>'));
 					}).each(function () {
 						let $this = $(this);
@@ -8998,7 +8980,7 @@ wpsn.menu.calculator = {
 						});
 					});
 				}
-			}, wpsn.template.promptHTML(templates, header, example));
+			}, wpsn.template.promptHTML(oneTemplate, templates, header, example));
 
 			form.evaluated = wpsn.template.evaluate(form.template, form);
 			return form;
