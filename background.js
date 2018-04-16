@@ -638,6 +638,7 @@ let shortcutConfig = {
 	'zoom-in-note'									: { context : ['page'] },
 	'zoom-out-note'									: { context : ['page'] },	
 	'zoom-on-note'									: { context : ['page'] },
+	'checklist'										: { context : ['page'] },
 	'indent-prettify-note'							: { context : ['page'] },
 	'minify-prettify-note'							: { context : ['page'] },
 	'indent-minify-prettify-note-undo'				: { context : ['page'] },

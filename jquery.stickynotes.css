@@ -48,6 +48,33 @@
 	background: transparent;
 }
 
+.wpsn-frame>.wpsn-md-checkbox-list {
+  padding-left: 0 !important;
+}
+.wpsn-md-checkbox-list li {
+  list-style-type: none;
+}
+
+.wpsn-md-checkbox {
+  display: inline-block;
+  height: 14px;
+  width: 14px;
+  position: relative;
+  top: 5px;
+  cursor: pointer;
+}
+
+.wpsn-md-checkbox:hover {
+  background-color: #ccc;
+}
+
+.wpsn-md-checkbox.wpsn-md-checked {
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/checkbox.svg');
+}
+.wpsn-md-checkbox.wpsn-md-unchecked {
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/checkbox_off.svg');
+}
+
 .wpsn-prompt {
 	width: 99%;
 }

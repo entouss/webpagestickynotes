@@ -23,9 +23,9 @@
 			'domain': 'wpsn.DOMAIN.' + location.hostname,
 			'global': 'wpsn.GLOBAL'
 		};
-		wpsn.mainmenu_left = ['maximize', 'minimize', 'fullscreen', 'color', 'refresh', 'font', 'lock', 'mode', 'zoom', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'snapshot', 'code', 'diagram'];
+		wpsn.mainmenu_left = ['maximize', 'minimize', 'fullscreen', 'color', 'refresh', 'font', 'lock', 'mode', 'zoom', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'snapshot', 'checklist','code', 'diagram'];
 		wpsn.mainmenu_right = ['export', 'sync', 'clone', 'add', 'more', 'remove', 'removePopup', 'tips', 'about', 'manager', 'settings', 'whatsnew'];
-		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'color', 'snapshot', 'zoom', 'lock', 'font', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'mode', 'export', 'removePopup', 'sync', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'code', 'diagram'];
+		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'color', 'snapshot', 'zoom', 'lock', 'font', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'export', 'removePopup', 'sync', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'checklist', 'code', 'diagram', 'mode'];
 		wpsn.filters = {
 			'blur': { max: 4, unit: 'px', value: 0, step: 0.25, division: 4 },
 			'grayscale': { max: 100, unit: '%', value: 0, step: 1, division: 4 },
@@ -636,8 +636,23 @@
 		}
 	};
 
+	wpsn.noteOrNotesToArray = function(noteOrNotes) {
+		if (!noteOrNotes) return [];
+		return noteOrNotes = noteOrNotes instanceof Array ? noteOrNotes : [noteOrNotes];
+	};
+
 	wpsn.deleteEffectiveNotes = function (noteOrNotes, confirmForAll) {
-		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.deleteNote, 'Are you sure you want to delete {0}?', false, confirmForAll);
+		let tNoteOrNotes = wpsn.noteOrNotesToArray(noteOrNotes);
+		if (confirmForAll && tNoteOrNotes.length > 0) {
+			let tConfirmForAll = false;
+			for (let note of tNoteOrNotes) {
+				if (note.text) {
+					tConfirmForAll = true;
+				}
+			}
+			confirmForAll = tConfirmForAll;
+		}
+		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.deleteNote, confirmForAll ? 'Are you sure you want to delete {0}?' : '', false, confirmForAll);
 	};
 
 	wpsn.deleteNote = function (note) {
@@ -3718,6 +3733,7 @@
 		'zoom-in-note': async function (commandName, info) { await wpsn.zoomInEffectiveNotes(info.note); },
 		'zoom-out-note': async function (commandName, info) { await wpsn.zoomOutEffectiveNotes(info.note); },
 		'zoom-on-note': async function (commandName, info) { await wpsn.zoomOnEffectiveNotes(info.note); },
+		'checklist': async function (commandName, info) { await wpsn.createChecklist(); },
 		'indent-prettify-note': async function (commandName, info) { await wpsn.indentPrettifyEffectiveNotes(info.note); },
 		'minify-prettify-note': async function (commandName, info) { await wpsn.minifyPrettifyEffectiveNotes(info.note); },
 		'indent-minify-prettify-note-undo': async function (commandName, info) { await wpsn.undoIndentMinifyPrettifyEffectiveNotes(info.note); },
@@ -4883,11 +4899,62 @@
 		return '<div class="panel panel-default"><div class="panel-heading">' + (header || 'Note editing/rendering mode') + ':</div><div class="panel-body">' + promptHTML + '</div></div>';
 	};
 
-	wpsn.renderMarkdown = function (note) {
+	wpsn.replace = function (original, regex, replaceWith, index) {
+		var nth = 0;
+		original = original.replace(regex, function (match) {
+			nth++;
+			return (nth === index+1) ? replaceWith : match;
+		});
+		return original;
+	}
+
+	wpsn.renderChecklist = function (note) {
+		let text = note.text;
+		
+		text = text
+			.replace(/(^|\n)(\s*|\t*)-\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-unchecked"></span> ')
+			.replace(/(^|\n)(\s*|\t*)x\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-checked"></span> ')
+			.replace(/  /g,'&nbsp;&nbsp;');
+
+		note.previewText = text;
+
+		wpsn.renderMarkdown(note);
+
 		let noteDiv = wpsn.getNoteDiv(note);
 		let noteFrame = $('.wpsn-frame', noteDiv);
 
-		noteFrame.html(wpsn.markdownConverter((note.previewText || note.text || '').replace(/{@@extension_id}/g, chrome.i18n.getMessage('@@extension_id'))));
+		$('.wpsn-md-checkbox', noteFrame).click(function(){
+			let $cb = $(this);
+			if ($cb.is('.wpsn-md-checked')) {
+				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').addClass('wpsn-md-unchecked');
+			} else {
+				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').addClass('wpsn-md-checked')
+			}
+
+			let ttext = note.text;
+			let tttext = '';
+			let token = '|~^~|';
+			$('.wpsn-md-checkbox', noteFrame).each(function(index){
+				let replaceWith = $(this).is('.wpsn-md-checked')?'x':'-';
+				ttext = ttext.replace(/(^|\n)(\s*|\t*)[-|x]/, '$1$2'+replaceWith+token);
+				tttext += ttext.split(token)[0];
+				ttext = ttext.split(token)[1];
+
+			});
+			tttext += ttext;
+			note.text = tttext;
+			wpsn.save(note);
+		});
+		$('.wpsn-md-checkbox', noteFrame).parent('li').parent('ul,ol').addClass('wpsn-md-checkbox-list');
+	}
+
+	wpsn.renderMarkdown = function (note) {
+		let noteDiv = wpsn.getNoteDiv(note);
+		let noteFrame = $('.wpsn-frame', noteDiv);
+		let text = wpsn.markdownConverter((note.previewText || note.text || '').replace(/{@@extension_id}/g, chrome.i18n.getMessage('@@extension_id')));
+			
+		noteFrame.html(text);
+
 		if (noteFrame.html() && noteFrame.html().indexOf('<!--TOC-->') > -1) {
 			let toc = '';
 			$('h1,h2,h3,h4,h5,h6', noteFrame).each(function () {
@@ -5445,7 +5512,7 @@
 		if (notes.length == 1 && wpsn.isMeme(notes[0]) && notes[0].text) {
 			watermark = false;
 		}
-		if ((e.ctrlKey || e.metaKey)) {
+		if (wpsn.keyPressed('ctrl') || wpsn.keyPressed('meta')) {
 			watermark = !watermark;
 		}
 		let $selectedNotes = $('.wpsn-selected');
@@ -5880,7 +5947,8 @@
 		modes: {
 			markdown: { name: 'Github Flavored Markdown', id: 6328746328, render: function (note) { wpsn.renderMarkdown(note); }, description: 'Markdown allows you to write using an easy-to-read, easy-to-write plain text format, which then converts to valid HTML. <a href="https://help.github.com/articles/basic-writing-and-formatting-syntax/">More information</a>. (Powered by <a href="https://github.com/chjj/marked">marked.js</a>)' },
 			asis: { name: 'As is', id: 3287458732, render: function (note) { wpsn.renderAsIs(note); }, description: 'What you write is what you read.' },
-			texteditor: { name: 'Text Editor', id: 6856399856, render: function (note) { wpsn.renderHTML(note); }, description: 'A text editor is provided to allow for text formatting. (Powered by <a href="http://www.tinymce.com">TinyMCE</a>)' }
+			texteditor: { name: 'Text Editor', id: 6856399856, render: function (note) { wpsn.renderHTML(note); }, description: 'A text editor is provided to allow for text formatting. (Powered by <a href="http://www.tinymce.com">TinyMCE</a>)' },
+			checklist: { name: 'Checklist', id: 9486429094, render: async function (note) { await wpsn.renderChecklist(note); }, description: 'Renders note in checklist mode. Lines beginning with - or x are transformed into checklists. Renders into Markdown otherwise' }
 		},
 		load: function (note, menuButton) {
 			if (!note.htmlMode) { note.htmlMode = false; }
@@ -8033,6 +8101,23 @@
 		}
 	};
 
+	wpsn.createChecklist = function() {
+		wpsn.createNote({mode:wpsn.menu.mode.modes.checklist.id});
+	};
+
+	wpsn.menu.checklist = {
+		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/checkbox.svg',
+		name: 'checklist',
+		optional: true,
+		description: '',
+		modes: {
+			checklist: { name: 'Checklist', id: 9486429094, render: async function (note) { await wpsn.renderChecklist(note); }, description: 'Renders note in checklist mode.' }
+		},
+		leftClick: {
+			command: 'checklist',
+			description: 'Create new note in checklist mode. Lines beginning with - or x are transformed into checklists. Renders into Markdown otherwise'
+		}
+	};
 
 	wpsn.menu.code = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/prettify.svg',
@@ -8631,6 +8716,10 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'2.6.18': [
+			'FEATURE: You can now create a checklist by clicking <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/checkbox.svg"/> (needs to be enabled in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/settings.svg"/>)',
+			'FEATURE: Deleting an empty note does not bring up a prompt anymore.'
+		],
 		'2.6.16': [
 			'FEATURE: You can now open a parameterized URL by right clicking page and selecting "Go To URL" (Works best with shortcut which can be set by opening chrome://extensions/configureCommands)',
 			'FIX: Indent/Prettify was broken for XML'
@@ -9367,12 +9456,8 @@ wpsn.menu.calculator = {
 		return !$active.is('input') && !$active.is('textarea');
 	};
 
-	wpsn.keyPress = function (ctrlPressed, shiftPressed, keyCode) {
-		let press = $.Event('keypress');
-		press.ctrlKey = ctrlPressed;
-		press.shiftKey = shiftPressed;
-		press.which = keyCode;
-		$('wpsn-container').trigger(press);
+	wpsn.keyPressed = function (shiftCtrlMetaAlt) {
+		return $(document).data('wpsn.'+shiftCtrlMetaAlt+'Key');
 	};
 
 	$(document).ready(function () {
@@ -9381,8 +9466,14 @@ wpsn.menu.calculator = {
 		if (wpsn.enableSelection) {
 			$(document).unbind('keydown.wpsn').bind('keydown.wpsn', function (e) {
 				$(this).data('wpsn.shiftKey', e.shiftKey);
+				$(this).data('wpsn.ctrlKey', e.ctrlKey);
+				$(this).data('wpsn.metaKey', e.metaKey);
+				$(this).data('wpsn.altKey', e.altKey);
 			}).unbind('keyup.wpsn').bind('keyup.wpsn', function () {
 				$(this).removeData('wpsn.shiftKey');
+				$(this).removeData('wpsn.ctrlKey');
+				$(this).removeData('wpsn.metaKey');
+				$(this).removeData('wpsn.altKey');
 			});
 
 			$body.unbind('keydown.wpsn').bind('keydown.wpsn', function (e) {
