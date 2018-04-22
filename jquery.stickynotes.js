@@ -646,7 +646,7 @@
 		if (confirmForAll && tNoteOrNotes.length > 0) {
 			let tConfirmForAll = false;
 			for (let note of tNoteOrNotes) {
-				if (note.text) {
+				if (note.text || note.mode != wpsn.menu.mode.modes.markdown.id) {
 					tConfirmForAll = true;
 				}
 			}
@@ -2506,7 +2506,8 @@
 	wpsn.saveSettings = function () {
 		let settingsToStore = {};
 		settingsToStore['wpsn.settings'] = wpsn.settings || {};
-		chrome.storage.sync.set(settingsToStore);
+		//storage.sync
+		chrome.storage.local.set(settingsToStore);
 	};
 	wpsn.save = async function (noteOrNotes, props) {
 		if (!noteOrNotes) {
@@ -2651,11 +2652,12 @@
 			wpsn.notes = [];
 			wpsn.allNotes = {};
 			await wpsn.loadHash();
-			chrome.storage.sync.get(null, function (result) {
+			//storage.sync
+			chrome.storage.local.get(['wpsn.settings'], function (result) {
 				if (result) {
 					wpsn.settings = result['wpsn.settings'] || {};
-					wpsn.updateNoteboardTab();
 				}
+				wpsn.updateNoteboardTab();
 				wpsn.loadFromAll().then(function (result) {
 					//chrome.storage.local.get(null, function (result) {
 					wpsn.resolveStorageContent(result, false).then(function (notes) {
@@ -4898,15 +4900,6 @@
 		promptHTML += '</ul>';
 		return '<div class="panel panel-default"><div class="panel-heading">' + (header || 'Note editing/rendering mode') + ':</div><div class="panel-body">' + promptHTML + '</div></div>';
 	};
-
-	wpsn.replace = function (original, regex, replaceWith, index) {
-		var nth = 0;
-		original = original.replace(regex, function (match) {
-			nth++;
-			return (nth === index+1) ? replaceWith : match;
-		});
-		return original;
-	}
 
 	wpsn.renderChecklist = function (note) {
 		let text = note.text;
@@ -7262,61 +7255,6 @@
 				}
 			}
 		},
-		'DISABLErightClick': {
-			'description': 'Load media from Google Search',
-			'prompt': {
-				mode: 9372103092,
-				popup: { minWidth: 600 },
-				form: function () {
-
-					google.load('search', '1');
-
-					return $('<div/>').append($('<input type="text">')).append($('<input type="button" value="Search"/>').click(function () {
-						google.setOnLoadCallback(function () {
-							let imageSearch = new google.search.ImageSearch();
-							imageSearch.setSearchCompleteCallback(this, function () {
-								if (imageSearch.results && imageSearch.results.length > 0) {
-									let contentDiv = document.getElementById('content');
-									contentDiv.innerHTML = '';
-									let results = imageSearch.results;
-									for (let i = 0; i < results.length; i++) {
-										let result = results[i];
-										let imgContainer = document.createElement('div');
-										let title = document.createElement('div');
-										title.innerHTML = result.titleNoFormatting;
-										let newImg = document.createElement('img');
-										newImg.src = '/image-search/v1/result.tbUrl;';
-										imgContainer.appendChild(title);
-										imgContainer.appendChild(newImg);
-										contentDiv.appendChild(imgContainer);
-									}
-									let cursor = imageSearch.cursor;
-									let curPage = cursor.currentPageIndex;
-									let pagesDiv = document.createElement('div');
-									for (let i = 0; i < cursor.pages.length; i++) {
-										let page = cursor.pages[i];
-										if (curPage == i) {
-											let label = document.createTextNode(' ' + page.label + ' ');
-											pagesDiv.appendChild(label);
-										} else {
-											let link = document.createElement('a');
-											link.href = '/image-search/v1/javascript:imageSearch.gotoPage(' + i + ');';
-											link.innerHTML = page.label;
-											link.style.marginRight = '2px';
-											pagesDiv.appendChild(link);
-										}
-									}
-									contentDiv = document.getElementById('content');
-									contentDiv.appendChild(pagesDiv);
-								}
-							}, null);
-							imageSearch.execute($(this).val());
-							google.search.Search.getBranding('branding');
-						});
-					})).append('<div id="content"/>');
-				}
-			}
-		},
 		'doubleClick': {
 			'description': 'Preview page content inside note',
 			'action': function (note) {
@@ -8716,6 +8654,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'2.6.19': [
+			'BUGFIX: Settings should not clear out anymore (not 100% sure this won\'t happen anymore).'
+		],
 		'2.6.18': [
 			'FEATURE: You can now create a checklist by clicking <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/checkbox.svg"/> (needs to be enabled in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/settings.svg"/>)',
 			'FEATURE: Deleting an empty note does not bring up a prompt anymore.'
@@ -8944,10 +8885,10 @@ wpsn.menu.calculator = {
 
 	wpsn.template = {
 		promptHTML : function(oneTemplate, templates=[], header, example, formFieldName) {
-			templates = wpsn.removeDuplicates(templates);
 			if (!oneTemplate) {
 				templates = [''].concat(templates);
 			}
+			templates = wpsn.removeDuplicates(templates);
 			let formText = `
 			<div>
 				<div class="panel panel-default"><div class="panel-heading">Template:</div><div class="panel-body"><table style="width:100%">
