@@ -6,7 +6,271 @@ let urlData = {
 
 };
 let commands = {};
-chrome.commands.getAll(function(data){log(data);});
+;
+
+
+/*GOOGLE DRIVE API START*/
+/*
+  "permissions": [
+	"identity"
+  ],
+  "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
+  "oauth2": {
+	"client_id": "[client ID]",
+	"scopes": [
+		"https://www.googleapis.com/auth/drive"
+	]   
+  },  
+*/
+async function GAPI_Loaded() {
+	await GAPI.api.loadGapiModules();
+}
+
+const boundary = '-------314159265358979323846';
+const GAPI = {
+	enabled: true,
+	loaded: false,
+	js: 'https://apis.google.com/js/api.js',
+	revokeTokenUrl: 'https://accounts.google.com/o/oauth2/revoke?token=',
+	discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+	folderMimeType: 'application/vnd.google-apps.folder',
+	contentType: 'application/json',
+	boundary: boundary,
+	delimiter: "\r\n--" + boundary + "\r\n",
+	close_delim: "\r\n--" + boundary + "--",
+	fileByIdRoot: 'https://www.googleapis.com/drive/v3/files/',
+	createFolderRoot: 'https://www.googleapis.com/drive/v3/files/',
+	writeToFileRoot: 'https://www.googleapis.com/upload/drive/v3/files/',
+	wpsnFolderName: 'WebPageStickyNotes',
+	wpsnFileName: 'sync.wpsn',
+	intervalBetweenSynchronization: 5 * 1000, //prevent DDOS
+	intervalBetweenAutoSynchronization: 24 * 60 * 60 * 1000, //prevent Quota abuse
+	api: {
+		loadGapi: function() {
+			return new Promise(function(resolve){
+				var head = document.getElementsByTagName('head')[0];
+				var script = document.createElement('script');
+				script.type = 'text/javascript';
+				script.src = `${GAPI.js}`;//?onload=GAPI_Loaded`;
+				script.onload = function() {
+					resolve();
+				}
+				head.appendChild(script);
+			});
+		},
+		loadGapiModules: async function() {
+			return new Promise(function(resolve){
+				gapi.load('client', async function(){
+					await GAPI.api.initGapiModules();
+					GAPI.loaded = true;
+					resolve();
+				});
+			})
+		},
+		initGapiModules: async function() {
+			await gapi.client.init({
+				discoveryDocs : GAPI.discoveryDocs
+			});
+			await GAPI.api.updateToken();
+		},
+		getToken: async function(props = {}) {
+			return new Promise(function(resolve) {
+				chrome.identity.getAuthToken({'interactive': !props.noninteractive}, function (token) {
+					resolve(token);
+				});
+			});
+		},
+		removeToken: function() {
+			return new Promise(async function(resolve){
+				let token = await GAPI.api.getToken({noninteractive:true});
+				if (!token) { resolve(); } 
+				else {
+					let xmlHttp = new XMLHttpRequest();
+					xmlHttp.open('GET', GAPI.revokeTokenUrl + token);
+					xmlHttp.onload = function() { 
+						chrome.identity.removeCachedAuthToken({ 'token': token }, function(){
+							resolve();
+						});
+					}
+					xmlHttp.onerror = function() { 
+						resolve();
+					}
+					xmlHttp.send();
+				}
+			});
+		},
+		updateToken: async function () {
+			let token = await GAPI.api.getToken();
+			gapi.client.setToken({access_token: token});
+			return token;
+		},
+		key: function() {
+			return chrome.runtime.id;
+		},
+		hashCode: function(string) {
+			var hash = 0, i, chr;
+			if (string.length === 0) return hash;
+			for (i = 0; i < string.length; i++) {
+			  chr   = string.charCodeAt(i);
+			  hash  = ((hash << 5) - hash) + chr;
+			  hash |= 0; // Convert to 32bit integer
+			}
+			return hash;
+		},
+		readJSON : async function(decrypt) {
+			GAPI.wpsnFile = GAPI.wpsnFile || await GAPI.api.getFile(GAPI.wpsnFolderName, GAPI.wpsnFileName, {createIfMissing: true});
+			let content = await GAPI.api.getFileContent(GAPI.wpsnFile);
+			try {
+				if (decrypt) {
+					content = CryptoJS.AES.decrypt(content,GAPI.api.key(GAPI.wpsnFile)).toString(CryptoJS.enc.Utf8);
+				}
+				GAPI.lastReadHash = GAPI.api.hashCode(content);
+				return JSON.parse(content);
+			} catch (err) {
+				return {};
+			}
+		},
+		writeJSON : async function(json, encrypt) {
+			let jsonString =  JSON.stringify(json);
+			let hash = GAPI.api.hashCode(jsonString);
+			if (GAPI.lastReadHash == hash) { return; }
+			GAPI.wpsnFile = GAPI.wpsnFile || await GAPI.api.getFile(GAPI.wpsnFolderName, GAPI.wpsnFileName, {createIfMissing: true});
+			if (encrypt) {
+				jsonString = CryptoJS.AES.encrypt(jsonString,GAPI.api.key(GAPI.wpsnFile)).toString();
+			}
+			await GAPI.api.writeContentToFile(GAPI.wpsnFile, jsonString);
+		},
+		getFileContent: async function(file) {
+			return new Promise(async function(resolve){
+				let url = GAPI.fileByIdRoot + file.id + '?alt=media'
+				let xhr = new XMLHttpRequest();
+				xhr.open('GET', url);
+				xhr.responseType = 'blob';
+				let token = await GAPI.api.getToken();
+				xhr.setRequestHeader("Authorization", 'Bearer ' + token);
+				xhr.onload = function () {
+					var reader = new FileReader();
+					reader.onload = function() {
+						resolve(reader.result);
+					}
+					reader.readAsText(this.response);
+				};
+				xhr.send();
+			});
+		},
+		writeContentToFile: async function(file, content) {
+			return new Promise(async function(resolve){
+				let metadata = {
+					'mimeType': GAPI.contentType
+				};
+				
+				let multipartRequestBody =
+					GAPI.delimiter +
+					'Content-Type: application/json\r\n\r\n' +
+					JSON.stringify(metadata) +
+					GAPI.delimiter +
+					'Content-Type: ' + GAPI.contentType + '\r\n\r\n' +
+					content +
+					GAPI.close_delim;
+			
+				let token = await GAPI.api.getToken();
+				let request = gapi.client.request({
+					'path': GAPI.writeToFileRoot + file.id +'?uploadType=multipart',
+					'method': 'PATCH',
+					'headers': {		
+					'Authorization': ('Bearer ' + token),
+					'Content-Type': 'multipart/related; boundary="' + GAPI.boundary + '"'
+					},
+					'body': multipartRequestBody
+				});
+				
+				request.execute(function(file){resolve(file);});
+			});
+		},
+		getFile: async function(folderName, fileName, options={}) {
+			return new Promise(async function(resolve){
+				let folder = await GAPI.api.getFolder(folderName, options);
+				if (folder && folder.id) {
+					let allFiles = await GAPI.api.getFiles({q:`fullText contains '${fileName}' and '${folder.id}' in parents and trashed = false`});
+					let files = allFiles.filter(function(file){
+						return file.name === fileName
+					});
+					let file = files.length > 0 ? files[0] : null;
+					if (file != null) {
+						resolve(file); return;
+					}
+					if (options.createIfMissing) {
+						let xhr = new XMLHttpRequest();
+						xhr.open('POST', GAPI.createFolderRoot+'?alt=json');
+						let token = await GAPI.api.getToken();
+						xhr.setRequestHeader("Authorization", 'Bearer ' + token);
+						xhr.setRequestHeader("Content-Type", "application/json");
+						xhr.onload = function () {
+							resolve(JSON.parse(this.response)); return;
+						};
+						xhr.send(JSON.stringify({
+							'name': fileName,
+							'mimeType': 'application/json',
+							'parents': [folder.id]
+						}));
+					} else {
+						resolve(null); return;
+					}
+				} else {
+					resolve(null); return;
+				}
+			});
+		},
+		getFolder: async function(folderName, options={}) {
+			return new Promise(async function(resolve){
+				let allFiles = await GAPI.api.getFilesByName(folderName);
+				let files = allFiles.filter(function(file){
+					return file.mimeType === GAPI.folderMimeType	
+				});
+				let file = files.length > 0 ? files[0] : null;
+				if (file != null) {
+					resolve(file); return;
+				}
+				if (options.createIfMissing) {
+					let xhr = new XMLHttpRequest();
+					xhr.open('POST', GAPI.createFolderRoot+'?alt=json');
+					let token = await GAPI.api.getToken();
+					xhr.setRequestHeader("Authorization", 'Bearer ' + token);
+					xhr.setRequestHeader("Content-Type", "application/json");
+					xhr.onload = function () {
+						resolve(JSON.parse(this.response)); return;
+					};
+					xhr.send(JSON.stringify({
+						'name': folderName,
+						'mimeType': GAPI.folderMimeType
+					}));
+				} else {
+					resolve(null); return;
+				}
+			});
+		},
+		getFilesByName: async function(fileName) {
+			let allFiles = await GAPI.api.getFiles({q:`fullText contains '${fileName}' and trashed = false`});
+			let files = allFiles.filter(function(file){
+				return file.name === fileName	
+			});
+			return files;
+		},
+		getFiles: async function(filter) {
+			return new Promise(function(resolve){
+				gapi.client.drive.files.list(filter).then(function(response){
+					if (response && response.result && response.result.files) {
+						resolve(response.result.files)
+					}
+				});
+			});
+		}
+	}
+};
+
+/*GOOGLE DRIVE API END*/
+
+
 function wpsn_loadBookmarks(callback,url,title) {
 	chrome.bookmarks.getTree(function(curentBookmarkTreeNodes) {
 		let otherBookmarks = curentBookmarkTreeNodes[0].children[1];
@@ -120,19 +384,46 @@ chrome.browserAction.onClicked.addListener(function() {
 	chrome.tabs.executeScript(null,{file:'popup.js'});
 });
 
-chrome.runtime.onMessageExternal.addListener(function(msg) {
-	if (msg.syncFileContent) {
-		chrome.tabs.getSelected(null, function(tab) {
-			chrome.tabs.sendRequest(tab.id, {syncFileContent: msg.syncFileContent}, function() {});
-		});
-	}
-});
 
-chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
-	if (msg.extensionId) {
-		log(msg);
-		chrome.runtime.sendMessage(msg.extensionId, msg, sendResponse);
+chrome.extension.onMessage.addListener(async function(msg,sender,sendResponse) {
+	if (msg.synchronize) {
+		if (GAPI.enabled && !GAPI.loaded && !msg.logout) { 
+			await GAPI.api.loadGapi();
+			await GAPI.api.loadGapiModules();
+		}
+		if (msg.logout) {
+			await GAPI.api.removeToken();
+			chrome.tabs.getSelected(null, function(tab) {
+				chrome.tabs.sendRequest(tab.id, {synchronize:true, loggedout:true}, function() {});
+			});
+		}
+		let synchronize = true;
+		if (msg.fetch && GAPI.lastSynchronization) {
+			let elapsed = new Date() - GAPI.lastSynchronization;
+			if (msg.autosynchronize && elapsed < GAPI.intervalBetweenAutoSynchronization) { // prevent Quota abuse
+				synchronize = false;
+			} else if (!msg.autosynchronize && elapsed < GAPI.intervalBetweenSynchronization) { // prevent DDOS
+				synchronize = false
+			}
+		}
+		if (synchronize) {
+			if (msg.fetch) {
+				GAPI.lastSynchronization = new Date();
+				GAPI.api.readJSON(true).then(function(result){
+					chrome.tabs.getSelected(null, function(tab) {
+						chrome.tabs.sendRequest(tab.id, {synchronize:true, result:result}, function() {});
+					});
+				});
+			} else if (msg.result) {
+				GAPI.api.writeJSON(msg.result, true).then(function(){
+					chrome.tabs.getSelected(null, function(tab) {
+						chrome.tabs.sendRequest(tab.id, {synchronize:true, synchronized:true}, function() {});
+					});
+				});
+			}
+		}
 	}
+	
 	if (msg.screenshot) {
 		chrome.tabs.captureVisibleTab(null, {quality:100}, function(dataUrl) {
 			sendResponse({ screenshotUrl: dataUrl });
@@ -603,9 +894,11 @@ function tabChange(o1, o2, o3, o4, o5, tryAgain) {
 let shortcutConfig = {
 	'a-c-manage-notes'								: { context : ['browser_action'] },
 	'a-c-a-note-board'								: { context : ['browser_action', 'page'] },
+	'a-c-b-sync-notes'								: { context : ['page'] },
+	'a-c-c-sync-logout'								: { context : ['page'] },
 	'a-d-settings'									: { context : ['browser_action'] },
 	'a-e-about'										: { context : ['browser_action'] },
-	'a-f-demo'										: { context : ['browser_action'] },
+	'a-f-demo'										: { context : ['page'] },
 	'a-a-undo'										: { context : ['browser_action', 'page'] },
 	'a-b-redo'										: { context : ['browser_action', 'page'] },
 	'a-g-backup'									: { context : ['browser_action', 'page'] },
