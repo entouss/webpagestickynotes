@@ -7,13 +7,9 @@
 		wpsn.allNotes = {};
 		wpsn.notes = [];
 		wpsn.settings = {};
-		//wpsn.wpsnSyncId = 'nhdocdlhionlahgoomkbnfmphmfmcceh';
-		wpsn.wpsnSyncId = 'diniibpaialofhplhliijamnonffeini';
-		wpsn.wpsnSyncFolder = null;
 		wpsn.version = null;
 		wpsn.versionPrevious = null;
 		wpsn.versionUpdate = null;
-		wpsn.syncStatus = {};
 		wpsn.options = null;
 		wpsn.enableSelection = true;
 		wpsn.hasSelection = false;
@@ -24,8 +20,8 @@
 			'global': 'wpsn.GLOBAL'
 		};
 		wpsn.mainmenu_left = ['maximize', 'minimize', 'fullscreen', 'color', 'refresh', 'font', 'lock', 'mode', 'zoom', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'snapshot', 'checklist','code', 'diagram'];
-		wpsn.mainmenu_right = ['export', 'sync', 'clone', 'add', 'more', 'remove', 'removePopup', 'tips', 'about', 'manager', 'settings', 'whatsnew'];
-		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'color', 'snapshot', 'zoom', 'lock', 'font', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'export', 'removePopup', 'sync', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'checklist', 'code', 'diagram', 'mode'];
+		wpsn.mainmenu_right = ['synchronize', 'export', 'clone', 'add', 'more', 'remove', 'removePopup', 'tips', 'about', 'manager', 'settings', 'whatsnew'];
+		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'color', 'snapshot', 'zoom', 'lock', 'font', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'export', 'synchronize', 'removePopup', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'checklist', 'code', 'diagram', 'mode'];
 		wpsn.filters = {
 			'blur': { max: 4, unit: 'px', value: 0, step: 0.25, division: 4 },
 			'grayscale': { max: 100, unit: '%', value: 0, step: 1, division: 4 },
@@ -73,7 +69,7 @@
 			//'blurdelta':{max:100,unit:'',value:20,step:1,division:10}//?
 		};
 
-		wpsn.defaultMode = 'markdown';
+		wpsn.defaultMode = wpsn.menu.mode.modes.markdown.id;
 		wpsn.lockModes = {
 			all: 1,
 			editable: 2
@@ -149,16 +145,8 @@
 		};
 		wpsn.options = $.extend({}, wpsn.defaults, options);
 		wpsn.prepareContainer(this);
-		if (wpsn.syncDisabled()) {
-			wpsn.WPSNSyncFolder().then(function () {//To determine whether sync is installed
-				wpsn.load();
-			}).catch(function () {
-				wpsn.load();
-			});
-		} else {
-			wpsn.load();
-		}
-
+		wpsn.load();
+		
 		if (wpsn.enableSelection) {
 			$(this).unbind('click.wpsn').bind('click.wpsn', function () {
 				wpsn.deselectElement($('.wpsn-selected'));
@@ -404,6 +392,7 @@
 
 	wpsn.clearPopups = function () {
 		wpsn.deleteNote(wpsn.getNoteFromDiv($('.wpsn-popup').closest('.wpsn-sticky')));
+		$('#wpsn-popup-container').hide();
 	};
 
 	wpsn.getNonPopupNotes = function () {
@@ -411,7 +400,7 @@
 		let notes = [];
 		for (let i = 0; i < wpsn.notes.length; i++) {
 			let note = wpsn.notes[i];
-			if (!note.isPopup) {
+			if (!note.isPopup && !note.deleted) {
 				notes.push(note);
 			}
 		}
@@ -459,8 +448,8 @@
 		return wpsn.getNote(note_div.attr('id').replace(/note-/, ''));
 	};
 
-	wpsn.newNote = function (note) {
-		wpsn.settings = wpsn.settings || {};
+	wpsn.newNote = async function (note) {
+		await wpsn.getSettings();
 		if (!note) { note = {}; }
 		note.id = note.id ? note.id : Math.floor((Math.random() * 1000000000) + 1);
 		note.text = note.text ? note.text : '';
@@ -482,11 +471,11 @@
 		return note;
 	};
 
-	wpsn.createNote = function (note, callback) {
-		wpsn.settings = wpsn.settings || {};
+	wpsn.createNote = async function (note, callback) {
+		await wpsn.getSettings();
 		let editMode = !note;
 
-		note = wpsn.newNote(note);
+		note = await wpsn.newNote(note);
 
 		if ((!wpsn.notes || wpsn.notes.length == 0) && wpsn.settings.enableBookmarks) {
 			chrome.extension.sendMessage({ bookmark: { url: location.href, title: document.title } });
@@ -500,9 +489,11 @@
 		let _note_div = wpsn.getNoteDiv(note);
 		//_note_div.find('>.wpsn-submenu-colors').show();
 
-		wpsn.save(note);
+		if (!note.isPopup && !note.deleted) {
+			wpsn.save(note);
+		}
 
-		if (note && !note.isPopup) {
+		if (note && !note.isPopup && !note.deleted) {
 			$.each(wpsn.notes, function (index, currentNote) {
 				if (currentNote && currentNote.mode == wpsn.menu.manager.modes.notes_manager.id) {
 					wpsn.reRenderNote(currentNote);
@@ -596,7 +587,7 @@
 		if (!wpsn.settings.disableAutoresize && !note.fullscreen && initiallyEmpty && $.trim(_note_frame.html()).length > 0) {
 			wpsn.autoResize(note);
 		}
-		if (note && !note.isPopup) {
+		if (note && !note.isPopup && !note.deleted) {
 			wpsn.setupDrop(note);
 		}
 
@@ -655,17 +646,30 @@
 		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.deleteNote, confirmForAll ? 'Are you sure you want to delete {0}?' : '', false, confirmForAll);
 	};
 
+	wpsn.cleanupDeletedNotes = function() {
+		Object.keys(wpsn.allNotes).forEach(function(key) {
+			let note = wpsn.allNotes[key];
+			if (note && note.id && note.deleted) {
+				wpsn.deleteNote(note);
+			}
+		});
+	};
+
 	wpsn.deleteNote = function (note) {
 		if (!note) { return false; }
 		//wpsn.saveNoteStateForUndo(note);
+		if (note.deleted) {
+			note.redeleted = true;
+		}
 		note.deleted = true;
 		if (note && note.preview) {
 			$(note.preview).unbind('keyup.wpsn-preview,change.wpsn-preview');
 		}
+
 		wpsn.eraseNote(note);
 		$.each(wpsn.notes, function (index, currentNote) {
 			if (currentNote && note && currentNote.id == note.id) {
-				wpsn.notes.splice(index, 1);
+				//wpsn.notes.splice(index, 1);
 				if ((!wpsn.notes || wpsn.notes.length == 0) && wpsn.settings.enableBookmarks) {
 					chrome.extension.sendMessage({ bookmark: { url: location.href, title: document.title, remove: true } });
 				}
@@ -673,9 +677,16 @@
 				return;
 			}
 		});
-		wpsn.removeFromAll('wpsn.note.' + note.id);
+
+		if (note.deleted && !note.redeleted && !note.isPopup) {
+			Object.keys(note).forEach(function(key) { if (key != 'id' && key != 'modified_date') { delete note[key]; }});
+			note.deleted = true;
+			wpsn.save(note);
+		} else {
+			wpsn.removeFromAll('wpsn.note.' + note.id);
+		}
 		//chrome.storage.local.remove('wpsn.note.'+note.id);
-		if (note && !note.isPopup) {
+		if (note && !note.isPopup && !note.deleted) {
 			$.each(wpsn.notes, function (index, currentNote) {
 				if (currentNote && currentNote.mode == wpsn.menu.manager.modes.notes_manager.id) {
 					wpsn.reRenderNote(currentNote);
@@ -784,7 +795,7 @@
 	wpsn.editNote = function (note) {
 		let noteDiv = wpsn.getNoteDiv(note);
 		let noteFrame = noteDiv.find('#wpsn-frame-' + note.id);
-		if (note && !note.isPopup) {
+		if (note && !note.isPopup && !note.deleted) {
 			let textarea = $(document.createElement('textarea'))
 				.attr('id', 'wpsn-textarea-' + note.id)
 				.addClass('wpsn-textarea')
@@ -857,7 +868,7 @@
 				}
 			});
 
-			if (wpsn.settings.enableSmartPaste && wpsn.getModeKey(note) == 'markdown') {
+			if (wpsn.settings.enableSmartPaste && wpsn.getModeKey(note) == wpsn.menu.mode.modes.markdown.id) {
 				textarea.unbind('paste').bind('paste', function (e) {
 					e.preventDefault();
 					let text = (e.originalEvent || e).clipboardData.getData('text/html') || (e.originalEvent || e).clipboardData.getData('text/plain');
@@ -1034,6 +1045,11 @@
 				let reader = new FileReader();
 				reader.onloadend = async function () {
 					let data = reader.result;
+					try {
+						JSON.parse(data);
+					} catch(err) {
+						data = CryptoJS.AES.decrypt(data,chrome.runtime.id).toString(CryptoJS.enc.Utf8);
+					}
 					if (isHTML) {
 						try {
 							data = steg.decode($('<div/>').append($(data)).find('#wpsn-snapshot').attr('src'));
@@ -1203,6 +1219,7 @@
 		}
 		let _popupClass = '';
 		let _alertClass = '';
+		let _noteClass = options.class;
 		if (note.isPopup && !note.lock) {
 			_background = '';
 			_popupClass = 'wpsn-popup';
@@ -1210,7 +1227,7 @@
 		if (note.isAlert) {
 			_alertClass = 'wpsn-alert';
 		}
-		let _div_note = $('<div class="wpsn-note ' + _popupClass + ' ' + _alertClass + '" style="background:' + _background + ';color:' + note.textcolor + ';box-shadow:0px 0px 1px 0px ' + _bordercolor + '"></div>');
+		let _div_note = $('<div class="wpsn-note ' + _popupClass + ' ' + _alertClass + ' ' + _noteClass +'" style="background:' + _background + ';color:' + note.textcolor + ';box-shadow:0px 0px 1px 0px ' + _bordercolor + '"></div>');
 		let _top_bar = $('<div class="wpsn-topbar">&nbsp;</div>');
 		if (note.canvas == 'frameless') {
 			_div_note.addClass('wpsn-frameless');
@@ -1368,7 +1385,7 @@
 
 			let top = wpsn.posy(note);
 			let left = wpsn.posx(note);
-			if (!note.isPopup || note.isNotPopup || note.lock) {
+			if ((!note.isPopup && !note.deleted) || note.isNotPopup || note.lock) {
 				$container.append(_div_wrap);
 			} else {
 				$('#wpsn-popup-container').append(_div_wrap);
@@ -1546,7 +1563,7 @@
 		}
 
 		wpsn.updateNote(note);
-		if (note && !note.isPopup) {
+		if (note && !note.isPopup && !note.deleted) {
 			wpsn.setupDrop(note);
 		}
 
@@ -1776,7 +1793,7 @@
 				filtersTransformsInit,
 				function (form, noteId) {
 					let note = wpsn.getNote(noteId);
-					if (!note.isPopup) {
+					if (!note.isPopup && !note.deleted) {
 						wpsn.saveNoteStateForUndo(note);
 					}
 					if (form) {
@@ -1800,7 +1817,7 @@
 					if (!note.colorToTransparent.threshold) {
 						delete note.colorToTransparent;
 					}
-					if (!note.isPopup) {
+					if (!note.isPopup && !note.deleted) {
 						wpsn.refreshNote(note);
 					}
 				},
@@ -1878,7 +1895,7 @@
 			}
 		};
 		noteDiv.resizable(options);
-		if (!note.isPopup) {
+		if (!note.isPopup && !note.deleted) {
 			//let hasMedia = $('.wpsn-media',noteDiv).size() > 0;
 			//noteDiv.resizable($.extend(true,{},wpsn.resizableOptions));
 			//noteDiv.resizable("option", "grid", [1, 1]);
@@ -2012,7 +2029,7 @@
 			let $menuBar = $('.wpsn-note', $div_wrap);
 			for (let i = 0; i < _menuDivs.length; i++) {
 				if (allItemsFit && _menuProperty == 'more') { continue; }
-				if ((!note.isPopup && _menuProperty != 'removePopup') ||
+				if ((!note.isPopup && !note.deleted && _menuProperty != 'removePopup') ||
 					(note.isPopup && (_menuProperty == 'removePopup' || _menuProperty == 'snapshot' || (note.menu && $.inArray(_menuProperty, note.menu) >= 0)))) {
 					let $menuItem = $(_menuDivs[i]).css('visibility', 'hidden');
 					$menuBar.after($menuItem);
@@ -2233,6 +2250,8 @@
 		return new Promise(async function (resolve, reject) {
 			props = props || {};
 			let hideCancelButton = props.hideCancelButton;
+			let hideOkButton = props.hideOkButton;
+			let clazz = props.class;
 
 			let note = {
 				isPopup: true,
@@ -2278,12 +2297,14 @@
 					resolve();
 				}
 			});
-			let cancel = $('.wpsn-cancel', form).off('click').on('click', function () {
+			let $cancel = $('.wpsn-cancel', form).off('click').on('click', function () {
 				let note = wpsn.getNoteFromDiv($(this).closest('.wpsn-sticky'));
 				wpsn.deleteNote(note);
 				reject();
 			});
-			if (hideCancelButton) { cancel.hide(); }
+			let $ok = $('.wpsn-ok', form)
+			if (hideCancelButton) { $cancel.hide(); }
+			if (hideOkButton) { $ok.hide(); }
 			if (props.onloadCallback) {
 				props.onloadCallback(form, props.currentNote);
 			}
@@ -2503,13 +2524,22 @@
 			wpsn.resizeMedia(note);
 		}
 	};
+	wpsn.getSettings = async function() {
+		return new Promise(function(resolve){
+			chrome.storage.local.get(['wpsn.settings'], function (result) {
+				wpsn.settings = result ? ((result['wpsn.settings']) || {}) : {};
+				resolve(wpsn.settings);
+			});
+		});
+	};
 	wpsn.saveSettings = function () {
 		let settingsToStore = {};
 		settingsToStore['wpsn.settings'] = wpsn.settings || {};
 		//storage.sync
 		chrome.storage.local.set(settingsToStore);
 	};
-	wpsn.save = async function (noteOrNotes, props) {
+	wpsn.save = async function (noteOrNotes, props={}) {
+		wpsn.settings = wpsn.settings || {};
 		if (!noteOrNotes) {
 			noteOrNotes = wpsn.notes;
 		}
@@ -2518,6 +2548,9 @@
 		if (noteOrNotes instanceof Array) {
 			notes = noteOrNotes;
 		} else {
+			if (noteOrNotes.isPopup) {
+				return;
+			}
 			notes.push(noteOrNotes);
 		}
 		let notesToStore = {};
@@ -2546,16 +2579,20 @@
 			notesToStore['wpsn.note.' + note.id] = note;
 		}
 		if (props.saveToFileOnly) {
-			wpsn.saveToFile(notesToStore).then(function () {
-				wpsn.updateCount();
-			});
+			await wpsn.saveToFile(notesToStore);
+			wpsn.updateCount();
 		} else if (props.saveToBrowserOnly) {
-			wpsn.saveToStorage(notesToStore).then(function () {
-				wpsn.updateCount();
-			});
+			await wpsn.saveToStorage(notesToStore);
+			wpsn.updateCount();
 		} else {
-			wpsn.saveToAll(notesToStore).then(function () {
-				wpsn.updateCount();
+			await wpsn.saveToAll(notesToStore);
+			wpsn.updateCount();
+		}
+		if (wpsn.settings.enableSynchronization && !props.noAutoSynchronize) {
+			chrome.extension.sendMessage({
+				'synchronize': true,
+				'fetch' : true,
+				'autosynchronize' : true
 			});
 		}
 	};
@@ -2646,6 +2683,7 @@
 		} catch (err) { wpsn.error(err); }
 	};
 
+	
 	wpsn.load = function () {
 		$('.wpsn-sticky').remove();
 		return new Promise(async function (resolve) {
@@ -2653,10 +2691,7 @@
 			wpsn.allNotes = {};
 			await wpsn.loadHash();
 			//storage.sync
-			chrome.storage.local.get(['wpsn.settings'], function (result) {
-				if (result) {
-					wpsn.settings = result['wpsn.settings'] || {};
-				}
+			wpsn.getSettings().then(function(){
 				wpsn.updateNoteboardTab();
 				wpsn.loadFromAll().then(function (result) {
 					//chrome.storage.local.get(null, function (result) {
@@ -2686,7 +2721,6 @@
 	wpsn.resolveStorageContent = function (result) {
 		return new Promise(function (resolve) {
 			if (result) {
-				//wpsn.updateSyncStatus(result,fromFile);
 				wpsn.previousFormNoteId = result['wpsn-form-note'];
 				wpsn.previousFormNoteId = result['wpsn-form-note'];
 				wpsn.version = result['wpsn-version'];
@@ -2739,9 +2773,21 @@
 			try {
 				let data;
 				try {
-					data = JSON.parse($('body > pre').text());
+					let text = $('body > pre').text();
+					try {
+						data = JSON.parse(text);
+					} catch(err) {
+						text = CryptoJS.AES.decrypt(text,chrome.runtime.id).toString(CryptoJS.enc.Utf8);
+						data = JSON.parse(text);
+					}
 				} catch (err) {
-					data = JSON.parse($('.blob-wrapper.data tbody').text());
+					let text = $('.blob-wrapper.data tbody').text();
+					try {
+						data = JSON.parse(text);
+					} catch(err) {
+						text = CryptoJS.AES.decrypt(text,chrome.runtime.id).toString(CryptoJS.enc.Utf8);
+						data = JSON.parse(text);
+					}
 				}
 				await wpsn.confirm({}, '<div class="alert alert-warning">Are you sure you want to import the note(s)?</div>');
 				let importedNotes = await wpsn.saveNotes(data);
@@ -2811,11 +2857,6 @@
 		return notes;
 	};
 
-	wpsn.syncDisabled = function () {
-		return wpsn.wpsnSyncFolder == null || wpsn.settings.disableSync == true || wpsn.settings.disableSync == 'true';
-	};
-
-
 	wpsn.notesById = function (notesArray, prefix) {
 		let notesById = {};
 		if (notesArray instanceof Array) {
@@ -2877,7 +2918,7 @@
 		return notesArray;
 	};
 
-	wpsn.resolveConflict = function (oldNotes, newNotes, props = { resolveConflictStrategy: null }) {
+	wpsn.resolveConflict = function (oldNotes, newNotes, props = { resolveConflictStrategy: null, inverse: false }) {
 		let outNotes = {
 			newNotes: [],
 			oldNotes: [],
@@ -2900,9 +2941,12 @@
 							outNotes.newNotes.push(newNote);
 						} else if (oldNote.modified_date == newNote.modified_date) {
 							outNotes.sameNotes.push(newNote);
-						} else if (oldNote.modified_date <= newNote.modified_date) {
+						} else if (!props.inverse && oldNote.modified_date <= newNote.modified_date) {
 							outNotes.oldNotes.push(oldNote);
 							outNotes.newNotes.push(newNote);
+						} else if (props.inverse && oldNote.modified_date >= newNote.modified_date) {
+							outNotes.oldNotes.push(newNote);
+							outNotes.newNotes.push(oldNote);
 						} else {
 							let promptHTML = '<div class="panel panel-default">' +
 								'<div class="alert alert-warning" style="margin-bottom:0px;text-align:center">A note with the same id (' + newNote.id + ') but with different modification date already exists in storage !</div>' +
@@ -3040,30 +3084,7 @@
 		return new Promise(function (resolve) {
 			wpsn.loadFromStorage().then(function (resultsA) {
 				results = $.extend({}, results, resultsA);
-				if (!wpsn.syncDisabled()) {
-					wpsn.loadFromFile().then(function (resultsB) {
-						wpsn.resolveConflict(wpsn.notesArray(results), wpsn.notesArray(resultsB), props).then(function (outNotes) {
-							let newNotesById = wpsn.notesById(outNotes.newNotes, 'wpsn.note.');
-							let oldNotesById = wpsn.notesById(outNotes.oldNotes, 'wpsn.note.');
-							let currentNotesById = wpsn.notesById(outNotes.currentNotes, 'wpsn.note.');
-							let sameNotesById = wpsn.notesById(outNotes.sameNotes, 'wpsn.note.');
-							for (let prop in oldNotesById) {
-								delete results[prop];
-							}
-							wpsn.deleteEffectiveNotes(outNotes.oldNotes);
-							wpsn.save(outNotes.currentNotes, { unmodified: true });
-							wpsn.save(outNotes.newNotes, { unmodified: true });
-							wpsn.updateSyncStatus(newNotesById, true);
-							results = Object.assign({}, results, sameNotesById, currentNotesById, newNotesById);
-							resolve(results);
-						});
-					}).catch(function (error) {
-						wpsn.log(error);
-						resolve(results);
-					});
-				} else {
-					resolve(results);
-				}
+				resolve(results);
 			});
 		});
 	};
@@ -3071,176 +3092,7 @@
 	wpsn.loadFromStorage = function () {
 		return new Promise(function (resolve) {
 			chrome.storage.local.get(null, function (results) {
-				wpsn.updateSyncStatus(results, false);
 				resolve(results);
-			});
-		});
-	};
-
-	wpsn.loadFromFile = function () {
-		return new Promise(function (resolve, reject) {
-			chrome.extension.sendMessage({
-				'action': 'loadFromFile',
-				'extensionId': wpsn.wpsnSyncId
-			}, function (results) {
-				let errors = chrome.runtime.lastError;
-				if (!errors) {
-					wpsn.updateSyncStatus(results, true);
-					resolve(results);
-				} else {
-					reject(errors);
-				}
-			});
-		});
-	};
-
-	wpsn.updateSyncStatus = function (notesById, fromFile, remove) {
-		if (!wpsn.syncStatus) { return; }
-		for (let prop in notesById) {
-			let note = notesById[prop];
-			if (note && note.id) {
-				let noteStatus = wpsn.syncStatus[note.id];
-				let startNoteStatus = noteStatus;
-				if (!remove) {
-					if (noteStatus == 'storage' && fromFile) {
-						noteStatus = 'synced';
-					} else if (noteStatus == 'file' && !fromFile) {
-						noteStatus = 'synced';
-					} else if (noteStatus != 'synced') {
-						noteStatus = fromFile ? 'file' : 'storage';
-					}
-				} else {
-					if (noteStatus == 'synced' && fromFile) {
-						noteStatus = 'storage';
-					} else if (noteStatus == 'synced' && !fromFile) {
-						noteStatus = 'file';
-					} else if (noteStatus != 'file' && fromFile) {
-						noteStatus = '';
-					} else if (noteStatus != 'storage' && !fromFile) {
-						noteStatus = '';
-					}
-				}
-				if (noteStatus != 'file' && noteStatus != 'storage' && noteStatus != 'synced') {
-					delete wpsn.syncStatus[note.id];
-				}
-
-				wpsn.syncStatus[note.id] = noteStatus;
-				if (startNoteStatus != noteStatus && wpsn.inScope(note)) {
-					wpsn.updateSyncStatusIcon(note);
-					//wpsn.reRenderNote(note);
-				}
-			}
-		}
-	};
-
-	wpsn.updateSyncStatusIcon = function (note, $menuButton) {
-		let noteStatus = wpsn.syncStatus[note.id];
-		let icon = 'cloud_off.svg';
-		if (noteStatus == 'file') {
-			icon = 'cloud_warning.svg';
-		} else if (noteStatus == 'synced') {
-			icon = 'cloud.svg';
-		}
-		$('.wpsn-menu-sync', wpsn.getNoteDiv(note)).css('background-image', 'url(chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/' + icon);
-		if ($menuButton) {
-			$menuButton.css('background-image', 'url(chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/' + icon);
-		}
-		$('[data-id="' + note.id + '"].wpsn-menu-sync').attr('src', 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/' + icon);
-	};
-
-	wpsn.WPSNSyncFolder = function () {
-		return new Promise(function (resolve) {
-			chrome.extension.sendMessage({
-				'action': 'WPSNSyncFolder',
-				'extensionId': wpsn.wpsnSyncId
-			},
-			function (WPSNSyncFolder) {
-				wpsn.wpsnSyncFolder = WPSNSyncFolder;
-				resolve(WPSNSyncFolder);
-			});
-		});
-	};
-
-	wpsn.chooseWPSNSyncFolder = function () {
-		return new Promise(function () {
-			chrome.extension.sendMessage({
-				'action': 'loadWPSNSync',
-				'extensionId': wpsn.wpsnSyncId
-			});
-		});
-	};
-
-	wpsn.clearWPSNSyncFolder = function () {
-		return new Promise(function (resolve) {
-			chrome.extension.sendMessage({
-				'action': 'clearWPSNSyncFolder',
-				'extensionId': wpsn.wpsnSyncId
-			}, function () {
-				wpsn.WPSNSyncFolder().then(function () {
-					wpsn.syncStatus = {};
-					wpsn.load();
-					resolve();
-				});
-			});
-		});
-	};
-
-	wpsn.syncNote = function (note) {
-		return new Promise(function (resolve) {
-			wpsn.WPSNSyncFolder().then(function () {
-				if (!wpsn.wpsnSyncFolder) {
-					wpsn.chooseWPSNSyncFolder();
-				} else {
-					wpsn.save([note], { unmodified: true });
-					if (wpsn.inScope(note)) {
-						wpsn.reRenderNote(note);
-					} else {
-						wpsn.updateSyncStatusIcon(note);
-					}
-				}
-				resolve(note);
-			});
-		});
-	};
-
-	wpsn.syncNotes = function (notes) {
-		return new Promise(function (resolve) {
-			wpsn.WPSNSyncFolder().then(function () {
-				if (!wpsn.wpsnSyncFolder) {
-					wpsn.chooseWPSNSyncFolder();
-				} else {
-					wpsn.save(notes, { unmodified: true });
-					for (let note of notes) {
-						wpsn.updateSyncStatus(wpsn.notesById(note), true);
-						wpsn.updateSyncStatusIcon(note);
-					}
-				}
-				resolve(notes);
-			});
-		});
-	};
-
-	wpsn.unSyncNote = function (note) {
-		return new Promise(function (resolve) {
-			if (!note) { resolve(note); }
-			wpsn.save([note], { unmodified: true, saveToBrowserOnly: true });
-
-			wpsn.removeFromFile('wpsn.note.' + note.id).then(function (note) {
-				wpsn.reRenderNote(note);
-				resolve(note);
-			});
-		});
-	};
-
-	wpsn.unSyncNoteToFile = function (note) {
-		return new Promise(function (resolve) {
-			if (!note) { resolve(note); }
-			wpsn.save([note], { unmodified: true, saveToFileOnly: true });
-			let noteById = {};
-			noteById['wpsn.note.' + note.id] = note;
-			wpsn.removeFromStorage(noteById).then(function (note) {
-				wpsn.reRenderNote(note);
-				resolve(note);
 			});
 		});
 	};
@@ -3248,13 +3100,7 @@
 	wpsn.saveToAll = function (notesToStore) {
 		return new Promise(function (resolve) {
 			wpsn.saveToStorage(notesToStore).then(function () {
-				if (wpsn.wpsnSyncFolder) {
-					wpsn.saveToFile(notesToStore).then(function () {
-						resolve(notesToStore);
-					});
-				} else {
-					resolve(notesToStore);
-				}
+				resolve(notesToStore);
 			});
 		});
 	};
@@ -3262,33 +3108,14 @@
 	wpsn.saveToStorage = function (notesToStore) {
 		return new Promise(function (resolve) {
 			chrome.storage.local.set(notesToStore);
-			wpsn.updateSyncStatus(notesToStore, false);
 			resolve(notesToStore);
-		});
-	};
-
-	wpsn.saveToFile = function (notesToStore) {
-		return new Promise(function (resolve) {
-			chrome.extension.sendMessage({
-				'action': 'saveToFile',
-				'extensionId': wpsn.wpsnSyncId,
-				'result': notesToStore
-			},
-			function (notesToStore) {
-				if (!wpsn.syncDisabled()) {
-					wpsn.updateSyncStatus(notesToStore, true);
-				}
-				resolve(notesToStore);
-			});
 		});
 	};
 
 	wpsn.removeFromAll = function (keysToRemove) {
 		return new Promise(function (resolve) {
 			wpsn.removeFromStorage(keysToRemove).then(function () {
-				wpsn.removeFromFile(keysToRemove).then(function () {
-					resolve(keysToRemove);
-				});
+				resolve(keysToRemove);
 			});
 		});
 	};
@@ -3298,25 +3125,24 @@
 		let tempKeysToRemove = wpsn.noteKeys(notesToRemove);
 		return new Promise(function (resolve) {
 			chrome.storage.local.remove(tempKeysToRemove);
-			wpsn.updateSyncStatus(notesToRemove, false, true);
 			resolve(notesToRemove);
 		});
 	};
 
-	wpsn.removeFromFile = function (keysToRemove) {
-		let notesToRemove = wpsn.notesByIdFromKeys(keysToRemove);
-		let tempKeysToRemove = wpsn.noteKeys(notesToRemove);
-		return new Promise(function (resolve) {
-			chrome.extension.sendMessage({
-				'action': 'removeFromFile',
-				'extensionId': wpsn.wpsnSyncId,
-				'keysToRemove': tempKeysToRemove
-			},
-			function () {
 
-				wpsn.updateSyncStatus(notesToRemove, true, true);
-				resolve(notesToRemove);
-			});
+	wpsn.synchronizeNotes = async function() {
+		wpsn.alert({hideCancelButton:true, hideOkButton: true, class: 'wpsn-no-remove'}, 'Synchronizing notes with Google Drive...')
+		chrome.extension.sendMessage({
+			synchronize:true,
+			fetch: true
+		});
+	};
+
+	wpsn.synchronizeLogout = async function() {
+		wpsn.alert({hideCancelButton:true, hideOkButton: true, class: 'wpsn-no-remove'}, 'Disconnecting Google Drive account...')
+		chrome.extension.sendMessage({
+			synchronize:true,
+			logout: true
 		});
 	};
 
@@ -3365,7 +3191,7 @@
 		for (let i = 0; i < wpsn.notes.length; i++) {
 			let note = wpsn.notes[i];
 			if (!note) { continue; }
-			if (!note.isPopup) {
+			if (!note.isPopup && !note.deleted) {
 				if (note.target) {
 					wpsn.notesToSort[note.target] = wpsn.notesToSort[note.target] || [];
 					wpsn.notesToSort[note.target].push(note);
@@ -3395,12 +3221,12 @@
 		let container = $('#wpsn-container');
 		if ($('.wpsn-preloadfont', container).size() == 0) { container.append($('<span class="wpsn-preloadfont" style="visibility:hidden">a</span>')); }
 
-		$('.wpsn-sticky').remove();
+		$('.wpsn-sticky:not(.wpsn-no-remove)').remove();
 		wpsn.reorderNotes();
 		for (let i = 0; i < wpsn.notes.length; i++) {
 			let note = wpsn.notes[i];
 			if (!note) { continue; }
-			if (!note.isPopup) {
+			if (!note.isPopup && !note.deleted) {
 				wpsn.renderNote(note);
 			}
 		}
@@ -3469,6 +3295,7 @@
 	};
 
 	wpsn.inScope = function (note, url, parts) {
+		if (note.deleted) { return false; }
 		let link = location;
 		if (url) {
 			link = document.createElement('a');
@@ -3544,7 +3371,7 @@
 			for (let i = 0; i < wpsn.notes.length; i++) {
 				let note = wpsn.notes[i];
 				if (!note) { continue; }
-				if (note.id && !note.isPopup && wpsn.inScope(note)) {
+				if (note.id && !note.isPopup && !note.deleted && wpsn.inScope(note)) {
 					count++;
 				}
 			}
@@ -3592,8 +3419,8 @@
 	wpsn.copyTextToNote = function (formatted) {
 		return new Promise(function (resolve) {
 			wpsn.copy().then(function () {
-				wpsn.getPasteContent(formatted).then(function (text) {
-					let note = wpsn.createNote({ text: text });
+				wpsn.getPasteContent(formatted).then(async function (text) {
+					let note = await wpsn.createNote({ text: text });
 					wpsn.stopEditing(note);
 					wpsn.autoResize(note);
 					resolve(note);
@@ -3623,7 +3450,7 @@
 		},
 		'c-add-media': async function (commandName, info) {
 			if (info.srcUrl) {
-				let note = wpsn.createNote();
+				let note = await wpsn.createNote();
 				await wpsn.addMedia(note, info.srcUrl);
 
 				if (note.width > 500) {
@@ -3633,15 +3460,15 @@
 				await wpsn.autoResizeHeight(note);
 				await wpsn.centerNote(note);
 			} else {
-				setTimeout(function () {
-					let note = wpsn.createNote();
+				setTimeout(async function () {
+					let note = await wpsn.createNote();
 					wpsn.pluginPrompt(note, wpsn.menu.media.leftClick.prompt);
 				}, 0);
 			}
 		},
 		'c-copy-media': async function (commandName, info) {
 			if (info.srcUrl) {
-				let note = wpsn.createNote();
+				let note = await wpsn.createNote();
 				await wpsn.addMedia(note, info.srcUrl);
 
 				if (note.width > 500) {
@@ -3652,8 +3479,8 @@
 				await wpsn.cutEffectiveNotes(note);
 			}
 		},
-		'c-add-rss': function () {
-			let note = wpsn.createNote();
+		'c-add-rss': async function () {
+			let note = await wpsn.createNote();
 			setTimeout(function () {
 				wpsn.pluginPrompt(note, wpsn.menu.rss.leftClick.prompt);
 			}, 0);
@@ -3706,6 +3533,8 @@
 		'a-a-add-note': async function () { await wpsn.createNote(); },
 		'a-c-manage-notes': async function () { await wpsn.manager.manageNotes(); },
 		'a-c-a-note-board': async function () { await wpsn.noteboard.openBoard(); },
+		'a-c-b-sync-notes': async function () { await wpsn.synchronizeNotes(); },
+		'a-c-c-sync-logout': async function () { await wpsn.synchronizeLogout(); },
 		'a-toggle-notes': async function () { await wpsn.toggleNotes(); },
 		'a-d-settings': async function () { await wpsn.menu.settings.leftClick.action(); },
 		'a-e-about': async function () { await wpsn.menu.about.rightClick.action(); },
@@ -3827,16 +3656,28 @@
 				wpsn.commands.commands[command.name] = command;
 			}
 		}
+		if (request.synchronize) {
+			if (request.result) {
+				wpsn.resolveConflict(wpsn.notesArray(wpsn.allNotes), wpsn.notesArray(request.result), {inverse:true}).then(function (outNotes) {
+					wpsn.resolveStorageContent(wpsn.notesById(outNotes.newNotes,'wpsn.note.'), true).then(function(){
+						wpsn.save(null, {noAutoSynchronize: true}).then(function(){
+							chrome.storage.local.get(null, function (results) {
+								chrome.extension.sendMessage({synchronize:true, result: results});
+							});
+						});
+					});
+				});
+			}
+			if (request.synchronized){
+				wpsn.clearPopups();
+				wpsn.cleanupDeletedNotes();
+			}
+			if (request.loggedout) {
+				wpsn.clearPopups();
+			}
+		}
 		if (request.toExtensionId) {
 			wpsn.log(request);
-		}
-		if (request.syncFileContent) {
-			wpsn.resolveConflict(wpsn.notes, wpsn.notesArray(request.syncFileContent)).then(function (outNotes) {
-				wpsn.resolveStorageContent(wpsn.notesById(outNotes.newNotes), true);
-				wpsn.WPSNSyncFolder().then(function () {
-					wpsn.refreshAllNotes();
-				});
-			});
 		}
 		if (request.stickyCountRequest) {
 			sendResponse(wpsn.getNoteCountProps());
@@ -4411,7 +4252,9 @@
 				width: 1000,
 				load: function () {
 					$('.wpsn-prompt').change(function () {
-						let blob = new Blob([$(this).val()], { type: 'text/plain' });
+						let content = $(this).val();
+						content = CryptoJS.AES.encrypt(content,chrome.runtime.id).toString()
+						let blob = new Blob([content], { type: 'text/plain' });
 						let url = URL.createObjectURL(blob);
 						//let url = 'data:plain/text,'+encodeURIComponent($(this).val());
 						$('.wpsn-download').attr('href', url);
@@ -5498,7 +5341,7 @@
 				zIndex: wpsn.defaultZIndex + 10,
 				lock: true
 			});
-			wpsn.createNote(frame_note);
+			await wpsn.createNote(frame_note);
 			wpsn.refreshNote(frame_note);
 		}
 		let watermark = true;
@@ -6065,7 +5908,18 @@
 	};
 
 
-
+	wpsn.menu.synchronize = {
+		'icon': 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/cloud.svg',
+		'name': 'synchronize',
+		optional: true,
+		'description': '',
+		'leftClick': {
+			command: 'a-c-b-sync-notes'
+		},
+		'rightClick': {
+			command: 'a-c-c-sync-logout'
+		}
+	};
 
 	wpsn.menu.export = {
 		'icon': 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/up.svg',
@@ -6408,6 +6262,7 @@
 
 	wpsn.noteboard = {
 		openBoard: async function() {
+			await wpsn.getSettings();
 			let example = 'https://www.google.com/blank.html#{name}';
 			wpsn.settings.noteboard_url = wpsn.settings.noteboard_url || example;
 			if (wpsn.settings.noteboard_url.indexOf('{')==-1){
@@ -6629,14 +6484,12 @@
 					{
 						'sTitle': '<span title="Actions to be applied to selected notes"><span class="wpsn-selected-count"></span><br/>Selected<br/>' +
 						(selectNotes ? '' :
-							(wpsn.syncDisabled() ? '' : '<img class="wpsn-menu wpsn-menu-sync" title="Sync current notes" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/cloud.svg" width="14"/> ') +
 							'<img class="wpsn-menu wpsn-menu-export" title="Export all selected notes" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/up.svg" width="14"/> ' +
 							'<img class="wpsn-menu wpsn-menu-delete" title="Delete all selected notes" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/multiply.svg" width="14"/></span>'
 						),
 						'bVisible': selectNotes != 'note', 'sClass': '', 'mDataProp': function (note) {
 							return '' +
 								(selectNotes ? '' :
-									(wpsn.syncDisabled() ? '' : '<img class="wpsn-menu wpsn-menu-sync" data-id="' + note.id + '" title="Sync current note" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/cloud' + (wpsn.syncStatus[note.id] == 'synced' ? '' : '_off') + '.svg" width="14"/> ') +
 									'<img class="wpsn-menu wpsn-menu-export" data-id="' + note.id + '" title="Export current note" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/up.svg" width="14"/> ' +
 									'<img class="wpsn-menu wpsn-menu-delete" data-id="' + note.id + '" title="Delete current note" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/multiply.svg" width="14"/>'
 								);
@@ -6822,7 +6675,7 @@
 						}
 						managerTable.rows().invalidate().draw();
 					});
-					$('.wpsn-menu-sync,.wpsn-menu-export,.wpsn-menu-delete,.wpsn-menu-favorite', noteFrame).off('click').on('click', async function (e) {
+					$('.wpsn-menu-export,.wpsn-menu-delete,.wpsn-menu-favorite', noteFrame).off('click').on('click', async function (e) {
 						e.stopPropagation();
 						let notes = [];
 						let isCurrentNote = false;
@@ -6838,9 +6691,6 @@
 									notes.push(note);
 								}
 							}
-						}
-						if (action.is('.wpsn-menu-sync')) {
-							wpsn.syncNotes(notes);
 						}
 						if (action.is('.wpsn-menu-export')) {
 							wpsn.exportEffectiveNotes(notes);
@@ -7620,6 +7470,7 @@
 			action : async function(note, menuButton, noteDiv) {
 				let props = Object.assign({},note[wpsn.menu.rss.modes.rssparam.id]);
 				props.template = props.rss;
+				await wpsn.getSettings();
 				wpsn.settings.RSSParams = wpsn.settings.RSSParams || ['http://rss.indeed.com/rss?q={keywords}&l={location}', 'http://rss.jobsearch.monster.com/rssquery.ashx?q={keywords}&where={location}', 'http://{city}.craigslist.org/search/jjj?query={keywords}&format=rss'];
 
 				let form = await wpsn.template.prompt(props, wpsn.settings.RSSParams, 'RSS Feed', 'http://rss.indeed.com/rss?q={keywords}&l={location}');
@@ -8039,8 +7890,8 @@
 		}
 	};
 
-	wpsn.createChecklist = function() {
-		wpsn.createNote({mode:wpsn.menu.mode.modes.checklist.id});
+	wpsn.createChecklist = async function() {
+		await wpsn.createNote({mode:wpsn.menu.mode.modes.checklist.id});
 	};
 
 	wpsn.menu.checklist = {
@@ -8227,6 +8078,7 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.commitToGitHubNote = async function (notes, options) {
+		await wpsn.getSettings();
 		options = options || {};
 		let anchorNote = notes[0];
 		let effectiveNotes = options.effectiveNotes || await wpsn.getEffectiveNotes(notes);
@@ -8315,6 +8167,7 @@ wpsn.menu.calculator = {
 		'leftClick': {
 			'description': async function () { return await wpsn.commandDescription('a-d-settings'); },
 			'action': async function (note) {
+				await wpsn.getSettings();
 				let promptHTML = '<h1>Settings</h1>';
 				promptHTML +=`
 					<div class="panel panel-default"><div class="panel-heading">Default Menu</div><div class="panel-body">
@@ -8368,11 +8221,6 @@ wpsn.menu.calculator = {
 				}
 				promptHTML += '</ul></div></div>';
 				*/
-				if (wpsn.wpsnSyncFolder) {
-					promptHTML +=
-						'<div class="panel panel-default"><div class="panel-heading">Disable Sync</div><div class="panel-body">' +
-						'<input type="radio" name="disableSync" value="true"/> Yes <input type="radio" name="disableSync" value="false"/> No</div></div>';
-				}
 				promptHTML +=
 					'<div class="panel panel-default"><div class="panel-heading">Default Width & Height</div><div class="panel-body">' +
 					'<span style="display:inline-block;width:50px">Width:</span><input type="range" style="width:100%;" name="defaultWidth" min="100" max="1000" step="25" data-display="wpsn-defaultWidth"list="wpsn_defaultWidth"><datalist id="wpsn_defaultWidth"><option>25</option><option>250</option><option>500</option><option>750</option><option>1000</option></datalist></input><span class="wpsn-defaultWidth" style="padding-left:5px;"></span><br/>' +
@@ -8393,7 +8241,15 @@ wpsn.menu.calculator = {
 					'<tr><td>Page title</td>	<td><input type="checkbox" name="wpsn_scope_title" class="wpsn_scope_title" value="true"/></td></tr>' +
 					'</table>' +
 					'</div></div>';
-					
+				promptHTML += `
+					<div class="panel panel-default"><div class="panel-heading">Enable Synchronization with Google Drive</div><div class="panel-body">
+					Once enabled, on creating/modifying/deleting a note, an attempt to synchronize all notes will occur seamlessly. 
+					If a certain amount of time elapses between synchronization, the notes will synchronize with Google Drive. Otherwise, the notes will remain out of sync.
+					This is to prevent an abuse of the Google Drive API quota.<br/><br/>
+					The notes will be stored under <code>WebPageStickyNotes/sync.wpsn</code> on your Google Drive.<br/><br/>
+					Only select 'Yes' if you have a Google account.<br/>
+					<input type="radio" name="enableSynchronization" value="true"/> Yes <input type="radio" name="enableSynchronization" value="false"/> No</div></div>
+					`;
 				promptHTML +=
 					`
 					<div class="panel panel-default"><div class="panel-heading">Disable Auto Resize</div><div class="panel-body">
@@ -8491,7 +8347,7 @@ wpsn.menu.calculator = {
 							'multiPosition': wpsn.settings.multiPosition ? 'true' : 'false' || 'false',
 							'disableAutoresize': wpsn.settings.disableAutoresize ? 'true' : 'false' || 'false',
 							'disableMemeModeByDefault': wpsn.settings.disableMemeModeByDefault ? 'true' : 'false' || 'false',
-							'disableSync': wpsn.settings.disableSync ? 'true' : 'false' || 'false',
+							'enableSynchronization': wpsn.settings.enableSynchronization ? 'true' : 'false' || 'false',
 							'enableSmartPaste': wpsn.settings.enableSmartPaste ? 'true' : 'false' || 'false',
 							'enableBookmarks': wpsn.settings.enableBookmarks ? 'true' : 'false' || 'false',
 							'monetizationOption': wpsn.settings.monetizationOption || wpsn.defaultMonetizationOption
@@ -8534,7 +8390,7 @@ wpsn.menu.calculator = {
 							wpsn.settings.disableAutoresize = form.disableAutoresize === 'true';
 							wpsn.settings.multiPosition = form.multiPosition === 'true';
 							wpsn.settings.disableMemeModeByDefault = form.disableMemeModeByDefault === 'true';
-							wpsn.settings.disableSync = form.disableSync === 'true';
+							wpsn.settings.enableSynchronization = form.enableSynchronization === 'true';
 							wpsn.settings.enableSmartPaste = form.enableSmartPaste === 'true';
 							wpsn.settings.enableBookmarks = form.enableBookmarks === 'true';
 							wpsn.settings.monetizationOption = form.monetizationOption;
@@ -8557,74 +8413,6 @@ wpsn.menu.calculator = {
 		}
 	};
 
-	wpsn.menu.sync = {
-		'icon': 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/cloud_off.svg',
-		'name': 'sync',
-		'required': false,
-		'optional': true,
-		'exclude': () => false && wpsn.syncDisabled(),
-		'description': function (note) {
-			if (wpsn.wpsnSyncFolder && note && wpsn.syncStatus[note.id] == 'synced') {
-				return 'Note is currently saved in browser and in ' + wpsn.wpsnSyncFolder;
-			} else if (note && wpsn.syncStatus[note.id] == 'file') {
-				return 'Note is currently saved in ' + wpsn.wpsnSyncFolder;
-			} else {
-				return 'Note is currently saved in browser';
-			}
-		},
-		'load': function (note, menuButton) {
-			wpsn.updateSyncStatusIcon(note, menuButton);
-		},
-		'leftClick': {
-			'description': function (note) {
-				if (wpsn.wpsnSyncFolder && note && wpsn.syncStatus[note.id] == 'synced') {
-					return 'Save note to ' + wpsn.wpsnSyncFolder + ' only';
-				} else if (note && wpsn.syncStatus[note.id] == 'file') {
-					return 'Save note to browser only';
-				} else if (wpsn.wpsnSyncFolder) {
-					return 'Save note in both browser and ' + wpsn.wpsnSyncFolder;
-				} else {
-					return 'Choose sync folder';
-				}
-			},
-			'action': function (note) {
-				if (wpsn.wpsnSyncFolder && note && wpsn.syncStatus[note.id] == 'synced') {
-					wpsn.unSyncNoteToFile(note).then(function () {
-						wpsn.reRenderNote(note);
-					});
-				} else if (note && wpsn.syncStatus[note.id] == 'file') {
-					wpsn.unSyncNote(note).then(function () {
-						wpsn.reRenderNote(note);
-					});
-				} else if (wpsn.wpsnSyncFolder) {
-					wpsn.syncNote(note).then(function () {
-						wpsn.reRenderNote(note);
-					});
-				} else {
-					if (wpsn.syncDisabled()) {
-						let tNote = wpsn.syncPopup();
-						wpsn.allNotes[tNote.id] = tNote;
-						wpsn.centerNote(wpsn.reRenderNote(tNote));
-					} else {
-						wpsn.chooseWPSNSyncFolder();
-					}
-				}
-			}
-		},
-		'rightClick': {
-			'description': 'Choose sync folder',
-			'action': function () {
-				wpsn.chooseWPSNSyncFolder();
-			}
-		},
-		'doubleClick': {
-			'description': 'Clear sync folder',
-			'action': function () {
-				wpsn.clearWPSNSyncFolder();
-			}
-		}
-	};
-
 	wpsn.menu.aboutAd = {
 		'icon': 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/question.svg',
 		'name': 'aboutAd',
@@ -8641,8 +8429,9 @@ wpsn.menu.calculator = {
 					{
 						'monetizationOption': wpsn.settings.monetizationOption || wpsn.defaultMonetizationOption
 					},
-					function (form) {
+					async function (form) {
 						if (form) {
+							await wpsn.getSettings();
 							wpsn.settings.monetizationOption = form.monetizationOption;
 							wpsn.settings.monetizationAffiliateWarning = form.monetizationAffiliateWarning;
 							wpsn.saveSettings();
@@ -8654,8 +8443,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
-		'2.6.19': [
-			'BUGFIX: Settings should not clear out anymore (not 100% sure this won\'t happen anymore).'
+		'3.0.0': [
+			'FEATURE: You can now synchronize with Google Drive!',
+			'FEATURE: Exports, Backups and Syncs are now encrypted!'
 		],
 		'2.6.18': [
 			'FEATURE: You can now create a checklist by clicking <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/checkbox.svg"/> (needs to be enabled in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/settings.svg"/>)',
@@ -8761,7 +8551,6 @@ wpsn.menu.calculator = {
 			'FEATURE: Add section about spaces in markdown cheatsheet'
 		],
 		'2.5.1': [
-			'FEATURE: Sync notes. Enable <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/cloud_off.svg"/> in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/settings.svg"/>',
 			'FEATURE: Resize all/selected notes by right clicking lower right handle and checking "Apply to all notes"',
 			'FEATURE: Rotate notes using lower left handle',
 			'FEATURE: View cheatsheet of menu icons by double clicking <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/sun.svg"/>'
@@ -8870,6 +8659,7 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.gotoUrl = async function() {
+		await wpsn.getSettings();
 		let example = 'https://www.google.com/search?q={query}';
 		wpsn.settings.GotoURLTemplates = wpsn.settings.GotoURLTemplates || [example];
 		wpsn.settings.GotoURLTemplate = wpsn.settings.GotoURLTemplate || example;
@@ -9079,7 +8869,7 @@ wpsn.menu.calculator = {
 		if (text) {
 			text = '<table width="' + (count < columns ? count * 315 : columns * 315) + '">' + text + '</table>';
 			let tNote = { 'menu': ['removePopup', 'snapshot'], 'background': '#fff', 'textcolor': '#444', 'font': { 'family': 'Verdana' }, 'position': 'right', 'dockable': 'top', 'htmlMode': false, 'mode': '6328746328', 'modified_date': 1439745294878, 'pos_x': 788, 'pos_y': 33, 'isPopup': true, 'isNotPopup': true, 'text': text };
-			wpsn.createNote(tNote);
+			await wpsn.createNote(tNote);
 			wpsn.autoResize(tNote);
 			wpsn.centerNote(tNote);
 		}
@@ -9089,12 +8879,6 @@ wpsn.menu.calculator = {
 		let text = wpsn.fileContent('tips.txt');
 
 		return { 'menu': ['removePopup', 'snapshot', 'position'], 'background': '#fff', 'textcolor': '#444', 'font': { 'family': 'Verdana' }, 'position': 'right', 'dockable': 'top', 'height': 688, 'width': 1024, 'htmlMode': false, 'id': 8369542886, 'mode': '6328746328', 'modified_date': 1439745294878, 'pos_x': 788, 'pos_y': 33, 'isPopup': true, 'isNotPopup': true, 'text': text };
-	};
-
-	wpsn.syncPopup = function () {
-		let text = wpsn.fileContent('sync.txt');
-
-		return { 'menu': ['removePopup', 'snapshot'], 'background': '#fff', 'textcolor': '#444', 'font': { 'family': 'Verdana' }, 'height': 800, 'width': 1024, 'lock': true, 'htmlMode': false, 'id': 8369542886, 'mode': '6328746328', 'modified_date': 1439745294878, 'pos_x': 788, 'pos_y': 33, 'isPopup': true, 'text': text };
 	};
 
 	wpsn.cheatsheet = function () {
@@ -9534,7 +9318,8 @@ wpsn.menu.calculator = {
 		'amazon.com': { parameter: 'tag', id: 'chrwebpagstin-20' },
 		'amazon.fr': { parameter: 'tag', id: 'chrwebpagstin-20' }
 	};
-	wpsn.updateAffiliateId = function () {
+	wpsn.updateAffiliateId = async function () {
+		await wpsn.getSettings();
 		delete wpsn.settings.monetizationAffiliateWarning;
 		wpsn.saveSettings();
 		try {
@@ -9547,7 +9332,7 @@ wpsn.menu.calculator = {
 								location.href = wpsn.updateQueryString(wpsn.affiliateIds[domain].parameter, wpsn.affiliateIds[domain].id, location.href);
 							} else if (!wpsn.settings.monetizationAffiliateWarning) {
 								//the following 2 lines are complex only because I haven't found a way to get the font to load prior to resize which causes the auto resize to resize incorrectly
-								wpsn.deleteNote(wpsn.createNote({ text: 'a' }));
+								wpsn.deleteNote(await wpsn.createNote({ text: 'a' }));
 								window.setTimeout(function () { wpsn.menu.aboutAd.leftClick.action(); }, 500);
 							}
 							window.sessionStorage['wpsn.affiliate.' + domain] = true;
@@ -9559,19 +9344,19 @@ wpsn.menu.calculator = {
 		} catch (err) { wpsn.log(err); }
 	};
 
-	wpsn.generateAd = function (note) {
+	wpsn.generateAd = async function (note) {
 		try {
 			if (wpsn.adEnabled && !window.sessionStorage['wpsn.adFree'] && ((!wpsn.settings.monetizationOption && wpsn.defaultMonetizationOption == 'ad') || wpsn.settings.monetizationOption == 'ad')) {
 				let noteCount = wpsn.propertiesSize(wpsn.allNotes);
-				if (wpsn.adEnabled && !note.isPopup && noteCount > 20 && noteCount % 5 == 0) {
-					window.setTimeout(function () {
+				if (wpsn.adEnabled && !note.isPopup && !note.deleted && noteCount > 20 && noteCount % 5 == 0) {
+					window.setTimeout(async function () {
 						let ad = $('.wpsn-ad');
 						if (ad.size() == 0) {
 							let note = { position: 'right', dockable: true, background: '#fff', width: 400, height: 100, discard: true, class: 'wpsn-ad wpsn-amazon', };
 							note.mode = wpsn.menu.rss.modes.rss.id;
 							note.menu = ['aboutAd', 'remove'];
 							note[wpsn.menu.rss.modes.rss.id] = { rss: 'https://rssfeeds.s3.amazonaws.com/goldbox' };
-							wpsn.createNote(note, function (feedItem) {
+							await wpsn.createNote(note, function (feedItem) {
 								if (feedItem && feedItem.link) {
 									feedItem.link = wpsn.updateQueryString(wpsn.affiliateIds['amazon.com'].parameter, wpsn.affiliateIds['amazon.com'].id, feedItem.link);
 								}

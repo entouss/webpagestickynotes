@@ -1,7 +1,7 @@
 {
   "name": "Web Page Sticky Notes",
   "short_name": "WPSN",
-  "version": "2.6.19",
+  "version": "3.0.0",
   "manifest_version": 2,
   "description": "Sticky Notes For Web Pages",
   "icons": { "16":"icon16.png","48":"icon48.png","128":"icon128.png" },
@@ -9,10 +9,17 @@
     "default_icon": "icon48.png"
   },
   "permissions": [
-	"storage", "bookmarks", "contextMenus", "tabs", "<all_urls>", "downloads", "clipboardRead", "clipboardWrite"
+	"storage", "bookmarks", "contextMenus", "tabs", "<all_urls>", "downloads", "clipboardRead", "clipboardWrite", "identity"
   ],
+  "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
+  "oauth2": {
+	"client_id": "121151248190-81aiah6es6se22bi7nc4k684oojnlf7m.apps.googleusercontent.com",
+	"scopes": [
+		"https://www.googleapis.com/auth/drive"
+	]   
+  },
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background.js", "vendor/aes.js"]
   },
   "content_scripts": [
     {
@@ -42,7 +49,8 @@
         "vendor/papaparse.min.js",
         "vendor/jquery.fittext.js",
         "vendor/imagetracerjs.js",
-		"vendor/pnglib.js"
+		"vendor/pnglib.js",
+		"vendor/aes.js"
       ],
 	  "css" : [
 		  "jquery.stickynotes.rebase.css",
@@ -150,6 +158,8 @@
 		"a-b-redo"										: { "description": "Redo" },
 		"a-c-manage-notes"								: { "description": "Manage notes" },
 		"a-c-a-note-board"								: { "description": "Note Board" },
+		"a-c-b-sync-notes"								: { "description": "Synchronize Notes to Google Drive" },
+		"a-c-c-sync-logout"								: { "description": "Disconnect from Google Drive account" },
 		"a-d-settings"									: { "description": "Settings" },
 		"a-g-backup"									: { "description": "Backup Web Page Sticky Notes" },
 		"a-toggle-notes"								: { "description": "Toggle notes" },
