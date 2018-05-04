@@ -8711,7 +8711,7 @@ wpsn.menu.calculator = {
 			if (validFields) {
 				for (let i = 0; i < validFields.length; i++) {
 					let validField = validFields[i].substring(1, validFields[i].length - 1);
-					evaledTemplate = evaledTemplate.replace('{' + validField + '}', (params[validField]||''));
+					evaledTemplate = evaledTemplate.replace(new RegExp('{' + validField + '}','g'), (params[validField]||''));
 					evaledTemplate = evaledTemplate.replace('{' + validField + '}', '');
 				}
 			}
