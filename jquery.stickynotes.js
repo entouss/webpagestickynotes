@@ -792,7 +792,7 @@
 		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.maximizeNote, 'Are you sure you want to maximize {0}?');
 	};
 
-	wpsn.editNote = function (note) {
+	wpsn.editNote = async function (note) {
 		let noteDiv = wpsn.getNoteDiv(note);
 		let noteFrame = noteDiv.find('#wpsn-frame-' + note.id);
 		if (note && !note.isPopup && !note.deleted) {
@@ -876,7 +876,7 @@
 				});
 			}
 			let preview = $('<img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/right_arrow.svg" class="wpsn-side-menu wpsn-preview" title="Click to preview input in another note"/>');
-			preview.mousedown(function (e) {
+			preview.mousedown(async function (e) {
 				e.preventDefault;
 				textarea.data('wpsn_dont_stop_editing', true);
 				let previewNote = $.extend(true, {}, note);
@@ -926,13 +926,13 @@
 				previewNote.isPopup = true;
 				previewNote.isNotPopup = true;
 				//previewNote.menu = ["removePopup"];
-				wpsn.refreshNote(previewNote);
+				await wpsn.refreshNote(previewNote);
 				wpsn.previewNotes = wpsn.previewNotes || {};
 				wpsn.previewNotes[previewNote.id] = previewNote;
 			});
 			if ($('#wpsn-frame-' + note.id + 'p').size() > 0) {
 				wpsn.previewNotes = wpsn.previewNotes || {};
-				wpsn.refreshNote(wpsn.previewNotes[note.id + 'p']);
+				await wpsn.refreshNote(wpsn.previewNotes[note.id + 'p']);
 			}
 			textarea.after(preview);
 			wpsn.updateFont(note, textarea);
@@ -3747,7 +3747,7 @@
 						'</div>' +
 						'</div>';
 				},
-				callback: function (form) {
+				callback: async function (form) {
 
 					if (form.wpsn_applyToAll) {
 						let notesClone = wpsn.getSelectedOrAllNotes().slice(0);
@@ -3760,12 +3760,12 @@
 							wpsn.saveNoteStateForUndo(tempNote);
 							if (form.wpsn_defaultWidth) { tempNote.width = form.wpsn_defaultWidth; }
 							if (form.wpsn_defaultHeight) { tempNote.height = form.wpsn_defaultHeight; }
-							wpsn.refreshNote(tempNote);
+							await wpsn.refreshNote(tempNote);
 						}
 					} else {
 						if (form.wpsn_defaultWidth) { note.width = form.wpsn_defaultWidth; }
 						if (form.wpsn_defaultHeight) { note.height = form.wpsn_defaultHeight; }
-						wpsn.refreshNote(note);
+						await wpsn.refreshNote(note);
 					}
 				}
 			}
@@ -4297,11 +4297,11 @@
 				'<li>or right click <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/plus.svg" width="14"/> in another note and <button>Choose Files</button>.</li>' +
 				'</ul> Neat!</div></div>' : ''),
 			{ 'wpsn-export': notesToExportString },
-			function (form) {
+			async function (form) {
 				if (isCurrentNote) {
 					let notes = JSON.parse(form['wpsn-export']);
 					for (let i = 0; i < notes.length; i++) {
-						wpsn.refreshNote(notes[i]);
+						await wpsn.refreshNote(notes[i]);
 					}
 				}
 			}
@@ -4330,10 +4330,10 @@
 		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.toggleFullscreenNote, 'Are you sure you want to toggle fullscreen for {0}?');
 	};
 
-	wpsn.toggleFullscreenNote = function (note) {
+	wpsn.toggleFullscreenNote = async function (note) {
 		note.fullscreen = !note.fullscreen;
 		note.minimized = false;
-		wpsn.refreshNote(note);
+		await wpsn.refreshNote(note);
 		if (note.fullscreen && wpsn.isTextMode(note)) {
 			setTimeout(function () { wpsn.getNoteDiv(note).mouseover().find('#wpsn-frame-' + note.id).dblclick(); }, 0);//edit mode
 		}
@@ -5330,7 +5330,7 @@
 		let frame_note = notes[0];
 
 		if (notes.length > 1) {
-			frame_note = wpsn.newNote({
+			frame_note = await wpsn.newNote({
 				pos_x: x1,
 				pos_y: y1,
 				width: x2 - x1,
@@ -5342,7 +5342,7 @@
 				lock: true
 			});
 			await wpsn.createNote(frame_note);
-			wpsn.refreshNote(frame_note);
+			await wpsn.refreshNote(frame_note);
 		}
 		let watermark = true;
 		if (notes.length == 1 && wpsn.isMeme(notes[0]) && notes[0].text) {
@@ -5419,10 +5419,10 @@
 		},
 		rightClick: {
 			'description': 'Toggle auto-minimize mode',
-			'action': function (note) {
+			'action': async function (note) {
 				note.autominimize = !note.autominimize;
 				if (!note.autominimize) { delete note.autominimize; }
-				wpsn.refreshNote(note);
+				await wpsn.refreshNote(note);
 				wpsn.clickOutSetup();
 			}
 		}
@@ -6004,11 +6004,11 @@
 			function (form) {
 				if (form) {
 					try {
-						wpsn.saveNotes(JSON.parse(form.newNotes)).then(function (importedNotes) {
+						wpsn.saveNotes(JSON.parse(form.newNotes)).then(async function (importedNotes) {
 							wpsn.notes = wpsn.notes.concat(importedNotes);
 							for (let i = 0; i < importedNotes.length; i++) {
 								let tnote = importedNotes[i];
-								wpsn.refreshNote(tnote);
+								await wpsn.refreshNote(tnote);
 							}
 							let message = '<div class="alert alert-success">The following note(s) have been imported</div>';
 							wpsn.manager.renderManagerNotes(null, importedNotes, message);
@@ -6862,7 +6862,7 @@
 				note.textposition = note.textposition || wpsn.settings.textposition || 'bottom-center';
 				if (note.textshadow == undefined) {
 					note.textshadow = note.textshadow || wpsn.settings.textshadow || 'true';
-					wpsn.refreshNote(note);
+					await wpsn.refreshNote(note);
 					return;
 				}
 			}
@@ -7029,7 +7029,7 @@
 								resolve();
 							}
 						})
-						.error(function () {
+						.error(async function () {
 							if (fallbackHTML) {
 								let $element = $(fallbackHTML);
 								if ($element.is('img')) {
@@ -7037,12 +7037,12 @@
 									note[wpsn.menu.media.modes.media.id] = props;
 									delete props.html;
 									props.media = $element.attr('src');
-									wpsn.refreshNote(note);
+									await wpsn.refreshNote(note);
 									resolve();
 								} else {
 									note.text = fallbackHTML;
 									delete note.mode;
-									wpsn.refreshNote(note);
+									await wpsn.refreshNote(note);
 									if (!wpsn.settings.disableAutoresize && !note.fullscreen) {
 										wpsn.autoResize(note);
 									}
@@ -8117,7 +8117,7 @@ wpsn.menu.calculator = {
 					path: form.wpsn_path
 				};
 			}
-			wpsn.refreshNote(note);
+			await wpsn.refreshNote(note);
 		}
 		wpsn.settings.github = {
 			username: form.wpsn_username,
@@ -9005,7 +9005,12 @@ wpsn.menu.calculator = {
 						label = 'note below cursor';
 						type = 'hovered';
 					} else if (activeNotes.all && activeNotes.all.length > 0) {
-						notes = activeNotes.all;
+						notes = [];
+						for (let note of activeNotes.all) {
+							if (!note.isPopup && !note.deleted) {
+								notes.push(note);
+							}
+						}
 						label = 'all ' + notes.length + ' ' + (notes.length > 1 ? 'notes' : 'note');
 						type = 'all';
 					}
@@ -9937,7 +9942,7 @@ wpsn.menu.calculator = {
 		props.media = wpsn.htmlEncode(img);
 		note[wpsn.menu.media.modes.media.id] = props;
 		note.mode = wpsn.menu.media.modes.media.id;
-		wpsn.refreshNote(note);
+		await wpsn.refreshNote(note);
 		return note;
 	};
 
@@ -9956,7 +9961,7 @@ wpsn.menu.calculator = {
 		}
 	};
 
-	wpsn.undo = function () {
+	wpsn.undo = async function () {
 		wpsn.undoObj = wpsn.undoObj || { index: -1, states: [] };
 		if (wpsn.undoObj.index > -1 && wpsn.undoObj.states.length > wpsn.undoObj.index) {
 			try {
@@ -9965,7 +9970,7 @@ wpsn.menu.calculator = {
 				for (let tnote of tnotes) {
 					let note = wpsn.getNote(tnote.id) || { id: tnote.id, deleted: true };
 					tnotes2.push(note);
-					wpsn.refreshNote(tnote);
+					await wpsn.refreshNote(tnote);
 				}
 				if (wpsn.undoObj.states.length == wpsn.undoObj.index + 1) {
 					wpsn.saveNoteStateForUndo(tnotes2);
@@ -9976,7 +9981,7 @@ wpsn.menu.calculator = {
 		}
 	};
 
-	wpsn.redo = function () {
+	wpsn.redo = async function () {
 		wpsn.undoObj = wpsn.undoObj || { index: -1, states: [] };
 		if ((wpsn.undoObj.index + 2) > -1 && wpsn.undoObj.states.length > (wpsn.undoObj.index + 2)) {
 			try {
@@ -9987,7 +9992,7 @@ wpsn.menu.calculator = {
 					if (tnote.deleted) {
 						wpsn.deleteNote(note);
 					} else {
-						wpsn.refreshNote(tnote);
+						await wpsn.refreshNote(tnote);
 					}
 				}
 			} catch (err) { wpsn.error(err); }

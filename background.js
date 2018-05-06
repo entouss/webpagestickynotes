@@ -385,193 +385,197 @@ chrome.browserAction.onClicked.addListener(function() {
 });
 
 
-chrome.extension.onMessage.addListener(async function(msg,sender,sendResponse) {
-	if (msg.synchronize) {
-		if (GAPI.enabled && !GAPI.loaded && !msg.logout) { 
-			await GAPI.api.loadGapi();
-			await GAPI.api.loadGapiModules();
+chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
+	let func = async function(msg,sender,sendResponse) {
+		if (msg.synchronize) {
+			if (GAPI.enabled && !GAPI.loaded && !msg.logout) { 
+				await GAPI.api.loadGapi();
+				await GAPI.api.loadGapiModules();
+			}
+			if (msg.logout) {
+				await GAPI.api.removeToken();
+				chrome.tabs.getSelected(null, function(tab) {
+					chrome.tabs.sendRequest(tab.id, {synchronize:true, loggedout:true}, function() {});
+				});
+			}
+			let synchronize = true;
+			if (msg.fetch && GAPI.lastSynchronization) {
+				let elapsed = new Date() - GAPI.lastSynchronization;
+				if (msg.autosynchronize && elapsed < GAPI.intervalBetweenAutoSynchronization) { // prevent Quota abuse
+					synchronize = false;
+				} else if (!msg.autosynchronize && elapsed < GAPI.intervalBetweenSynchronization) { // prevent DDOS
+					synchronize = false
+				}
+			}
+			if (synchronize) {
+				if (msg.fetch) {
+					GAPI.lastSynchronization = new Date();
+					GAPI.api.readJSON(true).then(function(result){
+						chrome.tabs.getSelected(null, function(tab) {
+							chrome.tabs.sendRequest(tab.id, {synchronize:true, result:result}, function() {});
+						});
+					});
+				} else if (msg.result) {
+					GAPI.api.writeJSON(msg.result, true).then(function(){
+						chrome.tabs.getSelected(null, function(tab) {
+							chrome.tabs.sendRequest(tab.id, {synchronize:true, synchronized:true}, function() {});
+						});
+					});
+				}
+			}
 		}
-		if (msg.logout) {
-			await GAPI.api.removeToken();
-			chrome.tabs.getSelected(null, function(tab) {
-				chrome.tabs.sendRequest(tab.id, {synchronize:true, loggedout:true}, function() {});
+		
+		if (msg.screenshot) {
+			chrome.tabs.captureVisibleTab(null, {quality:100}, function(dataUrl) {
+				sendResponse({ screenshotUrl: dataUrl });
 			});
 		}
-		let synchronize = true;
-		if (msg.fetch && GAPI.lastSynchronization) {
-			let elapsed = new Date() - GAPI.lastSynchronization;
-			if (msg.autosynchronize && elapsed < GAPI.intervalBetweenAutoSynchronization) { // prevent Quota abuse
-				synchronize = false;
-			} else if (!msg.autosynchronize && elapsed < GAPI.intervalBetweenSynchronization) { // prevent DDOS
-				synchronize = false
-			}
-		}
-		if (synchronize) {
-			if (msg.fetch) {
-				GAPI.lastSynchronization = new Date();
-				GAPI.api.readJSON(true).then(function(result){
-					chrome.tabs.getSelected(null, function(tab) {
-						chrome.tabs.sendRequest(tab.id, {synchronize:true, result:result}, function() {});
-					});
-				});
-			} else if (msg.result) {
-				GAPI.api.writeJSON(msg.result, true).then(function(){
-					chrome.tabs.getSelected(null, function(tab) {
-						chrome.tabs.sendRequest(tab.id, {synchronize:true, synchronized:true}, function() {});
-					});
-				});
-			}
-		}
-	}
-	
-	if (msg.screenshot) {
-		chrome.tabs.captureVisibleTab(null, {quality:100}, function(dataUrl) {
-			sendResponse({ screenshotUrl: dataUrl });
-		});
-	}
-	if (msg.stickyCount) {
-		if (msg.url) {
-			chrome.tabs.getSelected(null, function(tab) {
-				if (tab.url === msg.url) {
-					if (msg.stickyCount === '0') {
-						chrome.browserAction.setBadgeText({text: ''});
-						//chrome.browserAction.setBadgeBackgroundColor({color: '#ffffaa'});
-					} else {
-						chrome.browserAction.setBadgeText({text: ''+msg.stickyCount});
-						if (msg.stickyInvisible){
-							chrome.browserAction.setBadgeBackgroundColor({color: '#eee'});
+		if (msg.stickyCount) {
+			if (msg.url) {
+				chrome.tabs.getSelected(null, function(tab) {
+					if (tab.url === msg.url) {
+						if (msg.stickyCount === '0') {
+							chrome.browserAction.setBadgeText({text: ''});
+							//chrome.browserAction.setBadgeBackgroundColor({color: '#ffffaa'});
 						} else {
-							chrome.browserAction.setBadgeBackgroundColor({color: '#ff0000'});
+							chrome.browserAction.setBadgeText({text: ''+msg.stickyCount});
+							if (msg.stickyInvisible){
+								chrome.browserAction.setBadgeBackgroundColor({color: '#eee'});
+							} else {
+								chrome.browserAction.setBadgeBackgroundColor({color: '#ff0000'});
+							}
+						}
+					}
+				});
+			} else {
+				if (msg.stickyCount === '0') {
+					chrome.browserAction.setBadgeText({text: ''});
+					//chrome.browserAction.setBadgeBackgroundColor({color: '#ffffaa'});
+				} else {
+					chrome.browserAction.setBadgeText({text: ''+msg.stickyCount});
+					chrome.browserAction.setBadgeBackgroundColor({color: '#ff0000'});
+				}
+			}
+		}
+
+		if (msg.bookmark) {	
+			if (msg.bookmark.remove) {
+				wpsn_loadBookmarksAndRemoveBookmark(msg.bookmark.url);
+			} else {
+				wpsn_loadBookmarksAndSaveBookmark(msg.bookmark.url, msg.bookmark.title);
+			}
+		}
+
+		if (msg.saveNotes) {
+			let bkmrk = wpsn_getBookmark(msg.saveNotes.url);
+			if (msg.saveNotes.notCurrentPage) {
+				let oldNotes = JSON.parse(bkmrk.title);
+				let newNotes = JSON.parse(msg.saveNotes.notes);
+				for (let i = 0; i < newNotes.length; i++) {
+					let newNote = newNotes[i];
+					let found = false;
+					for (let j = 0; j < oldNotes.length; j++) {
+						let oldNote = oldNotes[j];
+						if (newNote.id === oldNote.id) {
+							for (let key in oldNote) {oldNote[key] = null;}
+							for (let key in newNote) {oldNote[key] = newNote[key];}
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						oldNotes.push(newNote);
+					}
+				}
+				wpsn_saveBookmarkAndGlobalBookmark(msg.saveNotes.url, JSON.stringify(oldNotes));
+			} else {
+				wpsn_saveBookmarkAndGlobalBookmark(msg.saveNotes.url, msg.saveNotes.notes);
+			}
+		}
+
+		if (msg.loadNotes) {
+			try {
+				if (msg.loadNotes.indexOf('#') > -1) {
+					let hash = unescape(msg.loadNotes.substring(msg.loadNotes.indexOf('#')+1));
+					if (hash.indexOf('[') > -1 && hash.indexOf('{') > -1 && hash.indexOf('"') > -1 && hash.indexOf('id') > -1) {
+						chrome.tabs.getSelected(null, function(tab) {
+							chrome.tabs.sendRequest(tab.id, {loadNotesResponse: hash}, function() {});
+						});
+						return;
+					}
+				}
+			}catch(err){error(err);}
+
+			let bkmrk_url = msg.loadNotes;
+			let bkmrk_title = '[]';
+
+			let bkmrk = wpsn_getBookmark(msg.loadNotes);
+			let globalBkmrk = wpsn_getBookmark(wpsn_globalURL);
+			if (bkmrk != null) {
+				bkmrk_url = bkmrk.url;
+				bkmrk_title = bkmrk.title;
+			}
+			if (globalBkmrk != null) {
+				let notes = JSON.parse(bkmrk_title);
+				let globalNotes = JSON.parse(globalBkmrk.title);
+				for (let i = 0; i < notes.length; i++) {
+					globalNotes.push(notes[i]);
+				}
+				bkmrk_title = JSON.stringify(globalNotes);
+			}
+
+			chrome.windows.getAll({populate:true}, function (window_list) {
+				for(let w = 0; w < window_list.length; w++) {
+					for (let t = 0; t < window_list[w].tabs.length; t++) {
+						let tab = window_list[w].tabs[t];
+
+						if (tab.url === bkmrk_url) {
+							chrome.tabs.get(tab.id, function(tab) {
+								chrome.tabs.sendRequest(tab.id, {loadNotesResponse: bkmrk_title}, function() {});
+							});
 						}
 					}
 				}
 			});
-		} else {
-			if (msg.stickyCount === '0') {
-				chrome.browserAction.setBadgeText({text: ''});
-				//chrome.browserAction.setBadgeBackgroundColor({color: '#ffffaa'});
-			} else {
-				chrome.browserAction.setBadgeText({text: ''+msg.stickyCount});
-				chrome.browserAction.setBadgeBackgroundColor({color: '#ff0000'});
-			}
-		}
-	}
-
-	if (msg.bookmark) {	
-		if (msg.bookmark.remove) {
-			wpsn_loadBookmarksAndRemoveBookmark(msg.bookmark.url);
-		} else {
-			wpsn_loadBookmarksAndSaveBookmark(msg.bookmark.url, msg.bookmark.title);
-		}
-	}
-
-	if (msg.saveNotes) {
-		let bkmrk = wpsn_getBookmark(msg.saveNotes.url);
-		if (msg.saveNotes.notCurrentPage) {
-			let oldNotes = JSON.parse(bkmrk.title);
-			let newNotes = JSON.parse(msg.saveNotes.notes);
-			for (let i = 0; i < newNotes.length; i++) {
-				let newNote = newNotes[i];
-				let found = false;
-				for (let j = 0; j < oldNotes.length; j++) {
-					let oldNote = oldNotes[j];
-					if (newNote.id === oldNote.id) {
-						for (let key in oldNote) {oldNote[key] = null;}
-						for (let key in newNote) {oldNote[key] = newNote[key];}
-						found = true;
-						break;
-					}
-				}
-				if (!found) {
-					oldNotes.push(newNote);
-				}
-			}
-			wpsn_saveBookmarkAndGlobalBookmark(msg.saveNotes.url, JSON.stringify(oldNotes));
-		} else {
-			wpsn_saveBookmarkAndGlobalBookmark(msg.saveNotes.url, msg.saveNotes.notes);
-		}
-	}
-
-	if (msg.loadNotes) {
-		try {
-			if (msg.loadNotes.indexOf('#') > -1) {
-				let hash = unescape(msg.loadNotes.substring(msg.loadNotes.indexOf('#')+1));
-				if (hash.indexOf('[') > -1 && hash.indexOf('{') > -1 && hash.indexOf('"') > -1 && hash.indexOf('id') > -1) {
-					chrome.tabs.getSelected(null, function(tab) {
-						chrome.tabs.sendRequest(tab.id, {loadNotesResponse: hash}, function() {});
-					});
-					return;
-				}
-			}
-		}catch(err){error(err);}
-
-		let bkmrk_url = msg.loadNotes;
-		let bkmrk_title = '[]';
-
-		let bkmrk = wpsn_getBookmark(msg.loadNotes);
-		let globalBkmrk = wpsn_getBookmark(wpsn_globalURL);
-		if (bkmrk != null) {
-			bkmrk_url = bkmrk.url;
-			bkmrk_title = bkmrk.title;
-		}
-		if (globalBkmrk != null) {
-			let notes = JSON.parse(bkmrk_title);
-			let globalNotes = JSON.parse(globalBkmrk.title);
-			for (let i = 0; i < notes.length; i++) {
-				globalNotes.push(notes[i]);
-			}
-			bkmrk_title = JSON.stringify(globalNotes);
 		}
 
-		chrome.windows.getAll({populate:true}, function (window_list) {
-			for(let w = 0; w < window_list.length; w++) {
-				for (let t = 0; t < window_list[w].tabs.length; t++) {
-					let tab = window_list[w].tabs[t];
+		if (msg.download) {
+			chrome.downloads.download(msg.download);
+		}
 
-					if (tab.url === bkmrk_url) {
-						chrome.tabs.get(tab.id, function(tab) {
-							chrome.tabs.sendRequest(tab.id, {loadNotesResponse: bkmrk_title}, function() {});
-						});
-					}
-				}
-			}
-		});
-	}
+		if (msg.upload) {
+			upload(msg.upload);
+		}
 
-	if (msg.download) {
-		chrome.downloads.download(msg.download);
-	}
+		if (msg.copySelectedNotes) {
+			copied_notes = msg.copySelectedNotes;
+		}
+		if (msg.pasteCopiedNotes) {
+			chrome.tabs.getSelected(null, function(tab) {
+				chrome.tabs.sendRequest(tab.id, {pasteCopiedNotes: copied_notes, keepOriginalCoordinates: msg.keepOriginalCoordinates}, function() {});
+			});
+		}
+		if (msg.getImageData) {
+			getImageData(msg.url, msg.width, msg.height).then(function(imageData){
+				sendResponse(imageData);
+			});
+		}
+		if (msg.getUrlData) {
+			getUrlData(msg.url, msg.interval).then(function(data){
+				sendResponse(data);
+			});
+		}
+		if (msg.github) {
+			commitToGithub(msg.github);
+		}
+		if (msg.gotourl) {
+			chrome.tabs.getSelected(null, function(tab) {
+				chrome.tabs.update(tab.id, {url: msg.gotourl});
+			});
+		}
+	};
 
-	if (msg.upload) {
-		upload(msg.upload);
-	}
-
-	if (msg.copySelectedNotes) {
-		copied_notes = msg.copySelectedNotes;
-	}
-	if (msg.pasteCopiedNotes) {
-		chrome.tabs.getSelected(null, function(tab) {
-			chrome.tabs.sendRequest(tab.id, {pasteCopiedNotes: copied_notes, keepOriginalCoordinates: msg.keepOriginalCoordinates}, function() {});
-		});
-	}
-	if (msg.getImageData) {
-		getImageData(msg.url, msg.width, msg.height).then(function(imageData){
-			sendResponse(imageData);
-		});
-	}
-	if (msg.getUrlData) {
-		getUrlData(msg.url, msg.interval).then(function(data){
-			sendResponse(data);
-		});
-	}
-	if (msg.github) {
-		commitToGithub(msg.github);
-	}
-	if (msg.gotourl) {
-		chrome.tabs.getSelected(null, function(tab) {
-			chrome.tabs.update(tab.id, {url: msg.gotourl});
-		});
-	}
+	func(msg,sender,sendResponse);
 	return true;
 });
 
