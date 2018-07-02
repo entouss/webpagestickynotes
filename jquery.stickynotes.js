@@ -13,6 +13,7 @@
 		wpsn.options = null;
 		wpsn.enableSelection = true;
 		wpsn.hasSelection = false;
+		wpsn.magnetEnabled = false;
 		wpsn.currentlyEditedNoteIds = new Array();
 		wpsn.keys = {
 			'page': location.url,
@@ -91,7 +92,8 @@
 		wpsn.defaultGoogleFonts.sort();
 		wpsn.defaultFontSizes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 		wpsn.resizableOptions = {
-			snap: '.wpsn-snappable', handles: 'all'/*,aspectRatio:hasMedia*/, resize: function (event, ui) {
+			snap: '.wpsn-snappable', handles: 'all'/*,aspectRatio:hasMedia*/, 
+			resize: function (event, ui) {
 				let $el = ui.originalElement;
 				//$el.find('.wpsn-frame').addClass('wpsn-resizing');
 				let _note = wpsn.getNoteFromDiv($el);
@@ -108,26 +110,100 @@
 				$el.find('.wpsn-watermark.wpsn-size').remove();
 				$el.append($('<span/>').append($el.width() + ' x ' + $el.height()).addClass('wpsn-watermark').addClass('wpsn-size'));
 				$el.find('.wpsn-auto-fit-text').fitText(wpsn.fittextcompressor, wpsn.fittextoptions);
+				if (wpsn.magnetEnabled) {
+					wpsn.resizeSnappedElements(_note, ui, false);
+				}
 			}, stop: function (event, ui) {
 				let $el = ui.originalElement;
 				$el.resizable('option', 'aspectRatio', false).data('uiResizable')._aspectRatio = false;
 				$el.find('.wpsn-frame').addClass('wpsn-resizing');
 				$el.find('.wpsn-watermark.wpsn-size').remove();
 				let _note = wpsn.getNoteFromDiv($el);
-				wpsn.saveNoteStateForUndo(_note);
-				wpsn.resizedNote(_note, ui);
-				let selectedNotes = wpsn.getSelectedNotes();
-				for (let i = 0; i < selectedNotes.length; i++) {
-					let selectedNote = selectedNotes[i];
-					let selectedNoteDiv = wpsn.getNoteDiv(selectedNote);
-					selectedNoteDiv.width(_note.width);
-					selectedNoteDiv.height(_note.height);
-					wpsn.saveNoteStateForUndo(selectedNote);
-					wpsn.resizedNote(selectedNote, ui);
+				let notes = wpsn.getNotesFromDivs(wpsn.getSnappedAndSelectedDivs(_note));
+				wpsn.saveNoteStateForUndo(notes);
+				wpsn.resizeSelectedElements(_note, ui, true);
+				if (wpsn.magnetEnabled) {
+					wpsn.resizeSnappedElements(_note, ui, true);
 				}
+				wpsn.resizedNote(_note, ui);
 				$el.find('.wpsn-auto-fit-text').fitText(wpsn.fittextcompressor, wpsn.fittextoptions);
 			}
 		};
+		wpsn.resizeSelectedElements = function(note, ui, save) {
+			let selectedNotes = wpsn.getSelectedNotes();
+			for (let tnote of selectedNotes) {
+				if (tnote.id == note.id) { continue; }
+				let tnoteDiv = wpsn.getNoteDiv(tnote);
+				tnoteDiv.width(note.width);
+				tnoteDiv.height(note.height);
+				if (save) { wpsn.resizedNote(tnote); } 
+			}
+		}
+		wpsn.resizeSnappedElements = function(note, ui, save) {
+			let snapped = wpsn.getSnappedNotes(note);
+			let oldLeft = ui.originalPosition.left;
+			let oldTop = ui.originalPosition.top;
+			let newLeft = ui.position.left;
+			let newTop = ui.position.top;
+			let oldWidth = ui.originalSize.width;
+			let oldHeight = ui.originalSize.height;
+			let newWidth = ui.size.width;
+			let newHeight = ui.size.height;
+
+			if (oldLeft != newLeft) {
+				for (let tnote of snapped.left.left) {
+					let $tnote = wpsn.getNoteDiv(tnote);
+					$tnote.css('left', newLeft);
+					$tnote.width(tnote.width - (newLeft - oldLeft));
+					if (save) { wpsn.resizedNote(tnote); }
+				}
+				for (let tnote of snapped.left.right) {
+					let $tnote = wpsn.getNoteDiv(tnote);
+					$tnote.width(tnote.width + (newLeft - oldLeft));
+					if (save) { wpsn.resizedNote(tnote); }
+				}
+			}
+			if (oldTop != newTop) {
+				for (let tnote of snapped.top.top) {
+					let $tnote = wpsn.getNoteDiv(tnote);
+					$tnote.css('top', newTop);
+					$tnote.height(tnote.height - (newTop - oldTop));
+					if (save) { wpsn.resizedNote(tnote); }
+				}
+				for (let tnote of snapped.top.bottom) {
+					let $tnote = wpsn.getNoteDiv(tnote);
+					$tnote.height(tnote.height + (newTop - oldTop));
+					if (save) { wpsn.resizedNote(tnote); }
+				}
+			}
+			if ((oldLeft + oldWidth) != (newLeft + newWidth)) {
+				for (let tnote of snapped.right.left) {
+					let $tnote = wpsn.getNoteDiv(tnote);
+					$tnote.css('left', tnote.pos_x + ((newLeft + newWidth) - (oldLeft + oldWidth)));
+					$tnote.width(tnote.width - ((newLeft + newWidth) - (oldLeft + oldWidth)));
+					if (save) { wpsn.resizedNote(tnote); }
+				}
+				for (let tnote of snapped.right.right) {
+					let $tnote = wpsn.getNoteDiv(tnote);
+					$tnote.width(tnote.width + ((newLeft + newWidth) - (oldLeft + oldWidth)));
+					if (save) { wpsn.resizedNote(tnote); }
+				}
+			}
+			if ((oldTop + oldHeight) != (newTop + newHeight)) {
+				for (let tnote of snapped.bottom.top) {
+					let $tnote = wpsn.getNoteDiv(tnote);
+					$tnote.css('top', tnote.pos_y + ((newTop + newHeight) - (oldTop + oldHeight)));
+					$tnote.height(tnote.height - ((newTop + newHeight) - (oldTop + oldHeight)));
+					if (save) { wpsn.resizedNote(tnote); }
+				}
+				for (let tnote of snapped.bottom.bottom) {
+					let $tnote = wpsn.getNoteDiv(tnote);
+					$tnote.height(tnote.height + ((newTop + newHeight) - (oldTop + oldHeight)));
+					if (save) { wpsn.resizedNote(tnote); }
+				}
+			}
+		};
+
 		wpsn.rotatableOptions = {
 			snap: '.wpsn-snappable', step: 5, wheelRotate: false,
 			stop: function (event, ui) {
@@ -188,10 +264,10 @@
 		let $media = $('.wpsn-frame .wpsn-media', $noteDiv);
 		let cropwidth = props.crop.cropwidth;
 		let cropheight = props.crop.cropheight;
-		let width = cropEnabled ? props.crop.width : ((props.crop.width * ($noteDiv.width() + 2 * 2)) / cropwidth);
-		let height = cropEnabled ? props.crop.height : ((props.crop.height * ($noteDiv.height() + 2 * 2)) / cropheight);
-		let top = cropEnabled ? props.crop.top : ((($noteDiv.height() + 2 * 2) * props.crop.top) / cropheight);
-		let left = cropEnabled ? props.crop.left : ((($noteDiv.width() + 2 * 2) * props.crop.left) / cropwidth);
+		let width = cropEnabled ? props.crop.width : ((props.crop.width * ($noteDiv.width())) / cropwidth);
+		let height = cropEnabled ? props.crop.height : ((props.crop.height * ($noteDiv.height())) / cropheight);
+		let top = cropEnabled ? props.crop.top : ((($noteDiv.height()) * props.crop.top) / cropheight);
+		let left = cropEnabled ? props.crop.left : ((($noteDiv.width()) * props.crop.left) / cropwidth);
 		$media.css({ 'position': 'relative', 'top': top, 'left': left, 'width': width, 'height': height });
 	};
 	wpsn.resizeMedia = function (note) {
@@ -199,12 +275,12 @@
 			let $noteDiv = wpsn.getNoteDiv(note);
 			let $media = $('.wpsn-frame .wpsn-media', $noteDiv);
 			if ($media) {
-				let cropwidth = $noteDiv.width() + 2 * 2;
-				let cropheight = $noteDiv.height() + 2 * 2;
+				let cropwidth = $noteDiv.width();
+				let cropheight = $noteDiv.height();
 				let width = $media.width();
 				let height = $media.height();
-				let top = $media.offset().top - $noteDiv.offset().top - 2;
-				let left = $media.offset().left - $noteDiv.offset().left - 2;
+				let top = $media.offset().top - $noteDiv.offset().top - (note.canvas == 'frameless' ? 0 : 14);
+				let left = $media.offset().left - $noteDiv.offset().left - (note.canvas == 'frameless' ? 0 : 14);
 
 				$media.css({ 'position': 'relative' });
 
@@ -434,6 +510,22 @@
 	wpsn.getNoteDiv = function (note) {
 		return $('#note-' + note.id);
 	};
+	wpsn.getNoteDivs = function(notes) {
+		let divs = [];
+		if (notes) { 
+			for (let note of notes) {
+				divs.push(wpsn.getNoteDiv(note));
+			}
+		}
+		return divs;
+	};
+	wpsn.getNoteDivElements = function(notes) {
+		let divs = [];
+		for (let noteDiv of wpsn.getNoteDivs(notes)) {
+			divs.push(noteDiv.get()[0]);
+		}
+		return divs;
+	};
 	wpsn.getNoteId = function (note) {
 		return '#note-' + note.id;
 	};
@@ -447,12 +539,30 @@
 		if (!note_div || !note_div.attr('id')) { return null; }
 		return wpsn.getNote(note_div.attr('id').replace(/note-/, ''));
 	};
+	wpsn.getNoteFromDivElement = function (note_div) {
+		if (!note_div || !note_div.id) { return null; }
+		return wpsn.getNote(note_div.id.replace(/note-/, ''));
+	};
+	wpsn.getNotesFromDivs = function (note_divs) {
+		let notes = [];
+		note_divs.each(function(index, note_div){
+			notes.push(wpsn.getNoteFromDiv(note_div));
+		});
+		return notes;
+	};
+	wpsn.getNotesFromDivElements = function (note_divs) {
+		let notes = [];
+		for (let note_div of note_divs) {
+			notes.push(wpsn.getNoteFromDivElement(note_div));
+		}
+		return notes;
+	};
 
 	wpsn.newNote = async function (note) {
 		await wpsn.getSettings();
 		if (!note) { note = {}; }
 		note.id = note.id ? note.id : Math.floor((Math.random() * 1000000000) + 1);
-		note.text = note.text ? note.text : '';
+		//note.text = note.text ? note.text : '';
 		note.width = note.width ? note.width : wpsn.settings.defaultWidth || 500;
 		note.height = note.height ? note.height : wpsn.settings.defaultHeight || 500;
 		note.pos_x = note.pos_x != null ? note.pos_x : Math.max(0, $(window).scrollLeft() + window.innerWidth / 2 - note.width / 2);
@@ -717,20 +827,23 @@
 		noteDiv.addClass('wpsn-fullscreen');
 	};
 
-	wpsn.actOnEffectiveNotes = async function (note, func, confirmationPrompt, noLoopNotes, confirmForAll, selectNotes) {
+	wpsn.actOnEffectiveNotes = async function (note, func, confirmationPrompt, noLoopNotes, confirmForAll, selectNotes, info={}) {
 		try {
 			let effective = await wpsn.getEffectiveNotes(note, selectNotes);
 			let anchorNote;
 			if (effective && effective.notes && effective.notes.length > 0) {
 				anchorNote = JSON.parse(JSON.stringify(effective.notes[0]));
 			}
+			info.effectiveNotes = effective;
+			info.anchorNote = anchorNote;
+
 			if (!confirmForAll && (!confirmationPrompt || effective.type == 'current' || effective.type == 'notes' || effective.type == 'hovered' || effective.type == 'edited')) {
 				wpsn.saveNoteStateForUndo(effective.notes);
 				if (noLoopNotes) {
-					await func(effective.notes, { anchorNote, effectiveNotes: effective });
+					await func(effective.notes, info);
 				} else {
 					for (let enote of effective.notes) { 
-						await func(enote, { anchorNote, effectiveNotes: effective }); 
+						await func(enote, info); 
 					}
 				}
 			} else {
@@ -741,9 +854,9 @@
 				let promises = [];
 				if (effective.notes.length > 0) {
 					if (noLoopNotes) {
-						func(effective.notes, { anchorNote, effectiveNotes: effective });
+						func(effective.notes, info);
 					} else {
-						for (let enote of effective.notes) { func(enote, { anchorNote, effectiveNotes: effective }); }
+						for (let enote of effective.notes) { func(enote, info); }
 					}
 				}
 				await Promise.all(promises);
@@ -1841,43 +1954,69 @@
 			scroll: false,
 			snap: '.wpsn-snappable',
 			start: function () {
-				let $this = $(this);
-				$this.find('.wpsn-menu-maximize').data('mousedown', false);
-				wpsn.selected = $('.wpsn-selected').each(function () {
-					let el = $(this);
-					el.data('wpsn-offset', el.offset());
-				});
-				wpsn.offset = $this.data('wpsn-offset');
-				//if( !$(this).hasClass("wpsn-selected")) $(this).addClass("wpsn-selected");
+
 			},
 			drag: function (event, ui) {
+				let $this = $(this);
 				try {
-					let snapElements = $(this).data('uiDraggable').snapElements;
+					let snapElements = $this.data('uiDraggable').snapElements;
 					for (let i = snapElements.length - 1; i >= 0; i--) {
 						if ($(snapElements[i].item).is('.ui-rotatable-handle')) {
 							snapElements.splice(i, 1);
 						}
 					}
 				} catch (err) { wpsn.error(err); }
-				if (wpsn.offset) {
-					let dt = ui.position.top - wpsn.offset.top, dl = ui.position.left - wpsn.offset.left;
-					wpsn.selected.not(this).each(function () {
-						// create the variable for we don't need to keep calling $("this")
-						// el = current element we are on
-						// off = what position was this element at when it was selected, before drag
-						let el = $(this), off = el.data('wpsn-offset');
-						el.css({ top: off.top + dt, left: off.left + dl });
-					});
-				}
+				
+				let dt = ui.position.top - $this.offset().top, dl = ui.position.left - $this.offset().left;
+				for (let el of wpsn.getSnappedAndSelectedDivs(note, true).get()) {
+					// create the variable for we don't need to keep calling $("this")
+					// el = current element we are on
+					// off = what position was this element at when it was selected, before drag
+					let $el = $(el), off = $el.offset();
+					$el.css({ top: off.top + dt, left: off.left + dl });
+				};
+				
 				let dragFunction = $(this).data('dragFunction');
 				if (dragFunction) { dragFunction(); }
 			},
-			stop: function () {
+			stop: function (event, ui) {
+				wpsn.moveSnappedAndSelectedDivs(note, ui, true);
 				wpsn.movedNote(note);
 				$('#wpsn-drag-helper').remove();
 			}
 		});
 	};
+
+	wpsn.getSnappedAndSelectedDivs = function(note, notNote) {
+		let noteDivs = new Set();
+		let selected = wpsn.getSelectedNotes();
+		let snapped = wpsn.magnetEnabled ? wpsn.getSnappedNotes(note).all : [];
+		let all = [].concat(selected).concat(snapped);
+		for (let tnote of all) {
+			if (notNote && tnote.id == note.id) { continue; }
+			noteDivs.add(wpsn.getNoteDiv(tnote));
+		}
+		return $(Array.from(noteDivs));
+	}
+
+	
+
+	wpsn.moveSnappedAndSelectedDivs = function(note, ui, save) {
+		let snapped = wpsn.getSnappedAndSelectedDivs(note, true);
+		let notes = wpsn.getNotesFromDivs(snapped);
+		if (save) { wpsn.saveNoteStateForUndo(notes.concat(note)); }
+		let oldLeft = ui.originalPosition.left;
+		let oldTop = ui.originalPosition.top;
+		let newLeft = ui.position.left;
+		let newTop = ui.position.top;
+		
+		for (let tnote of notes) {
+			let $tnote = wpsn.getNoteDiv(tnote);
+			tnote.pos_x = $tnote.position().left;
+			tnote.pos_y = $tnote.position().top;
+			if (save) { wpsn.refreshNote(tnote); }
+		}
+	}
 
 	wpsn.initResizable = function (note, opts) {
 		let noteDiv = wpsn.getNoteDiv(note);
@@ -3600,7 +3739,7 @@
 		'a-menu-cheatsheet': async function () { await wpsn.menuCommand(wpsn.getMouseoverNote(), 'tips', 'doubleClick'); },
 		'toggle-fullscreen-note': async function (commandName, info) { await wpsn.toggleFullscreenEffectiveNotes(info.note); },
 		'resize-note-paper-ratio': async function (commandName, info) { await wpsn.resizeEffectiveNotesToPaperRatio(info.note); },
-		'refresh-note': async function (commandName, info) { await wpsn.refreshEffectiveNotes(info.note); },
+		'refresh-note': async function (commandName, info) { await wpsn.refreshEffectiveNotes(info.note, info); },
 		'update-font-note': async function (commandName, info) { await wpsn.updateFontForEffectiveNotes(info.note); },
 		'toggle-lock-note': async function (commandName, info) { await wpsn.toggleLockEffectiveNotes(info.note); },
 		'update-mode-note': async function (commandName, info) { await wpsn.updateEffectiveNotesMode(info.note); },
@@ -3811,6 +3950,26 @@
 
 		_menuDiv.data('menu', _menu);
 
+		if (_menu.doubleClick) {
+			_menuDiv.dblclick(function (e) {
+				let $that = $(this);
+				let _menu = $that.data('menu');
+				window['wpsn_' + note.id + '_' + (_menu ? _menu.name : '') + '_dblclick'] = 2;
+				window.setTimeout(function () {
+					delete window['wpsn_' + note.id + '_' + (_menu ? _menu.name : '') + '_dblclick'];
+				}, 200);
+				if (_menu.doubleClick) {
+					if (_menu.doubleClick.action) {
+						_menu.doubleClick.action(note, $that, noteDiv, e);
+					} else if (_menu.doubleClick.prompt) {
+						wpsn.pluginPrompt(note, _menu.doubleClick.prompt);
+					} else if (_menu.doubleClick.command) {
+						wpsn.command(_menu.doubleClick.command, { note: (_menu.doubleClick.applyToAll && e.altKey ? null : note), menuButton: $that, noteDiv: noteDiv, e });
+					}
+				}
+			});
+		}
+		
 		_menuDiv.click(function (e) {
 			e.stopPropagation();
 		}).mouseenter(async function () {
@@ -3840,17 +3999,16 @@
 					} else if (_menu.middleClick.prompt) {
 						wpsn.pluginPrompt(note, _menu.middleClick.prompt);
 					} else if (_menu.middleClick.command) {
-						wpsn.command(_menu.middleClick.command, { note: (_menu.middleClick.applyToAll && e.altKey ? null : note), menuButton: $that, noteDiv: noteDiv });
+						wpsn.command(_menu.middleClick.command, { note: (_menu.middleClick.applyToAll && e.altKey ? null : note), menuButton: $that, noteDiv: noteDiv, e });
 					}
 				}
 			} else {// left click
 				let $that = $(this);
 				window.setTimeout(function () {
 					let _menu = $that.data('menu');
-					let dblclick = parseInt(window['wpsn_' + note.id + '_' + (_menu ? _menu.name : '') + '_dblclick'], 10);
-					if (dblclick > 0) {
-						window['wpsn_' + note.id + '_' + (_menu ? _menu.name : '') + '_dblclick'] = dblclick - 1;
-					} else {
+					let dblclick = parseInt(window['wpsn_' + note.id + '_' + (_menu ? _menu.name : '') + '_dblclick'], 10) || 0;
+					if (dblclick < 2) {
+						delete window['wpsn_' + note.id + '_' + (_menu ? _menu.name : '') + '_dblclick'];
 						if (_menu && _menu.leftClick) {
 							if (_menu.leftClick.action) {
 								if (_menu.name === 'maximize') {
@@ -3863,36 +4021,18 @@
 							} else if (_menu.leftClick.prompt) {
 								wpsn.pluginPrompt(note, _menu.leftClick.prompt);
 							} else if (_menu.leftClick.command) {
-								wpsn.command(_menu.leftClick.command, { note: (_menu.leftClick.applyToAll && e.altKey ? null : note), menuButton: $that, noteDiv: noteDiv });
+								wpsn.command(_menu.leftClick.command, { note: (_menu.leftClick.applyToAll && e.altKey ? null : note), menuButton: $that, noteDiv: noteDiv, e });
 							}
 						}
 					}
 				}, _menu.doubleClick ? 200 : 0);
-			}
-			if (_menu.name != 'more' && _menu.name != 'color') {
-				noteDiv.find('>.wpsn-submenu').hide('slide');
-			}
-			e.stopPropagation();
-		});
-		if (_menu.doubleClick) {
-			_menuDiv.dblclick(function (e) {
-				let $that = $(this);
-				let _menu = $that.data('menu');
-				window['wpsn_' + note.id + '_' + (_menu ? _menu.name : '') + '_dblclick'] = 2;
-				window.setTimeout(function () {
-					delete window['wpsn_' + note.id + '_' + (_menu ? _menu.name : '') + '_dblclick'];
-				}, 200);
-				if (_menu.doubleClick) {
-					if (_menu.doubleClick.action) {
-						_menu.doubleClick.action(note, $that, noteDiv, e);
-					} else if (_menu.doubleClick.prompt) {
-						wpsn.pluginPrompt(note, _menu.doubleClick.prompt);
-					} else if (_menu.doubleClick.command) {
-						wpsn.command(_menu.doubleClick.command, { note: (_menu.doubleClick.applyToAll && e.altKey ? null : note), menuButton: $that, noteDiv: noteDiv });
-					}
+			
+				if (_menu.name != 'more' && _menu.name != 'color') {
+					noteDiv.find('>.wpsn-submenu').hide('slide');
 				}
-			});
-		}
+				e.stopPropagation();
+			}
+		});
 		if (_menu.rightClick) {
 			_menuDiv.bind('contextmenu', function (e) {
 				let $that = $(this);
@@ -3903,7 +4043,7 @@
 					} else if (_menu.rightClick.prompt) {
 						wpsn.pluginPrompt(note, _menu.rightClick.prompt);
 					} else if (_menu.rightClick.command) {
-						wpsn.command(_menu.rightClick.command, { note: (_menu.rightClick.applyToAll && e.altKey ? null : note), menuButton: $that, noteDiv: noteDiv });
+						wpsn.command(_menu.rightClick.command, { note: (_menu.rightClick.applyToAll && e.altKey ? null : note), menuButton: $that, noteDiv: noteDiv, e });
 					}
 				}
 				return false;
@@ -3999,8 +4139,8 @@
 		return note;
 	};
 
-	wpsn.refreshEffectiveNotes = function (noteOrNotes) {
-		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.refreshNote, ''/*'Are you sure you want to refresh {0}?'*/);
+	wpsn.refreshEffectiveNotes = function (noteOrNotes, info) {
+		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.refreshNote, ''/*'Are you sure you want to refresh {0}?'*/, null, null, null, info);
 	};
 
 	wpsn.refreshNote = async function (note, options = {}) {
@@ -4148,8 +4288,11 @@
 
 	wpsn.resizedNote = function (note) {
 		let noteDiv = wpsn.getNoteDiv(note);
+		let pos = noteDiv.position();
 		note.width = noteDiv.width();
 		note.height = noteDiv.height();
+		note.pos_x = pos.left;
+		note.pos_y = pos.top;
 		if (wpsn.options.resizeCallback) {
 			wpsn.options.resizeCallback(note);
 		}
@@ -5473,7 +5616,7 @@
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/feather.svg',
 		name: 'font',
 		description: '',
-		optional: true,
+		optional: false,
 		leftClick: {
 			command: 'update-font-note',
 			applyToAll: true
@@ -5483,7 +5626,7 @@
 	wpsn.menu.zoom = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/zoom.svg',
 		name: 'zoom',
-		optional: true,
+		optional: false,
 		description: 'Zoom in/out.',
 		leftClick: {
 			command: 'zoom-in-note',
@@ -5512,13 +5655,13 @@
 				$menuButton.css('background-image', 'url(chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/' + icon);
 			}
 		},
-		optional: true,
+		optional: false,
 		description: '',
 		leftClick: {
 			command: 'refresh-note',
 			applyToAll: true
 		},
-		rightClick: {
+		doubleClick: {
 			description: 'Render note stored at provided URL (experimental). Please advise that remote note will not override most look and feel properties of current note',
 			action: function (note) {
 				wpsn.prompt(
@@ -5530,7 +5673,7 @@
 				);
 			}
 		},
-		doubleClick: {
+		rightClick: {
 			description: 'Fetch and manipulate data from provided URL (experimental)',
 			action: function (note) {
 				wpsn.prompt(
@@ -5744,7 +5887,7 @@
 	wpsn.menu.lock = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/lock_off.svg',
 		name: 'lock',
-		optional: true,
+		optional: false,
 		description: function (note) {
 			let desc = 'Lock note. Prevents moving, resizing and/or editing of note.\nThis is especially useful if you want to be able to select the content of the note without dragging note.';
 			if (note) {
@@ -5778,7 +5921,7 @@
 	wpsn.menu.mode = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/gear.svg',
 		name: 'mode',
-		optional: true,
+		optional: false,
 		description: '',
 		modes: {
 			markdown: { name: 'Github Flavored Markdown', id: 6328746328, render: function (note) { wpsn.renderMarkdown(note); }, description: 'Markdown allows you to write using an easy-to-read, easy-to-write plain text format, which then converts to valid HTML. <a href="https://help.github.com/articles/basic-writing-and-formatting-syntax/">More information</a>. (Powered by <a href="https://github.com/chjj/marked">marked.js</a>)' },
@@ -5804,7 +5947,7 @@
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/copy.svg',
 		name: 'clone',
 		description: '',
-		optional: true,
+		optional: false,
 		leftClick: {
 			command: 'b-clone-note',
 			applyToAll: true
@@ -5820,7 +5963,7 @@
 	wpsn.menu.scope = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/circle.svg',
 		name: 'scope',
-		optional: true,
+		optional: false,
 		description: 'A note can be visible across several pages depending on the given scope.',
 		leftClick: {
 			command: 'update-scope-note',
@@ -5829,19 +5972,19 @@
 	};
 
 	wpsn.menu.target = {
-		'icon': 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/pushpin_off.svg',
-		'name': 'pin',
-		'description': '',
-		'optional': true,
-		'load': function (note, menuButton) {
+		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/pushpin_off.svg',
+		name: 'pin',
+		description: '',
+		optional: false,
+		load: function (note, menuButton) {
 			if (note && note.target) {
 				menuButton.attr('title', note.target);
 				menuButton.css('background', 'url("chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/pushpin.svg")');
 			}
 		},
-		'doubleClick': {
-			'description': 'Pin note to HTML element by specifying selector',
-			'action': async function (note) {
+		doubleClick: {
+			description: 'Pin note to HTML element by specifying selector',
+			action: async function (note) {
 				try {
 					let target = await wpsn.promptWithTextInput(
 						{},
@@ -5856,17 +5999,17 @@
 				} catch (err) { wpsn.error(err); }
 			}
 		},
-		'rightClick': {
-			'description': 'Unpin note',
-			'action': function (note) {
+		rightClick: {
+			description: 'Unpin note',
+			action: function (note) {
 				wpsn.saveNoteStateForUndo(note);
 				delete note.target;
 				wpsn.refreshNote(note);
 			}
 		},
-		'leftClick': {
-			'description': 'Pin note to another note or page element',
-			'action': async function (note) {
+		leftClick: {
+			description: 'Pin note to another note or page element',
+			action: async function (note) {
 				await wpsn.confirm(
 					{},
 					'<div class="panel panel-default"><div class="panel-heading">You selected the option of pinning this note to another note or page element.</div><div class="panel-body">After clicking OK, click on the note or page element you want to pin this note to. <br/><br/>Click cancel if you don\'t want to proceed.</div></div>',
@@ -5897,7 +6040,7 @@
 	wpsn.menu.order = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/updown.svg',
 		name: 'order',
-		optional: true,
+		optional: false,
 		description: '',
 		leftClick: {
 			command: 'bring-to-top-note'
@@ -5911,7 +6054,7 @@
 	wpsn.menu.synchronize = {
 		'icon': 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/cloud.svg',
 		'name': 'synchronize',
-		optional: true,
+		optional: false,
 		'description': '',
 		'leftClick': {
 			command: 'a-c-b-sync-notes'
@@ -6847,7 +6990,7 @@
 	wpsn.menu.media = {
 		'icon': 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/play.svg',
 		'name': 'media',
-		'optional': true,
+		'optional': false,
 		'description': '',
 		'modes': {
 			'media': { name: 'Media', id: 4580805653, render: async function (note) { await wpsn.menu.media.render(note); }, description: 'Render an image, music or video from another web page.' },
@@ -7188,7 +7331,7 @@
 		//'extension' : 'wpsn.menu.record',
 		'icon': 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/record.svg',
 		'name': 'record',
-		'optional': true,
+		'optional': false,
 		'description': '',
 		'modes': { 'formrecorder': { name: 'Form Recorder', id: 9027598325, render: function (note) { wpsn.menu.record.render(note); }, description: 'Form Recorder allows you to record the state of the forms of a current page to allow for a one click form completion at a later time.' } },
 		'updateValue': function (fieldElement, value) {
@@ -7355,7 +7498,7 @@
 	wpsn.menu.rss = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/rss.svg',
 		name: 'feed',
-		optional: true,
+		optional: false,
 		description: 'RSS feeds benefit users who want to receive timely updates from favourite websites or to aggregate data from many sites.',
 		modes: {
 			rss: { name: 'RSS', id: 2997357854, render: function (note, callback) { wpsn.menu.rss.render(note, callback); }, description: 'RSS feeds benefit users who want to receive timely updates from favourite websites or to aggregate data from many sites.' },
@@ -7489,7 +7632,7 @@
 	wpsn.menu.position = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/position.svg',
 		name: 'position',
-		optional: true,
+		optional: false,
 		description: '',
 		load: function (note, menuButton) {
 			if (note.position == 'top') {
@@ -7579,11 +7722,22 @@
 		wpsn.refreshAllNotes();
 	};
 
+	wpsn.parseJSON = function(jsonStr) {
+		let json = jsonStr;
+		try {
+			json = JSON.parse(json);
+		} catch(err) {
+			let jsontemp = json.replace((/([\w]+)(:)/g), "\"$1\"$2");
+			let correctjson = jsontemp.replace((/'/g), "\"");
+			json = JSON.parse(correctjson);
+		}
+		return json;
+	}
 	wpsn.menu.diagram = {
 		//'extension' : 'wpsn.menu.diagram',
 		'icon': 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/diagram.svg',
 		'name': 'diagram',
-		'optional': true,
+		'optional': false,
 		'description': '',
 		'modes': {
 			/*'networkdiagram' : {name:'Network Diagram',id:5784637854,render:function(note){wpsn.menu.diagram.renderVisJsNetwork(note);},description:'Network Diagram (powered by VisJs)'},
@@ -7591,6 +7745,8 @@
 			'sequencediagram': { name: 'Sequence Diagram', id: 5453823628, render: function (note) { wpsn.menu.diagram.renderSequenceDiagram(note); }, description: 'Turns text into a UML sequence diagram. (Powered by <a href="https://bramp.github.io/js-sequence-diagrams/" target="_blank">JS-Sequence-Diagrams</a>)' },
 			'mermaiddiagram': { name: 'Diagram', id: 6478367842, render: function (note) { wpsn.menu.diagram.renderMermaidDiagram(note); }, description: 'Turns text into a diagram. <a href="http://knsv.github.io/mermaid/#graph" target="_blank">More information</a>. (Powered by <a href="https://github.com/knsv/mermaid" target="_blank">Mermaid.js</a>)' },
 			'flowchart': { name: 'Flowchart', id: 6122356463, render: function (note) { wpsn.menu.diagram.renderFlowchart(note); }, description: 'Turns text into a flowchart. <a href="http://adrai.github.io/flowchart.js/" target="_blank">More information</a>. (Powered by <a href="http://adrai.github.io/flowchart.js/" target="_blank">Flowchart.js</a>)', options: '{\n\t"x": 0,\n\t"y": 0,\n\t"line-width": 3,\n\t"line-length": 50,\n\t"text-margin": 10,\n\t"font-size": 14,\n\t"font": "normal",\n\t"font-family": "Helvetica",\n\t"font-weight": "normal",\n\t"font-color": "black",\n\t"line-color": "black",\n\t"element-color": "black",\n\t"fill": "white",\n\t"yes-text": "yes",\n\t"no-text": "no",\n\t"arrow-end": "block",\n\t"scale": 1,\n\t"symbols": {\n\t\t"start": {\n\t\t\t"font-color": "black",\n\t\t\t"element-color": "black",\n\t\t\t"fill": "white"\n\t\t},\n\t\t"end":{\n\t\t\t"class": "end-element"\n\t\t}\n\t},\n\t"flowstate" : {\n\t\t"past" : { "fill" : "#CCCCCC", "font-size" : 12},\n\t\t"anythingyouwant" : { "fill" : "#FFFF99"},\n\t\t"current" : {"fill" : "yellow", "font-color" : "red", "font-weight" : "bold"},\n\t\t"request" : { "fill" : "blue"},\n\t\t"invalid": {"fill" : "#444444", "font-color" : "white"},\n\t\t"approved" : { "fill" : "#58C4A3", "font-size" : 12, "yes-text" : "APPROVED", "no-text" : "n/a" },\n\t\t"rejected" : { "fill" : "#C45879", "font-size" : 12, "yes-text" : "n/a", "no-text" : "REJECTED" }\n\t}\n}' },
+			'js2flowchart': { name: 'JS 2 Flowchart', id: 5649385089, render: function (note) { wpsn.menu.diagram.renderJs2Flowchart(note); }, description: 'Turns JS code into a flowchart. <a href="https://github.com/Bogdan-Lyashenko/js-code-to-svg-flowchart" target="_blank">More information</a>. (Powered by <a href="https://github.com/Bogdan-Lyashenko/js-code-to-svg-flowchart" target="_blank">js2flowchart.js</a>)'},
+			'chartjs': { name: 'Chart.js', id: 3747823508, render: function (note) { wpsn.menu.diagram.renderChartjs(note); }, description: 'Creates beautiful charts. <a href="http://www.chartjs.org/docs/latest/charts/" target="_blank">More information</a>. (Powered by <a href="http://www.chartjs.org/" target="_blank">Chart.js</a>)'},
 			'treediagram': { name: 'Tree Diagram(beta)', id: 7659346992, render: function (note) { wpsn.menu.diagram.renderTreeDiagram(note); }, description: 'Turns text into a UML tree diagram. (Powered by <a href="http://webpagestickynotes.com"><img height="24" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/logo/wpsn-logo.png"/></a> + <a href="http://d3js.org/" target="_blank">d3.js</a>)' },
 		},
 		'renderMermaidDiagram': function (note) {
@@ -7645,6 +7801,29 @@
 					wpsn.error(err);
 				}
 				diagram.drawSVG(noteFrame[0], options);
+			} catch (err) {
+				wpsn.error(err);
+			}
+			wpsn.resizeSVG(note);
+		},
+		'renderJs2Flowchart': function (note) {
+			let noteDiv = wpsn.getNoteDiv(note);
+			let noteFrame = $('.wpsn-frame', noteDiv);
+			try {
+				let svg = js2flowchart.convertCodeToSvg(note.previewText || note.text);
+				$('.wpsn-frame', noteDiv).html(svg);
+			} catch (err) {
+				wpsn.error(err);
+			}
+			wpsn.resizeSVG(note);
+		},
+		'renderChartjs': function (note) {
+			let noteDiv = wpsn.getNoteDiv(note);
+			let noteFrame = $('.wpsn-frame', noteDiv);
+			try {
+				let options = wpsn.parseJSON(note.previewText || note.text);
+				$('.wpsn-frame', noteDiv).html('<canvas width="800" height="450"></canvas>');
+				new Chart($('.wpsn-frame canvas', noteDiv),options);
 			} catch (err) {
 				wpsn.error(err);
 			}
@@ -7882,6 +8061,61 @@
 								'  click A "http://www.webpagestickynotes.com" "Tooltip"';
 							note.text = note.text ? note.text : demo;
 						}
+						if (note.mode == wpsn.menu.diagram.modes.js2flowchart.id) {
+							let demo = 
+`
+function factorial(number) {
+	let result = 1;
+	for (let i = 2; i <= number; i += 1) {
+	result *= i;
+	}
+	return result;
+}
+`;
+						  note.text = note.text ? note.text : demo;
+						}
+						if (note.mode == wpsn.menu.diagram.modes.chartjs.id) {
+							let demo = 
+`
+{
+	type: 'bar',
+	data: {
+		labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+		datasets: [{
+			label: '# of Votes',
+			data: [12, 19, 3, 5, 2, 3],
+			backgroundColor: [
+				'rgba(255, 99, 132, 0.2)',
+				'rgba(54, 162, 235, 0.2)',
+				'rgba(255, 206, 86, 0.2)',
+				'rgba(75, 192, 192, 0.2)',
+				'rgba(153, 102, 255, 0.2)',
+				'rgba(255, 159, 64, 0.2)'
+			],
+			borderColor: [
+				'rgba(255,99,132,1)',
+				'rgba(54, 162, 235, 1)',
+				'rgba(255, 206, 86, 1)',
+				'rgba(75, 192, 192, 1)',
+				'rgba(153, 102, 255, 1)',
+				'rgba(255, 159, 64, 1)'
+			],
+			borderWidth: 1
+		}]
+	},
+	options: {
+		scales: {
+			yAxes: [{
+				ticks: {
+					beginAtZero:true
+				}
+			}]
+		}
+	}
+}
+`;
+						  note.text = note.text ? note.text : demo;
+						}
 						wpsn.refreshNote(note);
 					},
 					note.id
@@ -7897,7 +8131,7 @@
 	wpsn.menu.checklist = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/checkbox.svg',
 		name: 'checklist',
-		optional: true,
+		optional: false,
 		description: '',
 		modes: {
 			checklist: { name: 'Checklist', id: 9486429094, render: async function (note) { await wpsn.renderChecklist(note); }, description: 'Renders note in checklist mode.' }
@@ -7911,7 +8145,7 @@
 	wpsn.menu.code = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/prettify.svg',
 		name: 'code',
-		optional: true,
+		optional: false,
 		description: '',
 		modes: {
 			code: { name: 'Code', id: 4734532438, render: async function (note) { await wpsn.renderCode(note); }, description: 'Pretty prints the text. Especially useful when the text represents code or markup.' },
@@ -8062,14 +8296,117 @@ wpsn.menu.calculator = {
 };
 */
 
+	wpsn.getSnappedNotes = function(note) {
+		let snapped = {
+			all: new Set(),
+			top:{
+				top:[],right:[],bottom:[],left:[]
+			},
+			right:{
+				top:[],right:[],bottom:[],left:[]
+			},
+			bottom:{
+				top:[],right:[],bottom:[],left:[]
+			},
+			left:{
+				top:[],right:[],bottom:[],left:[]
+			}
+		};
+		for (let tnote of wpsn.notes) {
+			if (tnote.id === note.id) { continue; }
+			if (tnote.pos_y === note.pos_y) {
+				if (
+					(tnote.pos_x <= note.pos_x                && (tnote.pos_x + tnote.width + 1) >= note.pos_x               ) ||
+					(tnote.pos_x <= (note.pos_x + note.width + 1) && (tnote.pos_x + tnote.width) >= note.pos_x               )
+				) {
+					snapped.all.add(tnote);
+					snapped.top.top.push(tnote);
+				}
+			}
+			if ((tnote.pos_y + tnote.height + 1) === note.pos_y) {
+				if (
+					(tnote.pos_x <= note.pos_x                && (tnote.pos_x + tnote.width + 1) >= note.pos_x               ) ||
+					(tnote.pos_x <= (note.pos_x + note.width + 1) && (tnote.pos_x + tnote.width) >= note.pos_x                   )
+				) {
+					snapped.all.add(tnote);
+					snapped.top.bottom.push(tnote);
+				}
+			}
+
+			if (tnote.pos_x === (note.pos_x + note.width + 1)) {
+				if (
+					(tnote.pos_y <= note.pos_y                && (tnote.pos_y + tnote.height + 1) >= note.pos_y               ) ||
+					(tnote.pos_y <= (note.pos_y + note.height + 1) && (tnote.pos_y + tnote.height) >= note.pos_y              )
+				) {
+					snapped.all.add(tnote);
+					snapped.right.left.push(tnote);
+				}
+			}
+			if ((tnote.pos_x + tnote.width) === (note.pos_x + note.width)) {
+				if (
+					(tnote.pos_y <= note.pos_y                && (tnote.pos_y + tnote.height + 1) >= note.pos_y               ) ||
+					(tnote.pos_y <= (note.pos_y + note.height + 1) && (tnote.pos_y + tnote.height) >= note.pos_y              )
+				) {
+					snapped.all.add(tnote);
+					snapped.right.right.push(tnote);
+				}
+			}
+
+			if (tnote.pos_y === (note.pos_y + note.height + 1)) {
+				if (
+					(tnote.pos_x <= note.pos_x                && (tnote.pos_x + tnote.width + 1) >= note.pos_x               ) ||
+					(tnote.pos_x <= (note.pos_x + note.width + 1) && (tnote.pos_x + tnote.width) >= note.pos_x               )
+				) {
+					snapped.all.add(tnote);
+					snapped.bottom.top.push(tnote);
+				}
+			}
+			if ((tnote.pos_y + tnote.height) === (note.pos_y + note.height)) {
+				if (
+					(tnote.pos_x <= note.pos_x                && (tnote.pos_x + tnote.width + 1) >= note.pos_x               ) ||
+					(tnote.pos_x <= (note.pos_x + note.width + 1) && (tnote.pos_x + tnote.width) >= note.pos_x               )
+				) {
+					snapped.all.add(tnote);
+					snapped.bottom.bottom.push(tnote);
+				}
+			}
+
+			if (tnote.pos_x === note.pos_x) {
+				if (
+					(tnote.pos_y <= note.pos_y                && (tnote.pos_y + tnote.height + 1) >= note.pos_y               ) ||
+					(tnote.pos_y <= (note.pos_y + note.height + 1) && (tnote.pos_y + tnote.height) >= note.pos_y              )
+				) {
+					snapped.all.add(tnote);
+					snapped.left.left.push(tnote);
+				}
+			}
+			if ((tnote.pos_x + tnote.width + 1) === note.pos_x) {
+				if (
+					(tnote.pos_y <= note.pos_y                && (tnote.pos_y + tnote.height + 1) >= note.pos_y               ) ||
+					(tnote.pos_y <= (note.pos_y + note.height + 1) && (tnote.pos_y + tnote.height) >= note.pos_y                  )
+				) {
+					snapped.all.add(tnote);
+					snapped.left.right.push(tnote);
+				}
+			}
+		}
+		snapped.all = Array.from(snapped.all);
+		return snapped;
+	}
+
 	wpsn.menu.github = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/github.svg',
 		name: 'github',
-		optional: true,
+		optional: false,
 		description: '',
 		leftClick: {
 			command : 'b-commit-to-github',
 			applyToAll : true
+		},
+		rightClick: {
+			action: function(note) {
+				console.log(JSON.stringify(wpsn.getSnappedNotes(note),null,4));
+			}
 		}
 	};
 
@@ -8443,6 +8780,12 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'3.0.3': [
+			'FEATURE: Menu icons were updated with a more consistent look',
+			'FEATURE: All menu items enabled by default to match the slogan',
+			'FEATURE: You can now visualize javascript code in a flowchart diagram by clicking <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/diagram.svg"/>',
+			'FEATURE: You can now create beautiful charts by clicking <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/diagram.svg"/>'
+		],
 		'3.0.0': [
 			'FEATURE: You can now synchronize with Google Drive!',
 			'FEATURE: Exports, Backups and Syncs are now encrypted!'

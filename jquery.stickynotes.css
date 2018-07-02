@@ -148,8 +148,8 @@ textarea.wpsn-prompt {
     left: 0;/*-14px;*/
 	border: 0;
 }
-.wpsn-cropping {
-	border: 2px dotted #333;
+.wpsn-cropping > .wpsn-note {
+  box-shadow: 0px 0px 1px 0px #d43f3a !important;
 }
 .wpsn-resizing .wpsn-media {
 	height: 100%;
