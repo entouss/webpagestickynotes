@@ -7764,7 +7764,21 @@
 			let noteDiv = wpsn.getNoteDiv(note);
 			let noteFrame = $('.wpsn-frame', noteDiv);
 			try {
-				noteFrame.html(note.previewText || note.text).sequenceDiagram({ theme: 'simple' });
+				let text = note.previewText || note.text;
+				let numberedText = '';
+				let count = 1;
+				for (let line of text.split('\n')) {
+					let countText = '';
+					let leftSide = line.split(':')[0];
+					if (leftSide.toLowerCase().indexOf('title') == 0 || leftSide.toLowerCase().indexOf('note ') == 0) {
+						countText = '';
+					} else {
+						countText = (count++) + '. ';
+					}
+					let rightSide = (countText)+line.split(':')[1];
+					numberedText += leftSide + ':' + rightSide + '\n';
+				}
+				noteFrame.html(numberedText).sequenceDiagram({ theme: 'simple' });
 				$('svg', noteFrame).css('background', note.background);
 				$('*', noteFrame).each(function () {
 					if (this.tagName == 'text') {
@@ -8780,6 +8794,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'3.0.4': [
+			'FEATURE: Numbered each arrow of sequence diagram',
+		],
 		'3.0.3': [
 			'FEATURE: Menu icons were updated with a more consistent look',
 			'FEATURE: All menu items enabled by default to match the slogan',
