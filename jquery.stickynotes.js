@@ -7768,7 +7768,10 @@
 				let numberedText = '';
 				let count = 1;
 				for (let line of text.split('\n')) {
-					if (line.indexOf(':') == -1) continue;
+					if (line.indexOf(':') == -1) {
+						numberedText += line + '\n';
+						continue;
+					}
 					let countText = '';
 					let leftSide = line.split(':')[0];
 					if (leftSide.toLowerCase().indexOf('title') == 0 || leftSide.toLowerCase().indexOf('note ') == 0) {
@@ -8795,7 +8798,7 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
-		'3.0.5': [
+		'3.0.6': [
 			'FEATURE: Numbered each arrow of sequence diagram',
 		],
 		'3.0.3': [
