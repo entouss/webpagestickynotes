@@ -7742,7 +7742,7 @@
 		'modes': {
 			/*'networkdiagram' : {name:'Network Diagram',id:5784637854,render:function(note){wpsn.menu.diagram.renderVisJsNetwork(note);},description:'Network Diagram (powered by VisJs)'},
 			*/
-			'sequencediagram': { name: 'Sequence Diagram', id: 5453823628, render: function (note) { wpsn.menu.diagram.renderSequenceDiagram(note); }, description: 'Turns text into a UML sequence diagram. (Powered by <a href="https://bramp.github.io/js-sequence-diagrams/" target="_blank">JS-Sequence-Diagrams</a>)' },
+			'sequencediagram': { name: 'Sequence Diagram', id: 5453823628, render: function (note) { wpsn.menu.diagram.renderSequenceDiagram(note); }, description: 'Turns text into a UML sequence diagram. (Powered by <a href="https://bramp.github.io/js-sequence-diagrams/" target="_blank">JS-Sequence-Diagrams</a> and <a href="https://github.com/bramp/js-sequence-diagrams/pull/74" target="_blank">Pull Request</a>)' },
 			'mermaiddiagram': { name: 'Diagram', id: 6478367842, render: function (note) { wpsn.menu.diagram.renderMermaidDiagram(note); }, description: 'Turns text into a diagram. <a href="http://knsv.github.io/mermaid/#graph" target="_blank">More information</a>. (Powered by <a href="https://github.com/knsv/mermaid" target="_blank">Mermaid.js</a>)' },
 			'flowchart': { name: 'Flowchart', id: 6122356463, render: function (note) { wpsn.menu.diagram.renderFlowchart(note); }, description: 'Turns text into a flowchart. <a href="http://adrai.github.io/flowchart.js/" target="_blank">More information</a>. (Powered by <a href="http://adrai.github.io/flowchart.js/" target="_blank">Flowchart.js</a>)', options: '{\n\t"x": 0,\n\t"y": 0,\n\t"line-width": 3,\n\t"line-length": 50,\n\t"text-margin": 10,\n\t"font-size": 14,\n\t"font": "normal",\n\t"font-family": "Helvetica",\n\t"font-weight": "normal",\n\t"font-color": "black",\n\t"line-color": "black",\n\t"element-color": "black",\n\t"fill": "white",\n\t"yes-text": "yes",\n\t"no-text": "no",\n\t"arrow-end": "block",\n\t"scale": 1,\n\t"symbols": {\n\t\t"start": {\n\t\t\t"font-color": "black",\n\t\t\t"element-color": "black",\n\t\t\t"fill": "white"\n\t\t},\n\t\t"end":{\n\t\t\t"class": "end-element"\n\t\t}\n\t},\n\t"flowstate" : {\n\t\t"past" : { "fill" : "#CCCCCC", "font-size" : 12},\n\t\t"anythingyouwant" : { "fill" : "#FFFF99"},\n\t\t"current" : {"fill" : "yellow", "font-color" : "red", "font-weight" : "bold"},\n\t\t"request" : { "fill" : "blue"},\n\t\t"invalid": {"fill" : "#444444", "font-color" : "white"},\n\t\t"approved" : { "fill" : "#58C4A3", "font-size" : 12, "yes-text" : "APPROVED", "no-text" : "n/a" },\n\t\t"rejected" : { "fill" : "#C45879", "font-size" : 12, "yes-text" : "n/a", "no-text" : "REJECTED" }\n\t}\n}' },
 			'js2flowchart': { name: 'JS 2 Flowchart', id: 5649385089, render: function (note) { wpsn.menu.diagram.renderJs2Flowchart(note); }, description: 'Turns JS code into a flowchart. <a href="https://github.com/Bogdan-Lyashenko/js-code-to-svg-flowchart" target="_blank">More information</a>. (Powered by <a href="https://github.com/Bogdan-Lyashenko/js-code-to-svg-flowchart" target="_blank">js2flowchart.js</a>)'},
@@ -7779,7 +7779,7 @@
 					} else {
 						countText = (count++) + '. ';
 					}
-					let rightSide = (countText)+line.split(':')[1];
+					let rightSide = (countText)+line.substring(line.indexOf(':')+1);
 					numberedText += leftSide + ':' + rightSide + '\n';
 				}
 				noteFrame.html(numberedText).sequenceDiagram({ theme: 'simple' });
@@ -7794,7 +7794,7 @@
 					if (this.getAttribute('fill') == '#000000' || this.getAttribute('fill') == '#000') {
 						this.setAttribute('fill', note.textcolor);
 					} else if (this.getAttribute('fill')) {
-						this.setAttribute('fill', note.background);
+						//this.setAttribute('fill', note.background);
 					}
 					if (this.getAttribute('stroke') == '#000000') {
 						this.setAttribute('stroke', note.textcolor);
@@ -8055,7 +8055,16 @@
 							note.htmlMode = wpsn.getModeKey(note) == 'texteditor';
 						}
 						if (note.mode == wpsn.menu.diagram.modes.sequencediagram.id) {
-							let demo = 'Title: This is a demo\nA->B: Normal line\nB-->C: Dashed line\nC->>B: Open arrow\nB-->>A: Dashed open arrow\nNote right of B: Double \\nclick note';
+							let demo = 
+`
+Title: This is a demo [color="gray", fontcolor="white", fillcolor="black"]
+A->B: Normal line
+Note right of A: This is a link [url="http://www.example.com"]
+B-->C: Dashed line
+C->>B: Open arrow
+B-->>A: Dashed open arrow
+Note right of B: Double \\nclick note
+`;
 							note.text = note.text ? note.text : demo;
 						}
 						/*if (note.mode == wpsn.menu.diagram.modes.dotdiagram.id) {
@@ -8798,8 +8807,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
-		'3.0.6': [
+		'3.0.7': [
 			'FEATURE: Numbered each arrow of sequence diagram',
+			'FEATURE: Add color and url functionality to sequence diagram'
 		],
 		'3.0.3': [
 			'FEATURE: Menu icons were updated with a more consistent look',
