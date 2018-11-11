@@ -7789,7 +7789,9 @@
 						this.setAttribute('font', null);
 						$(this).css('font-family', 'inherit')
 							.css('font-size', 'inherit');
-
+					}
+					if (this.getAttribute('fill') == 'none' || this.getAttribute('fill') == '#ffffff' || this.getAttribute('fill') == '#fff') {
+						this.setAttribute('fill', note.background);
 					}
 					if (this.getAttribute('fill') == '#000000' || this.getAttribute('fill') == '#000') {
 						this.setAttribute('fill', note.textcolor);
@@ -8807,7 +8809,7 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
-		'3.0.7': [
+		'3.0.8': [
 			'FEATURE: Numbered each arrow of sequence diagram',
 			'FEATURE: Add color and url functionality to sequence diagram'
 		],
