@@ -5181,14 +5181,16 @@
 						let $searchCheck = $('.' + wpsn_ + 'scope_search');
 						let $hashCheck = $('.' + wpsn_ + 'scope_hash');
 						$('.' + wpsn_ + 'url').unbind('change keyup keydown blur').bind('change keyup keydown blur', function () {
-							let loc = wpsn.location($(this).val());
-							$('.form-control').unbind('change').bind('change', function () { $(this).siblings('input').val($(this).val()); });
-							let $protocol = $protocolCheck.siblings('.form-control'); $protocol.val(loc.protocol); $protocol.trigger('change');
-							let $hostname = $hostnameCheck.siblings('.form-control'); $hostname.val(loc.hostname); $hostname.trigger('change');
-							let $port = $portCheck.siblings('.form-control'); $port.val(loc.port); $port.trigger('change');
-							let $pathname = $pathnameCheck.siblings('.form-control'); $pathname.val(loc.pathname); $pathname.trigger('change');
-							let $search = $searchCheck.siblings('.form-control'); $search.val(loc.search); $search.trigger('change');
-							let $hash = $hashCheck.siblings('.form-control'); $hash.val(loc.hash); $hash.trigger('change');
+							if ($(this).val()) {
+								let loc = wpsn.location($(this).val());
+								$('.form-control').unbind('change').bind('change', function () { $(this).siblings('input').val($(this).val()); });
+								let $protocol = $protocolCheck.siblings('.form-control'); $protocol.val(loc.protocol); $protocol.trigger('change'); if (wpsn.settings.scope && wpsn.settings.scope.protocol == true) {$protocolCheck.prop('checked', true);}
+								let $hostname = $hostnameCheck.siblings('.form-control'); $hostname.val(loc.hostname); $hostname.trigger('change'); if (wpsn.settings.scope && wpsn.settings.scope.hostname == true) {$hostnameCheck.prop('checked', true);}
+								let $port = $portCheck.siblings('.form-control'); $port.val(loc.port); $port.trigger('change'); if (wpsn.settings.scope && wpsn.settings.scope.port == true) {$portCheck.prop('checked', true);}
+								let $pathname = $pathnameCheck.siblings('.form-control'); $pathname.val(loc.pathname); $pathname.trigger('change'); if (wpsn.settings.scope && wpsn.settings.scope.pathname == true) {$pathnameCheck.prop('checked', true);}
+								let $search = $searchCheck.siblings('.form-control'); $search.val(loc.search); $search.trigger('change'); if (wpsn.settings.scope && wpsn.settings.scope.search == true) {$searchCheck.prop('checked', true);}
+								let $hash = $hashCheck.siblings('.form-control'); $hash.val(loc.hash); $hash.trigger('change'); if (wpsn.settings.scope && wpsn.settings.scope.hash == true) {$hashCheck.prop('checked', true);}
+							}
 						}).focus();
 
 						$protocolCheck.unbind('click').bind('click', function () { let checked = $(this).prop('checked'); $protocolCheck.prop('checked', false); $(this).prop('checked', checked); });
@@ -8809,6 +8811,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'3.0.9': [
+			'FIX: Criteria setup was buggy in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/circle.svg"/>'
+		],
 		'3.0.8': [
 			'FEATURE: Numbered each arrow of sequence diagram',
 			'FEATURE: Add color and url functionality to sequence diagram'
@@ -10148,29 +10153,41 @@ wpsn.menu.calculator = {
 
 	wpsn.cropToElement = function (image, $element, {includeBorders=false}={}) {
 		return new Promise(function(resolve){
-			let canvas = document.createElement('canvas');
-			canvas.width = $element.width();
-			canvas.height = $element.height();
-
 			// Calculate the correct position of the element on the canvas
 			let prevTop = $element.offset().top - window.scrollY;
 			let prevLeft = $element.offset().left - window.scrollX;
 
-			let ctx = canvas.getContext('2d');
 			let borderWidth = includeBorders ? 1 : 0;
 			let extraTrim = includeBorders ? 0 : 1;
 
 			let ratio = window.devicePixelRatio;
-			//canvas.style.width = canvas.width+'px';
-			//canvas.style.height = canvas.height+'px';
+			
+			let canvas = document.createElement('canvas');
+			canvas.width = $element.width();
+			canvas.height = $element.height();
+			
 			//canvas.width *= ratio;
 			//canvas.height *= ratio;
+			
+			let ctx = canvas.getContext('2d');
+		
 			ctx.scale(1 / ratio, 1 / ratio);
+			ctx.translate(1/ratio, 1/ratio)
+			let srcX = (prevLeft - (1 * borderWidth) + (1 * extraTrim)) * ratio;
+			let srcY = (prevTop - (1 * borderWidth) + (1 * extraTrim)) * ratio;
+			let srcW = ($element.width() + (2 * borderWidth) - (1 * extraTrim)) * ratio;
+			let srcH = ($element.height() + (2 * borderWidth) - (1 * extraTrim)) * ratio;
 
-			ctx.drawImage(image, (prevLeft - (1 * borderWidth) + (1 * extraTrim)) * ratio, (prevTop - (1 * borderWidth) + (1 * extraTrim)) * ratio,
-				($element.width() + (2 * borderWidth) - (1 * extraTrim)) * ratio, ($element.height() + (2 * borderWidth) - (1 * extraTrim)) * ratio,
-				(0) * ratio, (0) * ratio,
-				($element.width()) * ratio, ($element.height()) * ratio);
+			let dstX = (0) * ratio;
+			let dstY = (0) * ratio;
+			let dstW = canvas.width * ratio;
+			let dstH = canvas.height * ratio;
+
+			ctx.drawImage(image, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
+
+			//canvas.width /= ratio;
+			//canvas.height /= ratio;
+
 
 			let img = new Image();
 			img.onload = function () {

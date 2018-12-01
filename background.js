@@ -426,7 +426,7 @@ chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
 		}
 		
 		if (msg.screenshot) {
-			chrome.tabs.captureVisibleTab(null, {quality:100}, function(dataUrl) {
+			chrome.tabs.captureVisibleTab(null, {format:'png', quality:100}, function(dataUrl) {
 				sendResponse({ screenshotUrl: dataUrl });
 			});
 		}
