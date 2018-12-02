@@ -8811,7 +8811,8 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
-		'3.0.9': [
+		'3.0.10': [
+			'FIX: Screenshot was blurry depending on the display in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/camera.svg"/>',
 			'FIX: Criteria setup was buggy in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/circle.svg"/>'
 		],
 		'3.0.8': [
@@ -10153,41 +10154,37 @@ wpsn.menu.calculator = {
 
 	wpsn.cropToElement = function (image, $element, {includeBorders=false}={}) {
 		return new Promise(function(resolve){
-			// Calculate the correct position of the element on the canvas
+			let width = $element.width();
+			let height = $element.height();
 			let prevTop = $element.offset().top - window.scrollY;
 			let prevLeft = $element.offset().left - window.scrollX;
-
 			let borderWidth = includeBorders ? 1 : 0;
 			let extraTrim = includeBorders ? 0 : 1;
 
-			let ratio = window.devicePixelRatio;
-			
 			let canvas = document.createElement('canvas');
-			canvas.width = $element.width();
-			canvas.height = $element.height();
-			
-			//canvas.width *= ratio;
-			//canvas.height *= ratio;
+			canvas.width = width;
+			canvas.height = height;
 			
 			let ctx = canvas.getContext('2d');
 		
-			ctx.scale(1 / ratio, 1 / ratio);
-			ctx.translate(1/ratio, 1/ratio)
-			let srcX = (prevLeft - (1 * borderWidth) + (1 * extraTrim)) * ratio;
-			let srcY = (prevTop - (1 * borderWidth) + (1 * extraTrim)) * ratio;
-			let srcW = ($element.width() + (2 * borderWidth) - (1 * extraTrim)) * ratio;
-			let srcH = ($element.height() + (2 * borderWidth) - (1 * extraTrim)) * ratio;
+			let srcX = (prevLeft - (1 * borderWidth) + (1 * extraTrim));
+			let srcY = (prevTop - (1 * borderWidth) + (1 * extraTrim));
+			let srcW = (width + (2 * borderWidth) - (1 * extraTrim));
+			let srcH = (height + (2 * borderWidth) - (1 * extraTrim));
 
-			let dstX = (0) * ratio;
-			let dstY = (0) * ratio;
-			let dstW = canvas.width * ratio;
-			let dstH = canvas.height * ratio;
+			let dstX = 0;
+			let dstY = 0;
+			let dstW = canvas.width;
+			let dstH = canvas.height;
+
+			let dpr = window.devicePixelRatio || 1;
+			srcX *= dpr; srcY *= dpr; srcW *= dpr; srcH *= dpr;
+			dstX *= dpr; dstY *= dpr; dstW *= dpr; dstH *= dpr;
+			ctx.scale(1/dpr, 1/dpr);
+			
+			ctx.imageSmoothingEnabled = false;
 
 			ctx.drawImage(image, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
-
-			//canvas.width /= ratio;
-			//canvas.height /= ratio;
-
 
 			let img = new Image();
 			img.onload = function () {
