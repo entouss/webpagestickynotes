@@ -1150,7 +1150,7 @@
 		$('form.wpsn-highlight').removeClass('wpsn-highlight');
 	};
 	wpsn.upload = function (note, files) {
-		for (let i = 0;; i++) {
+		for (let i = 0; i< files.length; i++) {
 			const f = files[i];
 			let isWPSN = f.name.endsWith('.wpsn');
 			let isHTML = f.name.endsWith('.html');
@@ -1161,7 +1161,9 @@
 					try {
 						JSON.parse(data);
 					} catch(err) {
-						data = CryptoJS.AES.decrypt(data,chrome.runtime.id).toString(CryptoJS.enc.Utf8);
+						try {
+							data = CryptoJS.AES.decrypt(data,chrome.runtime.id).toString(CryptoJS.enc.Utf8);
+						} catch(err) {}
 					}
 					if (isHTML) {
 						try {
@@ -8811,9 +8813,10 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
-		'3.0.10': [
+		'3.0.11': [
 			'FIX: Screenshot was blurry depending on the display in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/camera.svg"/>',
-			'FIX: Criteria setup was buggy in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/circle.svg"/>'
+			'FIX: Criteria setup was buggy in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/circle.svg"/>',
+			'FIX: Dragging an image into a note resulted in an error'
 		],
 		'3.0.8': [
 			'FEATURE: Numbered each arrow of sequence diagram',
