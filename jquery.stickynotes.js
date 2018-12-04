@@ -7759,6 +7759,7 @@
 			try {
 				noteFrame.html(note.previewText || note.text);
 				mermaid.init(null, '#wpsn-frame-' + note.id);
+				wpsn.resizeSVG(note);
 				$('.node,.node .label,.edgeLabel,.edgeLabel .label,.edgePath,.actor,.note,.labelText,.labelBox', noteFrame).css('stroke', note.textcolor).css('color', note.textcolor).css('fill', note.background).css('border', note.bordercolor);
 			} catch (err) {
 				wpsn.error(err);
@@ -8813,10 +8814,11 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
-		'3.0.11': [
+		'3.0.12': [
 			'FIX: Screenshot was blurry depending on the display in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/camera.svg"/>',
 			'FIX: Criteria setup was buggy in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/circle.svg"/>',
-			'FIX: Dragging an image into a note resulted in an error'
+			'FIX: Dragging an image into a note resulted in an error',
+			'FIX: Diagram resizing was buggy in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/diagram.svg"/>'
 		],
 		'3.0.8': [
 			'FEATURE: Numbered each arrow of sequence diagram',
