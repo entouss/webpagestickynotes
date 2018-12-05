@@ -1311,8 +1311,11 @@
 		}
 		if (previewedElement) {
 			previewedElement.unbind('keyup.wpsn-preview,change.wpsn-preview').bind('keyup.wpsn-preview,change.wpsn-preview', function () {
+				let previousText = note.previewText;
 				try { note.previewText = $(this).val() || (note.previewMode == 'raw' ? $(this).get(0).innerText : $(this).get(0).innerHTML); } catch (err) { wpsn.error(err); }
-				wpsn.refreshNote(note);
+				if (previousText != note.previewText) {
+					wpsn.refreshNote(note);
+				}
 			});
 			try { note.previewText = previewedElement.val() || (note.previewMode == 'raw' ? previewedElement.get(0).innerText : previewedElement.get(0).innerHTML); } catch (err) { wpsn.error(err); }
 		}
@@ -5442,7 +5445,7 @@
 		let y2 = -1;
 		for (let i = 0; i < notes.length; i++) {
 			let tnote = notes[i];
-			if (!tnote || tnote.isPopup) { continue; }
+			if (!tnote) { continue; }
 			let x = parseFloat(tnote.pos_x) - 1;
 			let y = parseFloat(tnote.pos_y) - 1;
 			let w = parseFloat(tnote.width) + 2;
@@ -5503,7 +5506,7 @@
 
 		try {
 			let $frame = wpsn.getNoteDiv(frame_note);
-			let imageAndCanvas = await wpsn.takeScreenshot($frame, {waitTime:wpsn.screenshotTimeout(e), watermark});
+			let imageAndCanvas = await wpsn.takeScreenshot($frame, {waitTime:wpsn.screenshotTimeout(e), watermark, includeBorders:notes.length>1});
 			let img = imageAndCanvas.image;
 			//callback(img, $element, note, callbackOptions)
 			await wpsn.processScreenshot(img, frame_note, { download:true });
@@ -9376,31 +9379,29 @@ wpsn.menu.calculator = {
 				label = (selectNotes == 'notes' ? notes.length + ' ' : '') + 'provided ' + selectNotes;
 				type = 'provided';
 			} else {
+				let activeNotes = wpsn.getActiveNotes();
 				let editedNotes = await wpsn.currentlyEditedNotes();
-				if (editedNotes && editedNotes.length > 0) {
+				if (activeNotes.selected && activeNotes.selected.length > 0) {
+					notes = activeNotes.selected;
+					label = notes.length + ' selected ' + (notes.length > 1 ? 'notes' : 'note');
+					type = 'selected';
+				} else if (editedNotes && editedNotes.length > 0) {
 					notes = editedNotes;
 					label = (notes.length > 1 ? notes.length : '') + ' edited ' + (notes.length > 1 ? 'notes' : 'note');
 					type = 'edited';
-				} else {
-					let activeNotes = wpsn.getActiveNotes();
-					if (activeNotes.selected && activeNotes.selected.length > 0) {
-						notes = activeNotes.selected;
-						label = notes.length + ' selected ' + (notes.length > 1 ? 'notes' : 'note');
-						type = 'selected';
-					} else if (activeNotes.hovered) {
-						notes = [activeNotes.hovered];
-						label = 'note below cursor';
-						type = 'hovered';
-					} else if (activeNotes.all && activeNotes.all.length > 0) {
-						notes = [];
-						for (let note of activeNotes.all) {
-							if (!note.isPopup && !note.deleted) {
-								notes.push(note);
-							}
+				} else if (activeNotes.hovered) {
+					notes = [activeNotes.hovered];
+					label = 'note below cursor';
+					type = 'hovered';
+				} else if (activeNotes.all && activeNotes.all.length > 0) {
+					notes = [];
+					for (let note of activeNotes.all) {
+						if (!note.isPopup && !note.deleted) {
+							notes.push(note);
 						}
-						label = 'all ' + notes.length + ' ' + (notes.length > 1 ? 'notes' : 'note');
-						type = 'all';
 					}
+					label = 'all ' + notes.length + ' ' + (notes.length > 1 ? 'notes' : 'note');
+					type = 'all';
 				}
 			}
 		}
@@ -9662,7 +9663,7 @@ wpsn.menu.calculator = {
 				}
 			}).unbind('keyup.wpsn').bind('keyup.wpsn', function (e) {
 				wpsn.destroySelectable();
-				if (e.keyCode == 16) {//Shift
+				if (e.shiftKey) {//Shift
 					let $note = $('.wpsn-sticky');
 					if ($note.data('wpsn-resizable')) {
 						$note.removeData('wpsn-resizable');
@@ -10254,7 +10255,7 @@ wpsn.menu.calculator = {
 							}
 						},
 						form: function () {
-							return '<div class="panel panel-default"><div class="panel-heading">Preview Snapshot:</div><div class="panel-body" style="text-align:center;backgroundz:blue"><img src="' + img.src + '" class="wpsn-no-draggable wpsn-base64 wpsn-media wpsn-media-preview" style="height:auto;width:auto;max-width:1000px"/></div></div>' +
+							return '<div class="panel panel-default"><div class="panel-heading">Preview Snapshot:</div><div class="panel-body" style="text-align:center;backgroundz:blue"><img src="' + img.src + '" class="wpsn-no-draggable wpsn-base64 wpsn-media wpsn-media-preview" style="height:auto;width:auto;max-width-BAK:1000px"/></div></div>' +
 								'<button style="width:100%" class="btn btn-primary wpsn-upload" data-image="' + img.src + '" data-service="imgur">Upload Snapshot To Imgur <img width="10" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/loader.svg" class="wpsn-loading" style="display:none"/></button><div class="wpsn-uploaded"></div><br/>' +
 								'<div class="panel panel-default"><div class="panel-heading">Download Snapshot As:</div><div class="panel-body"><input name="filename" class="form-control" placeholder="webpagestickynotes.png"/><input type="hidden" name="html" value=""/></div></div>';
 						},

@@ -173,10 +173,10 @@ textarea.wpsn-prompt {
 .wpsn-media-meme {
 	top: 56px;
 }
-.wpsn-media-filter, .wpsn-media-crop, .wpsn-media-meme {
+.wpsn-side-menu, .wpsn-media-filter, .wpsn-media-crop, .wpsn-media-meme {
 	display: none;
 }
-.wpsn-sticky:hover .wpsn-media-filter.wpsn-media-filter-show,.wpsn-sticky:hover .wpsn-media-crop.wpsn-media-crop-show,.wpsn-sticky:hover .wpsn-media-meme.wpsn-media-meme-show {
+.wpsn-sticky:hover .wpsn-side-menu, .wpsn-sticky:hover .wpsn-media-filter.wpsn-media-filter-show,.wpsn-sticky:hover .wpsn-media-crop.wpsn-media-crop-show,.wpsn-sticky:hover .wpsn-media-meme.wpsn-media-meme-show {
 	display: block;
 }
 
