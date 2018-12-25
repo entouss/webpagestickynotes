@@ -1002,8 +1002,8 @@
 				let width = $noteDiv.width();
 				let height = $noteDiv.height();
 
-				let rightPosx = pos_x + width;
-				let leftPosx = pos_x - width;
+				let rightPosx = pos_x + width + 1;
+				let leftPosx = pos_x - width - 1;
 				let bottomPosy = pos_y + height;
 				let topPosy = pos_y - height;
 
@@ -1317,7 +1317,7 @@
 					wpsn.refreshNote(note);
 				}
 			});
-			try { note.previewText = previewedElement.val() || (note.previewMode == 'raw' ? previewedElement.get(0).innerText : previewedElement.get(0).innerHTML); } catch (err) { wpsn.error(err); }
+			try { note.previewText = previewedElement.val() || ((note.previewMode == 'raw' && previewedElement.get(0)) ? previewedElement.get(0).innerText : previewedElement.get(0).innerHTML); } catch (err) { wpsn.error(err); }
 		}
 		let _note_frame = $('<div id="wpsn-frame-' + note.id + '" class="wpsn-frame" style="zoom:' + (note.zoom || 100) + '%;"/>');
 		note.font = note.font ? note.font : { family: 'Verdana' };
@@ -1338,7 +1338,7 @@
 		let _popupClass = '';
 		let _alertClass = '';
 		let _noteClass = options.class;
-		if (note.isPopup && !note.lock) {
+		if (note.isPopup && !note.lock && !note.preview) {
 			_background = '';
 			_popupClass = 'wpsn-popup';
 		}
@@ -3708,7 +3708,8 @@
 		'zoom-in-note': async function (commandName, info) { await wpsn.zoomInEffectiveNotes(info.note); },
 		'zoom-out-note': async function (commandName, info) { await wpsn.zoomOutEffectiveNotes(info.note); },
 		'zoom-on-note': async function (commandName, info) { await wpsn.zoomOnEffectiveNotes(info.note); },
-		'checklist': async function (commandName, info) { await wpsn.createChecklist(); },
+		'create-checklist': async function (commandName, info) { await wpsn.createChecklist(); },
+		'render-checklist': async function (commandName, info) { await wpsn.renderChecklistEffectiveNotes(info.note); },
 		'indent-prettify-note': async function (commandName, info) { await wpsn.indentPrettifyEffectiveNotes(info.note); },
 		'minify-prettify-note': async function (commandName, info) { await wpsn.minifyPrettifyEffectiveNotes(info.note); },
 		'indent-minify-prettify-note-undo': async function (commandName, info) { await wpsn.undoIndentMinifyPrettifyEffectiveNotes(info.note); },
@@ -7755,6 +7756,53 @@
 			'js2flowchart': { name: 'JS 2 Flowchart', id: 5649385089, render: function (note) { wpsn.menu.diagram.renderJs2Flowchart(note); }, description: 'Turns JS code into a flowchart. <a href="https://github.com/Bogdan-Lyashenko/js-code-to-svg-flowchart" target="_blank">More information</a>. (Powered by <a href="https://github.com/Bogdan-Lyashenko/js-code-to-svg-flowchart" target="_blank">js2flowchart.js</a>)'},
 			'chartjs': { name: 'Chart.js', id: 3747823508, render: function (note) { wpsn.menu.diagram.renderChartjs(note); }, description: 'Creates beautiful charts. <a href="http://www.chartjs.org/docs/latest/charts/" target="_blank">More information</a>. (Powered by <a href="http://www.chartjs.org/" target="_blank">Chart.js</a>)'},
 			'treediagram': { name: 'Tree Diagram(beta)', id: 7659346992, render: function (note) { wpsn.menu.diagram.renderTreeDiagram(note); }, description: 'Turns text into a UML tree diagram. (Powered by <a href="http://webpagestickynotes.com"><img height="24" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/logo/wpsn-logo.png"/></a> + <a href="http://d3js.org/" target="_blank">d3.js</a>)' },
+			'directory': { name: 'Directory Structure', id: 7632954307, render: function (note) { wpsn.menu.diagram.renderDirectoryStructure(note); }, description: 'Turns text into a directory structure. Lines beginning with - or x are transformed into open or closed folders and into files if no entries are found below the line. Renders into Markdown otherwise' },
+		},
+		'renderDirectoryStructure': function (note) {
+			let text = note.text;
+		
+			text = text
+				.replace(/(^|\n)(\s*|\t*)-\s/g, '$1$2- <span class="wpsn-md-node wpsn-md-expanded"></span> ')
+				.replace(/(^|\n)(\s*|\t*)x\s/g, '$1$2- <span class="wpsn-md-node wpsn-md-collapsed"></span> ');
+
+			note.previewText = text;
+
+			wpsn.renderMarkdown(note);
+
+			let noteDiv = wpsn.getNoteDiv(note);
+			let noteFrame = $('.wpsn-frame', noteDiv);
+
+			$('.wpsn-md-node').each(function(index){
+				let $this = $(this);
+				if ($this.find('+ul').size() == 0) {
+					$this.addClass('wpsn-md-leaf')
+				} else {
+					$this.removeClass('wpsn-md-leaf')
+				}
+			});
+			$('.wpsn-md-node', noteFrame).click(function(){
+				let $cb = $(this);
+				if ($cb.is('.wpsn-md-expanded')) {
+					$cb.removeClass('wpsn-md-expanded').removeClass('wpsn-md-collapsed').addClass('wpsn-md-collapsed');
+				} else {
+					$cb.removeClass('wpsn-md-expanded').removeClass('wpsn-md-collapsed').addClass('wpsn-md-expanded')
+				}
+
+				let ttext = note.text;
+				let tttext = '';
+				let token = '|~^~|';
+				$('.wpsn-md-node', noteFrame).each(function(index){
+					let replaceWith = $(this).is('.wpsn-md-expanded')?'-':'x';
+					ttext = ttext.replace(/(^|\n)(\s*|\t*)[-|x]/, '$1$2'+replaceWith+token);
+					tttext += ttext.split(token)[0];
+					ttext = ttext.split(token)[1];
+
+				});
+				tttext += ttext;
+				note.text = tttext;
+				wpsn.save(note);
+			});
+			$('.wpsn-md-node', noteFrame).parent('li').parent('ul,ol').addClass('wpsn-md-node-list');
 		},
 		'renderMermaidDiagram': function (note) {
 			let noteDiv = wpsn.getNoteDiv(note);
@@ -8174,7 +8222,11 @@ function factorial(number) {
 			checklist: { name: 'Checklist', id: 9486429094, render: async function (note) { await wpsn.renderChecklist(note); }, description: 'Renders note in checklist mode.' }
 		},
 		leftClick: {
-			command: 'checklist',
+			command: 'render-checklist',
+			description: 'Render note as checklist. Lines beginning with - or x are transformed into checklists. Renders into Markdown otherwise'
+		},
+		rightClick: {
+			command: 'create-checklist',
 			description: 'Create new note in checklist mode. Lines beginning with - or x are transformed into checklists. Renders into Markdown otherwise'
 		}
 	};
@@ -8268,6 +8320,20 @@ function factorial(number) {
 			text += '\n';
 		}
 		return text;
+	};
+
+	wpsn.renderChecklistEffectiveNotes = function (noteOrNotes) {
+		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.renderChecklistNote, 'Are you sure you want to render {0} as checklist?');
+	};
+
+	wpsn.renderChecklistNote = async function (note) {
+		if (note) {
+			wpsn.stopEditing(note);
+			note.mode = wpsn.menu.mode.modes.checklist.id;
+			await wpsn.refreshNote(note);
+			await wpsn.autoResize(note);
+			//await wpsn.refreshNote(note);
+		}
 	};
 
 	wpsn.indentPrettifyEffectiveNotes = function (noteOrNotes) {
@@ -8817,6 +8883,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'3.0.14': [
+			'FEATURE: Create directory structure in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/diagram.svg"/>'
+		],
 		'3.0.12': [
 			'FIX: Screenshot was blurry depending on the display in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/camera.svg"/>',
 			'FIX: Criteria setup was buggy in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/circle.svg"/>',
@@ -9616,7 +9685,7 @@ wpsn.menu.calculator = {
 						wpsn.destroySelectable();
 					}
 				}
-				if (e.shiftKey) {
+				if (e.shiftKey && !e.ctrlKey) {
 					let $note = $('.wpsn-sticky');
 					if (!$note.resizable('option', 'disabled')) {
 						$note.data('wpsn-resizable', true);

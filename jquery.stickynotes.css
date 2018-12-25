@@ -75,6 +75,41 @@
   background-image: url('chrome-extension://__MSG_@@extension_id__/images/checkbox_off.svg');
 }
 
+
+.wpsn-md-node-list ul {
+  border-left: 1px dashed #ccc;
+}
+.wpsn-md-node-list li {
+  list-style-type: none;
+}
+
+.wpsn-md-node {
+  display: inline-block;
+  height: 14px;
+  width: 14px;
+  position: relative;
+  top: 5px;
+  cursor: pointer;
+}
+
+.wpsn-md-node:hover {
+  background-color: #ccc;
+}
+
+.wpsn-md-node.wpsn-md-expanded {
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/folder_open.svg');
+}
+.wpsn-md-node.wpsn-md-collapsed {
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/folder.svg');
+}
+.wpsn-md-node.wpsn-md-leaf {
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/file.svg');
+}
+
+.wpsn-md-node.wpsn-md-collapsed + ul {
+  display: none;
+}
+
 .wpsn-prompt {
 	width: 99%;
 }
