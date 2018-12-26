@@ -7774,7 +7774,7 @@
 
 			$('.wpsn-md-node').each(function(index){
 				let $this = $(this);
-				if ($this.find('+ul').size() == 0) {
+				if ($this.siblings('ul').size() == 0) {
 					$this.addClass('wpsn-md-leaf')
 				} else {
 					$this.removeClass('wpsn-md-leaf')
@@ -8883,7 +8883,7 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
-		'3.0.14': [
+		'3.0.15': [
 			'FEATURE: Create directory structure in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/diagram.svg"/>'
 		],
 		'3.0.12': [
