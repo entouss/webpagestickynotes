@@ -3700,6 +3700,7 @@
 		'b-commit-to-github': async function (commandName, info) { await wpsn.commitToGitHubEffectiveNotes(info.note); },
 		'b-paste-copied-notes': async function (commandName, info) { await wpsn.pasteCopiedNotes(info.text, false); },
 		'b-paste-copied-notes-original-coordinates': async function (commandName, info) { await wpsn.pasteCopiedNotes(info.text, true); },
+		'b-stop-editing-note':  async function (commandName, info) { await wpsn.stopEditingEffectiveNotes(info.note); },
 		'minimize-note': async function (commandName, info) { await wpsn.minimizeEffectiveNotes(info.note); },
 		'maximize-note': async function (commandName, info) { await wpsn.maximizeEffectiveNotes(info.note); },
 		'change-color-note': async function (commandName, info) { await wpsn.changeEffectiveNotesColor(info.note, info.menuButton.data('color'), info.menuButton.css('background')); },
@@ -5186,10 +5187,10 @@
 						let $pathnameCheck = $('.' + wpsn_ + 'scope_pathname');
 						let $searchCheck = $('.' + wpsn_ + 'scope_search');
 						let $hashCheck = $('.' + wpsn_ + 'scope_hash');
+						$('.form-control').unbind('change keyup keydown blur').bind('change keyup keydown blur', function () { $(this).siblings('input').val($(this).val()); });
 						$('.' + wpsn_ + 'url').unbind('change keyup keydown blur').bind('change keyup keydown blur', function () {
 							if ($(this).val()) {
 								let loc = wpsn.location($(this).val());
-								$('.form-control').unbind('change').bind('change', function () { $(this).siblings('input').val($(this).val()); });
 								let $protocol = $protocolCheck.siblings('.form-control'); $protocol.val(loc.protocol); $protocol.trigger('change'); if (wpsn.settings.scope && wpsn.settings.scope.protocol == true) {$protocolCheck.prop('checked', true);}
 								let $hostname = $hostnameCheck.siblings('.form-control'); $hostname.val(loc.hostname); $hostname.trigger('change'); if (wpsn.settings.scope && wpsn.settings.scope.hostname == true) {$hostnameCheck.prop('checked', true);}
 								let $port = $portCheck.siblings('.form-control'); $port.val(loc.port); $port.trigger('change'); if (wpsn.settings.scope && wpsn.settings.scope.port == true) {$portCheck.prop('checked', true);}
@@ -9633,7 +9634,9 @@ wpsn.menu.calculator = {
 			wpsn.save(selectedNote);
 		}
 	};
-
+	wpsn.stopEditingEffectiveNotes = function (noteOrNotes) {
+		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.stopEditing);
+	};
 	wpsn.activeNote = function () {
 		return wpsn.getNoteFromDiv($(document.activeElement).closest('.wpsn-sticky'));
 	};
