@@ -6231,6 +6231,13 @@
 		leftClick: {
 			command: 'delete-note',
 			applyToAll: true
+		},
+		rightClick: {
+			'description': 'Cleanup deleted notes.\nNotes that are deleted are purged of content but the ID and timestamp remain (These notes continue to show in the "Manage Note" table with minimal size).\nThis is done to reconcile the synchronization of notes.\nIf the deleted notes are fully deleted locally, on the next synchronization, these notes previously synced on Google Drive would reappear.\nOn synchronization, these deleted notes are cleaned up automatically.\n\nPlease note that on manually cleaning the deleted notes, they might reappear with their old content on the next synchronization!',
+			'action': async function (note) {
+				await wpsn.confirm({}, 'Notes that are deleted are purged of content but the ID and timestamp remain<br/>(These notes continue to show in the "Manage Note" table with minimal size).<br/><br/>This is done to reconcile the synchronization of notes.<br/><br/>If the deleted notes are fully deleted locally, on the next synchronization, these notes previously synced on Google Drive would reappear.<br/>On synchronization, these deleted notes are cleaned up automatically.<br/><br/>Please note that on manually cleaning the deleted notes, they might reappear with their old content on the next synchronization!<br/><br/>Are you sure you want to cleanup deleted notes?');
+				wpsn.cleanupDeletedNotes();
+			}
 		}
 	};
 
@@ -8884,6 +8891,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'3.0.16': [
+			'FEATURE: Added ability to add shortcut to stop editing note'
+		],
 		'3.0.15': [
 			'FEATURE: Create directory structure in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/diagram.svg"/>'
 		],
