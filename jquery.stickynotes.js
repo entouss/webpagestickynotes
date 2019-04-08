@@ -970,11 +970,12 @@
 
 
 			var currentNote = note;
+			textarea.data('initiallyEmpty', initiallyEmpty)
 			textarea.unbind('blur').blur(function (e) {
 				currentNote.text = $(this).html();
 				if (!e || !e.relatedTarget || !e.relatedTarget.className || e.relatedTarget.className.indexOf('mce-widget') < 0) {
 					if (!$(this).data('wpsn_dont_stop_editing')) {
-						wpsn.stopEditingCurrentlyEditedNotes(null, initiallyEmpty);
+						wpsn.stopEditingCurrentlyEditedNotes(null, textarea.data('initiallyEmpty'));
 					} else {
 						$(this).removeData('wpsn_dont_stop_editing').focus();
 					}
@@ -988,6 +989,10 @@
 					window.document.execCommand('insertText', false, text);
 				});
 			}
+			$('.wpsn-menu-delete').mousedown(async function (e) {
+				e.preventDefault;
+				textarea.data('initiallyEmpty', false);
+			});
 			let preview = $('<img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/right_arrow.svg" class="wpsn-side-menu wpsn-preview" title="Click to preview input in another note"/>');
 			preview.mousedown(async function (e) {
 				e.preventDefault;
@@ -8891,9 +8896,6 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
-		'3.0.16': [
-			'FEATURE: Added ability to add shortcut to stop editing note'
-		],
 		'3.0.15': [
 			'FEATURE: Create directory structure in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/diagram.svg"/>'
 		],
