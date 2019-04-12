@@ -1719,9 +1719,16 @@
 		}
 	};
 
+	wpsn.absoluteUrl = function(url) {
+		var link = document.createElement("a");
+    	link.href = url;
+    	return link.href;
+	};
+
 	wpsn.fetch = async function (note, url, interval, script, fetchWhat) {
 		let func = async function () {
-			let data = await wpsn.getUrlData(url, interval);
+
+			let data = await wpsn.getUrlData(wpsn.absoluteUrl(url), interval);
 			if (fetchWhat == 'note') {
 				let tnote;
 				try {
