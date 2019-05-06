@@ -10275,13 +10275,22 @@ wpsn.menu.calculator = {
 			let dstH = canvas.height;
 
 			let dpr = window.devicePixelRatio || 1;
-			srcX *= dpr; srcY *= dpr; srcW *= dpr; srcH *= dpr;
-			dstX *= dpr; dstY *= dpr; dstW *= dpr; dstH *= dpr;
-			ctx.scale(1/dpr, 1/dpr);
-			
 			ctx.imageSmoothingEnabled = false;
 
-			ctx.drawImage(image, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
+			if (dpr != 1) {
+				srcX *= dpr; srcY *= dpr; srcW *= dpr; srcH *= dpr;
+
+				var oc = document.createElement('canvas'),
+				octx = oc.getContext('2d');
+		
+				oc.width = canvas.width * dpr;
+				oc.height = canvas.height * dpr;
+				octx.drawImage(image, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
+			
+				ctx.drawImage(oc, 0, 0, oc.width, oc.height);
+			} else {
+				ctx.drawImage(image, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
+			}
 
 			let img = new Image();
 			img.onload = function () {
