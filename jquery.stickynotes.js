@@ -9754,7 +9754,7 @@ wpsn.menu.calculator = {
 				}
 			}).unbind('keyup.wpsn').bind('keyup.wpsn', function (e) {
 				wpsn.destroySelectable();
-				if (e.shiftKey) {//Shift
+				if (e.shiftKey || e.key=="Shift") {//Shift
 					let $note = $('.wpsn-sticky');
 					if ($note.data('wpsn-resizable')) {
 						$note.removeData('wpsn-resizable');
