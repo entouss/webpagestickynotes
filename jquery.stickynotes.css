@@ -358,6 +358,10 @@ textarea.wpsn-prompt {
 	border: 1px solid #fcc;
 }
 
+.wpsn-mouseover {
+	box-shadow: 2px 2px 8px 1px rgba(200, 200, 200, 0.5);
+}
+
 .wpsn-selected, .wpsn-selected > .wpsn-menu-maximize {
 	box-shadow: 2px 2px 8px 1px rgba(0,0,200,.7);
 }

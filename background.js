@@ -924,6 +924,7 @@ let shortcutConfig = {
 	'b-paste-copied-notes'							: { context : ['page'] },
 	'b-paste-copied-notes-original-coordinates'		: { context : ['page'] },
 	'b-commit-to-github'							: { context : ['page'] },
+	//'b-compare-github-repos'						: { context : ['page'] },
 	"b-stop-editing-note"							: { context : ['page'] },
 	'c-add-media'									: { context : ['image','video','audio'] },
 	'c-copy-media'									: { context : ['image','video','audio'] },

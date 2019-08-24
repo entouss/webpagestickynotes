@@ -1405,7 +1405,7 @@
 			});
 			_note_frame.after($mediaMeme);
 		}
-		let _div_wrap = $('<div id="note-' + note.id + '" style="z-index:' + (note.isAlert ? (wpsn.defaultZIndex + 10) : note.zIndex || wpsn.defaultZIndex) + ';position:absolute;'+
+		let _div_wrap = $('<div id="note-' + note.id + '" style="z-index:' + wpsn.getZIndex(note) + ';position:absolute;'+
 		(wpsn.posx(note)?'left:' + wpsn.posx(note) + ';':'')+
 		(wpsn.posy(note)?'top:' + wpsn.posy(note) + ';':'')+
 		(note.width?'width:' + note.width + 'px;':'')+
@@ -1784,6 +1784,10 @@
 		}
 	};
 
+	wpsn.colorPicker = function($input) {
+		$input.colorPicker();
+	}
+
 	wpsn.mediaFilterPrompt = function (note) {
 		{
 			$('.wpsn-media-filter-prompt').remove();
@@ -1897,7 +1901,7 @@
 						$tracer.eq(0).change();
 						let $color = $('input.wpsn_transparency_color');
 						//$color.after($('<span/>').css('font-size','x-small').append('Powered by ').append($('<a>Jquery UI Colorpicker</a>').attr('href','https://bitbucket.org/lindekleiv/jquery-ui-colorpicker')));
-						$color.colorPicker();
+						wpsn.colorPicker($color);
 						$color.bind('change', function () {
 							transparentOptions.color = $(this).val();
 							wpsn.menu.media.renderTransparentAndVectorizer(originalNote, { transparentOptions: transparentOptions, vectorizerOptions: tracerValues });
@@ -2603,8 +2607,15 @@
 			wpsn.saveNoteStateForUndo(_note);
 			let oldPosX = _note.pos_x;
 			let oldPosY = _note.pos_y;
-			_note.pos_x = wpsn.getNoteDiv(_note).position().left;
-			_note.pos_y = wpsn.getNoteDiv(_note).position().top;
+			let _noteDiv = wpsn.getNoteDiv(_note);
+			if (_note.angle) {
+				_noteDiv.css('transform','rotate(0rad)');
+			}
+			_note.pos_x = _noteDiv.position().left;
+			_note.pos_y = _noteDiv.position().top;
+			if (_note.angle) {
+				_noteDiv.css('transform','rotate('+_note.angle+'rad)');
+			}
 			if (wpsn.isMultiPosition(_note)) {
 				wpsn.setScopedProp(_note,'pos_x',_note.pos_x);
 				wpsn.setScopedProp(_note,'pos_y',_note.pos_y);
@@ -3326,6 +3337,11 @@
 		});
 	};
 
+	wpsn.getZIndex = function (note) {
+		let order = note.order || 0;
+		return note.zIndex || (note.isAlert ? (wpsn.defaultZIndex + order + 1000) : (wpsn.defaultZIndex+order));
+	}
+
 	wpsn.reorderNote = function (note) {
 		let index = wpsn.getNoteIndex(note.id);
 		let $this = wpsn.getNoteDiv(note);
@@ -3710,6 +3726,7 @@
 		'b-copy-note': async function (commandName, info) { await wpsn.copyEffectiveNotes(info.note); },
 		'b-cut-note': async function (commandName, info) { await wpsn.cutEffectiveNotes(info.note); },
 		'b-commit-to-github': async function (commandName, info) { await wpsn.commitToGitHubEffectiveNotes(info.note); },
+		'b-compare-github-repos': async function (commandName, info) { await wpsn.compareRepos(info.note); },
 		'b-paste-copied-notes': async function (commandName, info) { await wpsn.pasteCopiedNotes(info.text, false); },
 		'b-paste-copied-notes-original-coordinates': async function (commandName, info) { await wpsn.pasteCopiedNotes(info.text, true); },
 		'b-stop-editing-note':  async function (commandName, info) { await wpsn.stopEditingEffectiveNotes(info.note); },
@@ -4630,13 +4647,17 @@
 			let $that = $(this);
 			wpsn.delay(function () {
 				let fontFamily = $that.val();
+				
 				$that.siblings('.wpsn_sample_text_div').find('.wpsn_sample_text').css('font-family', fontFamily || 'inherit');
 				if ($.inArray(fontFamily, wpsn.defaultGoogleFonts) && $.inArray(fontFamily, wpsn.loadedFonts) < 0) {
 					wpsn.loadFonts([fontFamily]);
 				}
-				if (!preventResize) wpsn.autoResize(note);
+				//if (!preventResize) wpsn.autoResize(note);
 			}, 1000);
-		}).trigger('input').focus(function () { $(this).select(); }).focus();
+		}).trigger('input')
+		.focus(function () { 
+			$(this).select(); 
+		}).focus();
 		noteDiv.find('[name="wpsn_font_size"]').unbind('change').bind('change', function () {
 			let size = $(this).val();
 			size = size ? parseInt(size) : null;
@@ -4653,7 +4674,7 @@
 			if (!preventResize) wpsn.autoResize(note);
 		}).change();
 		let colorInput = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"],input[name="wpsn_mediatextcolor"]');
-		colorInput.colorPicker();
+		wpsn.colorPicker(colorInput);
 		colorInput.keyup(function () {
 			$(this).css('background', $(this).val());
 			$(this).change();
@@ -5346,7 +5367,7 @@
 					input.after($('<span/>').css('font-size', 'x-small').append('<br/>Powered by ').append($('<a>Jquery UI Colorpicker</a>').attr('href', 'https://bitbucket.org/lindekleiv/jquery-ui-colorpicker')));
 					input.after($('<div class="wpsn-canvas-color-div"></div>'));
 					input.after($predefined);
-					input.colorPicker();
+					wpsn.colorPicker(input);
 					input.colorPicker('setColor', defaultColor);
 					input.keyup(function () {
 						let $this = $(this);
@@ -5395,7 +5416,7 @@
 		for (let color of colors) {
 			$colors += wpsn.predifinedColor(color);
 		}
-		return '<ul class="wpsn-predefined-colors" style="padding:0">' + $colors + '</ul>';
+		return '<ul class="wpsn-predefined-colors" style="padding:0;clear:both">' + $colors + '</ul>';
 	};
 	wpsn.predifinedColor = function (color) {
 		let background = (color == wpsn.transparent ? '#fff url(\'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/transparent_grid.png\') no-repeat -2px -2px' : color);
@@ -7267,7 +7288,7 @@
 				popup: { minWidth: 600 },
 				refresh: true,
 				form: function () {
-					return '<div class="panel panel-default"><div class="panel-heading">Media:</div><div class="panel-body"><ol><li>Right click an image, music or video from another web page and copy its URL. </li><li>Paste the URL below.</li></ol>The note will <i>attempt</i> to render the media.<br/><br/>URL:<input type="text" style="width:100%" name="media"/><br/>Caption:<textarea name="caption" style="width:100%;height:200px"/><br/>Tip: You can also drag and drop an image from another window into a note.</div></div><div class="panel panel-default"><div class="panel-heading">Background mode:</div><div class="panel-body"><input type="radio" name="canvas" id="wpsn-none" value="" checked="checked"/> <label for="wpsn-none">None</label><br/><input type="radio" name="canvas" id="wpsn-frameless" value="frameless"/> <label for="wpsn-frameless">Frameless (no background, no border, media fits to note)</label><br/><input type="radio" name="canvas" id="wpsn-sticker" value="' + wpsn.transparent + '|' + wpsn.transparent + '"/> <label for="wpsn-sticker">Sticker Mode (transparent background & border)</label><br/><input type="radio" name="canvas" id="wpsn-whiteGray" value="#fff|#aaa"/> <label for="wpsn-whiteGray">Canvas Mode (white background / gray border)</label></div></div>';
+					return '<div class="panel panel-default"><div class="panel-heading">Media:</div><div class="panel-body"><ol><li>Right click an image, music or video from another web page and copy its URL. </li><li>Paste the URL below.</li></ol>The note will <i>attempt</i> to render the media.<br/><br/>URL:<input type="text" style="width:100%" name="media" value="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/transparent.gif"/><br/>Caption:<textarea name="caption" style="width:100%;height:200px"/><br/>Tip: You can also drag and drop an image from another window into a note.</div></div><div class="panel panel-default"><div class="panel-heading">Background mode:</div><div class="panel-body"><input type="radio" name="canvas" id="wpsn-none" value="" checked="checked"/> <label for="wpsn-none">None</label><br/><input type="radio" name="canvas" id="wpsn-frameless" value="frameless"/> <label for="wpsn-frameless">Frameless (no background, no border, media fits to note)</label><br/><input type="radio" name="canvas" id="wpsn-sticker" value="' + wpsn.transparent + '|' + wpsn.transparent + '"/> <label for="wpsn-sticker">Sticker Mode (transparent background & border)</label><br/><input type="radio" name="canvas" id="wpsn-whiteGray" value="#fff|#aaa"/> <label for="wpsn-whiteGray">Canvas Mode (white background / gray border)</label></div></div>';
 				},
 				callback: function (note) {
 					let props = note[wpsn.menu.media.modes.media.id];
@@ -8527,10 +8548,172 @@ wpsn.menu.calculator = {
 			applyToAll : true
 		},
 		rightClick: {
-			action: function(note) {
-				console.log(JSON.stringify(wpsn.getSnappedNotes(note),null,4));
+			command: 'b-compare-github-repos'
+		}
+	};
+
+	wpsn.compareRepos = async function (noteOrNotes) {
+		let effectiveNotes = await wpsn.getEffectiveNotes(noteOrNotes);
+		let note = effectiveNotes.notes[0];
+
+		var data = await wpsn.fetchReposData(note.text.split('\n'));
+		var output = await wpsn.printJsonData(data);
+		var $note = wpsn.getNoteFrame(note);
+		$note.html(output)
+		$note.find('table').dataTable({
+			"paging": false, "searching": false, "info": false
+		});
+	};
+
+	wpsn.fetchReposData = async function(urls) {
+		let data = {};
+		let promises = [];
+		for (let i = 0; i < urls.length; i++) {
+			let url = urls[i];
+			if (!url) continue;
+			promises.push(wpsn.fetchRepoData(url));
+		}
+		await Promise.all(promises).then(function(values) {
+			for (let i = 0; i < values.length; i++) {
+				data[urls[i]] = values[i];
+			}
+		});
+		return data;
+	};
+
+	wpsn.fetchRepoData = async function(url) {
+		let data = {};
+
+		let link = document.createElement('a');
+		link.href = url
+		link.domain = link.protocol +'//'+ link.hostname;
+
+		let html = await wpsn.getUrlData(wpsn.absoluteUrl(url), 280);
+		let $html = $(html);
+		
+		try {
+			let author = $html.find('[itemprop="author"] a');
+			data.author = {
+				name : author.text(),
+				url : link.domain+author.attr('href')
+			}
+		}catch(err){}
+		try {
+			let repo = $html.find('[itemprop="name"] a');
+			data.repo = {
+				name : repo.text(),
+				url : link.domain+repo.attr('href')
+			}
+		}catch(err){}
+		try {
+			let license = $html.find('.octicon-law').parent('a');
+			if (license.size()>0) {
+				data.license = {
+					name : license.text(),
+					url : link.domain+license.attr('href')
+				}
+			}
+		}catch(err){}
+		try{data.watchers = parseInt($html.find('a[href*="/watchers"]').html().trim().replace(',',''));}catch(err){ data.watchers = ''; }
+		try{data.stars = parseInt($html.find('a[href*="/stargazers"]').html().trim().replace(',',''));}catch(err){ data.stars = ''; }
+		try{data.forks = parseInt($html.find('a[href*="/members"]').html().trim().replace(',',''));}catch(err){ data.forks = ''; }
+		try{data.issues = parseInt($html.find('a[href*="/issues"] .Counter').html().trim().replace(',',''));}catch(err){ data.issues = ''; }
+		try{data.pulls = parseInt($html.find('a[href*="/pulls"] .Counter').html().trim().replace(',',''));}catch(err){ data.pulls = ''; }
+		try{data.projects= parseInt($html.find('a[href*="/projects"] .Counter').html().trim().replace(',',''));}catch(err){ data.projects = ''; }
+		try{data.commits= parseInt($html.find('a[href*="/commits/master"] .num').html().trim().replace(',',''));}catch(err){ data.commits = ''; }
+		try{data.branches= parseInt($html.find('a[href*="/branches"] .num').html().trim().replace(',',''));}catch(err){ data.branches = ''; }
+		try{data.releases= parseInt($html.find('a[href*="/releases"] .num').html().trim().replace(',',''));}catch(err){ data.releases = ''; }
+		try{data.contributors= parseInt($html.find('a[href*="/contributors"] .num').html().trim().replace(',',''));}catch(err){ data.contributors = ''; }
+		try {
+			let repo = $html.find('[itemprop="name"] a');
+			data.repo = {
+				name : repo.text(),
+				url : link.domain+repo.attr('href')
+			}
+		}catch(err){}
+		try {
+			$html.find('.repository-lang-stats a').each(function() {
+				let lang = $(this).find('.lang').html();
+				let percent = $(this).find('.percent').html();
+				data[lang] = percent;
+			});
+		} catch(err){}
+		return data;
+	}
+
+	wpsn.printJsonData = async function(data) {
+		let keys = [];
+		let properties = [];
+		for (var repo in data) {
+			if (data.hasOwnProperty(repo)) {
+				keys.push(repo);
+				//if (properties.length == 0) {
+					for (var property in data[repo]) {
+						if (data[repo].hasOwnProperty(property)) {
+							properties.push(property);
+						}
+					}
+			    //}
 			}
 		}
+		keys = [...new Set(keys)];
+		properties = [...new Set(properties)];
+
+		let output = '<div style="width:99%"><table>';
+		let headers = false;
+		let weight = {};
+		try {
+			for (let i = 0; i < keys.length; i++) {
+				let key = keys[i];
+				for (let j = 0; j<properties.length; j++) {
+					let prop = properties[j];
+					let value = data[key][prop];
+					weight[prop] = weight[prop] || {};
+					weight[prop].max = weight[prop].max ? weight[prop].max > value ? weight[prop].max : value : value;
+					weight[prop].min = weight[prop].min ? weight[prop].min < value ? weight[prop].min : value : value;
+				}
+			}
+		}catch(err){}
+
+		for (let i = 0; i < keys.length; i++) {
+			let key = keys[i];
+		
+		    if (!headers) {
+				output += '<thead><tr>';
+				for (let j = 0; j<properties.length; j++) {
+					let prop = properties[j];
+					output += '<td>'+prop+'</td>';
+				}
+				headers = true;
+				output += '</tr></thead>';
+			}
+			if (i==0) {
+				output += '<tbody>';
+			}
+			output += '<tr>';
+			for (let j = 0; j<properties.length; j++) {
+				let prop = properties[j];
+				let value = data[key][prop];
+				if (value instanceof Object) {
+					if (value.name && value.url) {
+						value = '<a href="'+value.url+'">'+value.name+'</a>';
+					}
+				}
+				let color = '#fff';
+				if (keys.length > 1) {
+					try {
+						let weightObj = weight[prop];
+						let weightValue = value / weightObj.max;
+						color = wpsn.weightedColor({r:200,g:200,b:200}, weightValue);
+					} catch(err){}
+				}
+				output += '<td style="background:'+color+'">'+(value?value:'')+'</td>';
+			}
+			output += '</tr>';
+		}
+		output += '<tbody>';
+		output += '</table></div>'
+		return output;
 	};
 
 	wpsn.commitToGitHubEffectiveNotes = function (noteOrNotes) {
@@ -8749,7 +8932,7 @@ wpsn.menu.calculator = {
 						maxWidth: 600, minWidth: 330, 
 						load: function (note) {
 							let colorInput = $('input[name="background"],input[name="textcolor"],input[name="bordercolor"]');
-							colorInput.colorPicker();
+							wpsn.colorPicker(colorInput);
 							colorInput.keyup(function () {
 								$(this).css('background', $(this).val());
 							}).focus(function () {
@@ -10285,9 +10468,17 @@ wpsn.menu.calculator = {
 		
 				oc.width = canvas.width * dpr;
 				oc.height = canvas.height * dpr;
+
 				octx.drawImage(image, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
 			
 				ctx.drawImage(oc, 0, 0, oc.width, oc.height);
+
+				if (true){
+					ctx.imageSmoothingEnabled = true;
+					dstX *= dpr; dstY *= dpr; dstW *= dpr; dstH *= dpr;
+					ctx.scale(1/dpr,1/dpr);
+					ctx.drawImage(image, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
+				}
 			} else {
 				ctx.drawImage(image, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
 			}
@@ -10355,7 +10546,7 @@ wpsn.menu.calculator = {
 							}
 						},
 						form: function () {
-							return '<div class="panel panel-default"><div class="panel-heading">Preview Snapshot:</div><div class="panel-body" style="text-align:center;backgroundz:blue"><img src="' + img.src + '" class="wpsn-no-draggable wpsn-base64 wpsn-media wpsn-media-preview" style="height:auto;width:auto;max-width-BAK:1000px"/></div></div>' +
+							return '<div class="panel panel-default"><div class="panel-heading">Preview Snapshot:</div><div class="panel-body" style="text-align:center;backgroundz:blue"><img src="' + img.src + '" class="wpsn-no-draggable wpsn-base64 wpsn-media wpsn-media-preview" style="height:auto;width:auto;max-width-BAK:1000px;"/></div></div>' +
 								'<button style="width:100%" class="btn btn-primary wpsn-upload" data-image="' + img.src + '" data-service="imgur">Upload Snapshot To Imgur <img width="10" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/loader.svg" class="wpsn-loading" style="display:none"/></button><div class="wpsn-uploaded"></div><br/>' +
 								'<div class="panel panel-default"><div class="panel-heading">Download Snapshot As:</div><div class="panel-body"><input name="filename" class="form-control" placeholder="webpagestickynotes.png"/><input type="hidden" name="html" value=""/></div></div>';
 						},
