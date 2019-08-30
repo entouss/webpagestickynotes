@@ -256,6 +256,9 @@ textarea.wpsn-prompt {
 	margin: 14px !important;
 }
 
+.wpsn-editing .wpsn-menu {
+  display: none;
+}
 .wpsn-menu{
 	display: inline;
 	height:14px;
@@ -267,7 +270,8 @@ textarea.wpsn-prompt {
 	/*background-image: url('chrome-extension://__MSG_@@extension_id__/images/menu.gif');*/
 	border: 0px solid #eee;
 	height: 14px;
-	width: 14px;
+  width: 14px;
+  background-size:cover;
 }
 
 
