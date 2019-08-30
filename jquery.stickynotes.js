@@ -1826,7 +1826,7 @@
 			promptHTML += '</tr><tr>';
 
 			filtersTransformsInit['wpsn_media_tracer_enabled'] = note.mediaTracer ? note.mediaTracer.enabled ? 'true' : 'false' : 'false';
-			promptHTML += '<td style="vertical-align:top;border:0" class="wpsn-media-tracer-td"><div class="panel panel-default"><div class="panel-heading">Convert To SVG <input type="checkbox" name="wpsn_media_tracer_enabled" class="wpsn_media_tracer_enabled" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/>:</div><div class="panel-body" style="height:455px"><table width="100%">';
+			promptHTML += '<td style="vertical-align:top;border:0" class="wpsn-media-tracer-td"><div class="panel panel-default"><div class="panel-heading">Convert To SVG <input type="checkbox" name="wpsn_media_tracer_enabled" class="wpsn_media_tracer_enabled" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/>:</div><div class="panel-body" style="height:455px"><table width="100%">';
 			for (let tracer in tracers) {
 				let options = '';
 				for (let i = (tracers[tracer].min || 0); i <= tracers[tracer].max; i = i + ((tracers[tracer].max - (tracers[tracer].min || 0)) / tracers[tracer].division)) {
@@ -3128,10 +3128,10 @@
 								'<a class="wpsn_new" style="float:right">New (Last Modified: ' + wpsn.formatDate(new Date(newNote.modified_date)) + ')</a>' +
 								'<a class="wpsn_old" style="float:left">Current (Last Modified: ' + wpsn.formatDate(new Date(oldNote.modified_date)) + ')</a><br/>' +
 								'<h3>Conflict Resolution</h3>' +
-								'<input type="radio" name="wpsn_conflictResolution" id="wpsn_conflictResolution_keep" value="keep" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn_conflictResolution_keep"><b>Keep current note & discard new note</b></label>' +
-								'<br/><input type="radio" name="wpsn_conflictResolution" id="wpsn_conflictResolution_replace" value="replace" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn_conflictResolution_replace"><b>Replace current note with new note</b></label>' +
-								'<br/><input type="radio" name="wpsn_conflictResolution" id="wpsn_conflictResolution_duplicate" value="duplicate" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn_conflictResolution_duplicate"><b>Keep old note & import new note with new ID</b></label>' +
-								'<br/><br/><input type="checkbox" name="wpsn_applyAll" id="wpsn_conflictResolution_applyAll" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn_conflictResolution_applyAll"><b>Apply resolution to next conflicts</b></label>' +
+								'<input type="radio" name="wpsn_conflictResolution" id="wpsn_conflictResolution_keep" value="keep" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn_conflictResolution_keep"><b>Keep current note & discard new note</b></label>' +
+								'<br/><input type="radio" name="wpsn_conflictResolution" id="wpsn_conflictResolution_replace" value="replace" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn_conflictResolution_replace"><b>Replace current note with new note</b></label>' +
+								'<br/><input type="radio" name="wpsn_conflictResolution" id="wpsn_conflictResolution_duplicate" value="duplicate" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn_conflictResolution_duplicate"><b>Keep old note & import new note with new ID</b></label>' +
+								'<br/><br/><input type="checkbox" name="wpsn_applyAll" id="wpsn_conflictResolution_applyAll" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn_conflictResolution_applyAll"><b>Apply resolution to next conflicts</b></label>' +
 								'</div>' +
 								'</div><br/>';
 							notesPromise = notesPromise.then(function () {
@@ -3924,7 +3924,7 @@
 						'<div class="panel-body">' +
 						'<span style="display:inline-block;width:50px">Width:</span><input type="range" class="wpsn_slider" style="width:100%;" name="wpsn_defaultWidth" min="25" max="1000" step="25" data-display="wpsn_defaultWidth" list="wpsn_defaultWidth"><datalist id="wpsn_defaultWidth"><option>25</option><option>250</option><option>500</option><option>750</option><option>1000</option></datalist></input><span class="wpsn_defaultWidth" style="padding-left:5px;"></span><br/><br/>' +
 						'<span style="display:inline-block;width:50px">Height:</span><input type="range" class="wpsn_slider" style="width:100%;" name="wpsn_defaultHeight" min="25" max="1000" step="25" data-display="wpsn_defaultHeight" list="wpsn_defaultHeight"><datalist id="wpsn_defaultHeight"><option>25</option><option>250</option><option>500</option><option>750</option><option>1000</option></datalist></input><span class="wpsn_defaultHeight" style="padding-left:5px;"></span><br/><br/>' +
-						'<input type="checkbox" name="wpsn_applyToAll" id="wpsn_applyAll" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_applyAll">Apply to all notes</label>' +
+						'<input type="checkbox" name="wpsn_applyToAll" id="wpsn_applyAll" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_applyAll">Apply to all notes</label>' +
 						'</div>' +
 						'</div>';
 				},
@@ -3988,7 +3988,7 @@
 				_backgroundImage = 'url(\'' + _menu.icon + '\')';
 			}
 		}
-		let _menuDiv = $('<div data-note-id="' + note.id + '" class="wpsn-menu wpsn-menu-' + _menu.name + '" ' + (_color ? 'data-color="' + _color + '"' : '') + ' style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+';' + (_background ? 'background:' + _background + ';' : '') + (_backgroundImage ? 'background-image:' + _backgroundImage + ';' : '') + '"/>');
+		let _menuDiv = $('<div data-note-id="' + note.id + '" class="wpsn-menu wpsn-menu-' + _menu.name + '" ' + (_color ? 'data-color="' + _color + '"' : '') + ' style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'px;' + (_background ? 'background:' + _background + ';' : '') + (_backgroundImage ? 'background-image:' + _backgroundImage + ';' : '') + '"/>');
 
 		_menuDiv.data('menu', _menu);
 
@@ -4575,29 +4575,29 @@
 			'<table>' +
 			'<tr><th>Format</th><th colspan="3">A series</th><th colspan="3">B series</th><th colspan="3">C series</th></tr>' +
 			'<tr><th>Size</th><th></th><th>mm × mm</th><th>in × in</th><th></th><th>mm × mm</th><th>in × in</th><th></th><th>mm × mm</th><th>in × in</th></tr>' +
-			'<tr><td>0</td><td><input type="radio" name="wpsn_size" value="841 × 1189" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>841 × 1189</td><td>33.1 × 46.8</td><td><input type="radio" name="wpsn_size" value="1000 × 1414" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>1000 × 1414</td><td>39.4 × 55.7</td><td><input type="radio" name="wpsn_size" value="917 × 1297" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>917 × 1297</td><td>36.1 × 51.1</td></tr>' +
-			'<tr><td>1</td><td><input type="radio" name="wpsn_size" value="594 × 841" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>594 × 841</td><td>23.4 × 33.1</td><td><input type="radio" name="wpsn_size" value="707 × 1000" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>707 × 1000</td><td>27.8 × 39.4</td><td><input type="radio" name="wpsn_size" value="648 × 917" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>648 × 917</td><td>25.5 × 36.1</td></tr>' +
-			'<tr><td>2</td><td><input type="radio" name="wpsn_size" value="420 × 594" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>420 × 594</td><td>16.5 × 23.4</td><td><input type="radio" name="wpsn_size" value="500 × 707" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>500 × 707</td><td>19.7 × 27.8</td><td><input type="radio" name="wpsn_size" value="458 × 648" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>458 × 648</td><td>18.0 × 25.5</td></tr>' +
-			'<tr><td>3</td><td><input type="radio" name="wpsn_size" value="297 × 420" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>297 × 420</td><td>11.7 × 16.5</td><td><input type="radio" name="wpsn_size" value="353 × 500" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>353 × 500</td><td>13.9 × 19.7</td><td><input type="radio" name="wpsn_size" value="324 × 458" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>324 × 458</td><td>12.8 × 18.0</td></tr>' +
-			'<tr><td>4</td><td><input type="radio" name="wpsn_size" value="210 × 297" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>210 × 297</td><td>8.27 × 11.7</td><td><input type="radio" name="wpsn_size" value="250 × 353" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>250 × 353</td><td>9.84 × 13.9</td><td><input type="radio" name="wpsn_size" value="229 × 324" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>229 × 324</td><td>9.02 × 12.8</td></tr>' +
-			'<tr><td>5</td><td><input type="radio" name="wpsn_size" value="148 × 210" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>148 × 210</td><td>5.83 × 8.27</td><td><input type="radio" name="wpsn_size" value="176 × 250" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>176 × 250</td><td>6.93 × 9.84</td><td><input type="radio" name="wpsn_size" value="162 × 229" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>162 × 229</td><td>6.38 × 9.02</td></tr>' +
-			'<tr><td>6</td><td><input type="radio" name="wpsn_size" value="105 × 148" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>105 × 148</td><td>4.13 × 5.83</td><td><input type="radio" name="wpsn_size" value="125 × 176" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>125 × 176</td><td>4.92 × 6.93</td><td><input type="radio" name="wpsn_size" value="114 × 162" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>114 × 162</td><td>4.49 × 6.38</td></tr>' +
-			'<tr><td>7</td><td><input type="radio" name="wpsn_size" value="74 × 105" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>74 × 105</td><td>2.91 × 4.13</td><td><input type="radio" name="wpsn_size" value="88 × 125" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>88 × 125</td><td>3.46 × 4.92</td><td><input type="radio" name="wpsn_size" value="81 × 114" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>81 × 114</td><td>3.19 × 4.49</td></tr>' +
-			'<tr><td>8</td><td><input type="radio" name="wpsn_size" value="52 × 74" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>52 × 74</td><td>2.05 × 2.91</td><td><input type="radio" name="wpsn_size" value="62 × 88" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>62 × 88</td><td>2.44 × 3.46</td><td><input type="radio" name="wpsn_size" value="57 × 81" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>57 × 81</td><td>2.24 × 3.19</td></tr>' +
-			'<tr><td>9</td><td><input type="radio" name="wpsn_size" value="37 × 52" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>37 × 52</td><td>1.46 × 2.05</td><td><input type="radio" name="wpsn_size" value="44 × 62" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>44 × 62</td><td>1.73 × 2.44</td><td><input type="radio" name="wpsn_size" value="40 × 57" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>40 × 57</td><td>1.57 × 2.24</td></tr>' +
-			'<tr><td>10</td><td><input type="radio" name="wpsn_size" value="26 × 37" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>26 × 37</td><td>1.02 × 1.46</td><td><input type="radio" name="wpsn_size" value="31 × 44" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>31 × 44</td><td>1.22 × 1.73</td><td><input type="radio" name="wpsn_size" value="28 × 40" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>28 × 40</td><td>1.10 × 1.57</td></tr>' +
+			'<tr><td>0</td><td><input type="radio" name="wpsn_size" value="841 × 1189" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>841 × 1189</td><td>33.1 × 46.8</td><td><input type="radio" name="wpsn_size" value="1000 × 1414" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>1000 × 1414</td><td>39.4 × 55.7</td><td><input type="radio" name="wpsn_size" value="917 × 1297" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>917 × 1297</td><td>36.1 × 51.1</td></tr>' +
+			'<tr><td>1</td><td><input type="radio" name="wpsn_size" value="594 × 841" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>594 × 841</td><td>23.4 × 33.1</td><td><input type="radio" name="wpsn_size" value="707 × 1000" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>707 × 1000</td><td>27.8 × 39.4</td><td><input type="radio" name="wpsn_size" value="648 × 917" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>648 × 917</td><td>25.5 × 36.1</td></tr>' +
+			'<tr><td>2</td><td><input type="radio" name="wpsn_size" value="420 × 594" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>420 × 594</td><td>16.5 × 23.4</td><td><input type="radio" name="wpsn_size" value="500 × 707" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>500 × 707</td><td>19.7 × 27.8</td><td><input type="radio" name="wpsn_size" value="458 × 648" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>458 × 648</td><td>18.0 × 25.5</td></tr>' +
+			'<tr><td>3</td><td><input type="radio" name="wpsn_size" value="297 × 420" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>297 × 420</td><td>11.7 × 16.5</td><td><input type="radio" name="wpsn_size" value="353 × 500" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>353 × 500</td><td>13.9 × 19.7</td><td><input type="radio" name="wpsn_size" value="324 × 458" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>324 × 458</td><td>12.8 × 18.0</td></tr>' +
+			'<tr><td>4</td><td><input type="radio" name="wpsn_size" value="210 × 297" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>210 × 297</td><td>8.27 × 11.7</td><td><input type="radio" name="wpsn_size" value="250 × 353" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>250 × 353</td><td>9.84 × 13.9</td><td><input type="radio" name="wpsn_size" value="229 × 324" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>229 × 324</td><td>9.02 × 12.8</td></tr>' +
+			'<tr><td>5</td><td><input type="radio" name="wpsn_size" value="148 × 210" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>148 × 210</td><td>5.83 × 8.27</td><td><input type="radio" name="wpsn_size" value="176 × 250" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>176 × 250</td><td>6.93 × 9.84</td><td><input type="radio" name="wpsn_size" value="162 × 229" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>162 × 229</td><td>6.38 × 9.02</td></tr>' +
+			'<tr><td>6</td><td><input type="radio" name="wpsn_size" value="105 × 148" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>105 × 148</td><td>4.13 × 5.83</td><td><input type="radio" name="wpsn_size" value="125 × 176" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>125 × 176</td><td>4.92 × 6.93</td><td><input type="radio" name="wpsn_size" value="114 × 162" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>114 × 162</td><td>4.49 × 6.38</td></tr>' +
+			'<tr><td>7</td><td><input type="radio" name="wpsn_size" value="74 × 105" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>74 × 105</td><td>2.91 × 4.13</td><td><input type="radio" name="wpsn_size" value="88 × 125" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>88 × 125</td><td>3.46 × 4.92</td><td><input type="radio" name="wpsn_size" value="81 × 114" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>81 × 114</td><td>3.19 × 4.49</td></tr>' +
+			'<tr><td>8</td><td><input type="radio" name="wpsn_size" value="52 × 74" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>52 × 74</td><td>2.05 × 2.91</td><td><input type="radio" name="wpsn_size" value="62 × 88" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>62 × 88</td><td>2.44 × 3.46</td><td><input type="radio" name="wpsn_size" value="57 × 81" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>57 × 81</td><td>2.24 × 3.19</td></tr>' +
+			'<tr><td>9</td><td><input type="radio" name="wpsn_size" value="37 × 52" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>37 × 52</td><td>1.46 × 2.05</td><td><input type="radio" name="wpsn_size" value="44 × 62" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>44 × 62</td><td>1.73 × 2.44</td><td><input type="radio" name="wpsn_size" value="40 × 57" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>40 × 57</td><td>1.57 × 2.24</td></tr>' +
+			'<tr><td>10</td><td><input type="radio" name="wpsn_size" value="26 × 37" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>26 × 37</td><td>1.02 × 1.46</td><td><input type="radio" name="wpsn_size" value="31 × 44" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>31 × 44</td><td>1.22 × 1.73</td><td><input type="radio" name="wpsn_size" value="28 × 40" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>28 × 40</td><td>1.10 × 1.57</td></tr>' +
 			'</table>' +
 			'<br/>' +
 			'<table>' +
 			'<tr><th>Format</th><th colspan="3">North American</th>' +
 			'<tr><th>Size</th><th></th><th>mm × mm</th><th>in × in</th>' +
-			'<tr><td>Letter</td><td><input type="radio" name="wpsn_size" value="216 × 279" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>216 × 279</td><td>8.5 × 11</td>' +
-			'<tr><td>Legal</td><td><input type="radio" name="wpsn_size" value="216 × 356" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>216 × 356</td><td>8.5 × 14</td>' +
+			'<tr><td>Letter</td><td><input type="radio" name="wpsn_size" value="216 × 279" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>216 × 279</td><td>8.5 × 11</td>' +
+			'<tr><td>Legal</td><td><input type="radio" name="wpsn_size" value="216 × 356" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td><td>216 × 356</td><td>8.5 × 14</td>' +
 			'</table>' +
 			'</div></div>' +
 			'<div class="panel panel-default"><div class="panel-heading">Orientation:</div><div class="panel-body">' +
-			'<input type="radio" name="wpsn_orientation" value="landscape" id="wpsn_landscape" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_landscape">Landscape</label><br/>' +
-			'<input type="radio" name="wpsn_orientation" value="portrait" id="wpsn_portrait" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_portrait">Portrait</label><br/>' +
+			'<input type="radio" name="wpsn_orientation" value="landscape" id="wpsn_landscape" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_landscape">Landscape</label><br/>' +
+			'<input type="radio" name="wpsn_orientation" value="portrait" id="wpsn_portrait" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_portrait">Portrait</label><br/>' +
 			'</div></div>';
 	};
 
@@ -4814,8 +4814,8 @@
 			}
 			prompt += '</ul><br/>';
 			prompt += '<label>Media Text Shadow:</label><br/>';
-			prompt += '<input type="radio" name="wpsn_textshadow" value="true" id="wpsn-textshadow-true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-textshadow-true"><b>True</b></label> ';
-			prompt += '<input type="radio" name="wpsn_textshadow" value="false" id="wpsn-textshadow-false" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-textshadow-false"><b>False</b></label> ';
+			prompt += '<input type="radio" name="wpsn_textshadow" value="true" id="wpsn-textshadow-true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-textshadow-true"><b>True</b></label> ';
+			prompt += '<input type="radio" name="wpsn_textshadow" value="false" id="wpsn-textshadow-false" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-textshadow-false"><b>False</b></label> ';
 			prompt += '<br/><br/>';
 		}
 
@@ -4827,7 +4827,7 @@
 				if (i % 3 == 0) {
 					prompt += '<br/>';
 				}
-				prompt += '<input type="radio" name="wpsn_textposition" value="' + pos + '" id="wpsn-textposition-' + pos + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/>' +
+				prompt += '<input type="radio" name="wpsn_textposition" value="' + pos + '" id="wpsn-textposition-' + pos + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/>' +
 					'<label for="wpsn-textposition-' + pos + '" style="width:150px;"><b>' + pos + '</b></label> ';
 			}
 			prompt += '<br/><br/>';
@@ -4922,7 +4922,7 @@
 			if (!modeKeys[i]) { continue; }
 			let modeKey = modeKeys[i];
 			let mode = wpsn.menu.mode.modes[modeKey];
-			promptHTML += '<li style="list-style-type:none"><input type="radio" name="wpsn_mode" value="' + mode.id + '" id="wpsn-mode-' + mode.id + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/>' +
+			promptHTML += '<li style="list-style-type:none"><input type="radio" name="wpsn_mode" value="' + mode.id + '" id="wpsn-mode-' + mode.id + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/>' +
 				'<label for="wpsn-mode-' + mode.id + '"><b>' + mode.name + '</b></label>';
 			if (mode.description) {
 				promptHTML += '<span>: ' + mode.description + '</span>';
@@ -5047,7 +5047,7 @@
 					`
 					<div class="panel panel-default"><div class="panel-heading">Enable Note Positioning Per Page</div><div class="panel-body">
 					If note is scoped to many pages, its position can vary between pages.<br/>
-					<input type="radio" name="wpsn_multiPosition" value="true" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="wpsn_multiPosition" value="false" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
+					<input type="radio" name="wpsn_multiPosition" value="true" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="wpsn_multiPosition" value="false" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
 					`,
 					wpsn.scope.noteToForm(note)
 				);
@@ -5099,51 +5099,51 @@
 				'</tr>' +
 				'<tr>' +
 					'<td>Protocol</td>' +
-					'<td><input type="checkbox" name="' + wpsn_ + 'scope_protocol" class="' + wpsn_ + 'scope_protocol" value="' + location.protocol + '" id="wpsn-' + location.protocol + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text" value="' + location.protocol + '" class="form-control"/></td>' +
+					'<td><input type="checkbox" name="' + wpsn_ + 'scope_protocol" class="' + wpsn_ + 'scope_protocol" value="' + location.protocol + '" id="wpsn-' + location.protocol + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text" value="' + location.protocol + '" class="form-control"/></td>' +
 					(note.scope && note.scope.protocol && scope.protocol != location.protocol ?
-						'<td><input type="checkbox" name="' + wpsn_ + 'scope_protocol" class="' + wpsn_ + 'scope_protocol" value="' + scope.protocol + '" id="wpsn-' + scope.protocol + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.protocol + '">' + scope.protocol + '</label></td>'
+						'<td><input type="checkbox" name="' + wpsn_ + 'scope_protocol" class="' + wpsn_ + 'scope_protocol" value="' + scope.protocol + '" id="wpsn-' + scope.protocol + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.protocol + '">' + scope.protocol + '</label></td>'
 						: '') +
 					'</tr>'+
 					'<tr>' +
 					'<td>Host name</td>' +
-					'<td><input type="checkbox" name="' + wpsn_ + 'scope_hostname" class="' + wpsn_ + 'scope_hostname" value="' + location.hostname + '" id="wpsn-' + location.hostname + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <input type="text" class="form-control" value="' + location.hostname + '"/></td>' +
+					'<td><input type="checkbox" name="' + wpsn_ + 'scope_hostname" class="' + wpsn_ + 'scope_hostname" value="' + location.hostname + '" id="wpsn-' + location.hostname + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <input type="text" class="form-control" value="' + location.hostname + '"/></td>' +
 					(scope && scope.hostname && scope.hostname != location.hostname ?
-						'<td><input type="checkbox" name="' + wpsn_ + 'scope_hostname" class="' + wpsn_ + 'scope_hostname" value="' + scope.hostname + '" id="wpsn-' + scope.hostname + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.hostname + '">' + scope.hostname + '</label></td>'
+						'<td><input type="checkbox" name="' + wpsn_ + 'scope_hostname" class="' + wpsn_ + 'scope_hostname" value="' + scope.hostname + '" id="wpsn-' + scope.hostname + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.hostname + '">' + scope.hostname + '</label></td>'
 						: '') +
 					'</tr>'+
 					'<tr>' +
 					'<td>Port</td>' +
-					'<td><input type="checkbox" name="' + wpsn_ + 'scope_port" class="' + wpsn_ + 'scope_port" value="' + location.port + '" id="wpsn-' + location.port + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text" class="form-control" value="' + location.port + '"/></td>' +
+					'<td><input type="checkbox" name="' + wpsn_ + 'scope_port" class="' + wpsn_ + 'scope_port" value="' + location.port + '" id="wpsn-' + location.port + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text" class="form-control" value="' + location.port + '"/></td>' +
 					(scope && scope.port && scope.port != location.port ?
-						'<td><input type="checkbox" name="' + wpsn_ + 'scope_port" class="' + wpsn_ + 'scope_port" value="' + scope.port + '" id="wpsn-' + scope.port + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.port + '">' + scope.port + '</label></td>'
+						'<td><input type="checkbox" name="' + wpsn_ + 'scope_port" class="' + wpsn_ + 'scope_port" value="' + scope.port + '" id="wpsn-' + scope.port + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.port + '">' + scope.port + '</label></td>'
 						: '') +
 					'</tr>'+
 					'<tr>' +
 					'<td>Path name</td>' +
-					'<td><input type="checkbox" name="' + wpsn_ + 'scope_pathname" class="' + wpsn_ + 'scope_pathname" value="' + location.pathname + '" id="wpsn-' + location.pathname + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text" class="form-control" value="' + location.pathname + '"/></td>' +
+					'<td><input type="checkbox" name="' + wpsn_ + 'scope_pathname" class="' + wpsn_ + 'scope_pathname" value="' + location.pathname + '" id="wpsn-' + location.pathname + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text" class="form-control" value="' + location.pathname + '"/></td>' +
 					(scope && scope.pathname && scope.pathname != location.pathname ?
-						'<td><input type="checkbox" name="' + wpsn_ + 'scope_pathname" class="' + wpsn_ + 'scope_pathname" value="' + scope.pathname + '" id="wpsn-' + scope.pathname + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.pathname + '">' + scope.pathname + '</label></td>'
+						'<td><input type="checkbox" name="' + wpsn_ + 'scope_pathname" class="' + wpsn_ + 'scope_pathname" value="' + scope.pathname + '" id="wpsn-' + scope.pathname + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.pathname + '">' + scope.pathname + '</label></td>'
 						: '') +
 					'</tr>'+
 					'<tr>' +
 					'<td>Query string</td>' +
-					'<td><input type="checkbox" name="' + wpsn_ + 'scope_search" class="' + wpsn_ + 'scope_search" value="' + location.search + '" id="wpsn-' + location.search + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text"  class="form-control" value="' + (location.search ? location.search : location.href.indexOf('?') >= 0 ? '?' : '') + '"/></td>' +
+					'<td><input type="checkbox" name="' + wpsn_ + 'scope_search" class="' + wpsn_ + 'scope_search" value="' + location.search + '" id="wpsn-' + location.search + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text"  class="form-control" value="' + (location.search ? location.search : location.href.indexOf('?') >= 0 ? '?' : '') + '"/></td>' +
 					(scope && scope.search && scope.search != location.search ?
-						'<td><input type="checkbox" name="' + wpsn_ + 'scope_search" class="' + wpsn_ + 'scope_search" value="' + scope.search + '" id="wpsn-' + scope.search + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.search + '">' + scope.search + '</label></td>'
+						'<td><input type="checkbox" name="' + wpsn_ + 'scope_search" class="' + wpsn_ + 'scope_search" value="' + scope.search + '" id="wpsn-' + scope.search + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.search + '">' + scope.search + '</label></td>'
 						: '') +
 					'</tr>'+
 					'<tr>' +
 					'<td>Hash name</td>' +
-					'<td><input type="checkbox" name="' + wpsn_ + 'scope_hash" class="' + wpsn_ + 'scope_hash" value="' + location.hash + '" id="wpsn-' + location.hash + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text" class="form-control" value="' + location.hash + '"/></td>' +
+					'<td><input type="checkbox" name="' + wpsn_ + 'scope_hash" class="' + wpsn_ + 'scope_hash" value="' + location.hash + '" id="wpsn-' + location.hash + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text" class="form-control" value="' + location.hash + '"/></td>' +
 					(scope && scope.hash && scope.hash != location.hash ?
-						'<td><input type="checkbox" name="' + wpsn_ + 'scope_hash" class="' + wpsn_ + 'scope_hash" value="' + scope.hash + '" id="wpsn-' + scope.hash + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.hash + '">' + scope.hash + '</label></td>'
+						'<td><input type="checkbox" name="' + wpsn_ + 'scope_hash" class="' + wpsn_ + 'scope_hash" value="' + scope.hash + '" id="wpsn-' + scope.hash + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-' + scope.hash + '">' + scope.hash + '</label></td>'
 						: '') +
 					'</tr>'+
 					'<tr>' +
 					'<td>Page title</td>' +
-					'<td><input type="checkbox" name="' + wpsn_ + 'scope_title" class="' + wpsn_ + 'scope_title" value="' + document.title + '" id="wpsn-' + document.title + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text" class="form-control" value="' + document.title + '"/></td>' +
+					'<td><input type="checkbox" name="' + wpsn_ + 'scope_title" class="' + wpsn_ + 'scope_title" value="' + document.title + '" id="wpsn-' + document.title + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" /> <input type="text" class="form-control" value="' + document.title + '"/></td>' +
 					(scope && scope.title && scope.title != document.title ?
-						'<td><input type="checkbox" name="' + wpsn_ + 'scope_title" class="' + wpsn_ + 'scope_title" value="' + scope.title + '" id="wpsn-' + scope.title + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-' + scope.title + '">' + scope.title + '</label></td>'
+						'<td><input type="checkbox" name="' + wpsn_ + 'scope_title" class="' + wpsn_ + 'scope_title" value="' + scope.title + '" id="wpsn-' + scope.title + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-' + scope.title + '">' + scope.title + '</label></td>'
 						: '') +
 					'</tr>';
 			table += '' +
@@ -6611,25 +6611,25 @@
 					{
 						'sTitle': '', 'bVisible': true, 'sClass': '', 'mDataProp': function (note) {
 							return ((note.tag && note.tag.indexOf('#favorite') > -1) ?
-								'<img class="wpsn-menu wpsn-menu-favorite" data-id="' + note.id + '" title="Favorite current note" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/star.svg" width="'+(wpsn.settings.defaultIconSize||14)+'" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+';background-size:cover"/>'
+								'<img class="wpsn-menu wpsn-menu-favorite" data-id="' + note.id + '" title="Favorite current note" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/star.svg" width="'+(wpsn.settings.defaultIconSize||14)+'" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'px;background-size:cover"/>'
 								:
-								'<img class="wpsn-menu wpsn-menu-favorite" data-id="' + note.id + '" title="Favorite current note" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/star_off.svg" width="'+(wpsn.settings.defaultIconSize||14)+'" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+';background-size:cover"/> '
+								'<img class="wpsn-menu wpsn-menu-favorite" data-id="' + note.id + '" title="Favorite current note" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/star_off.svg" width="'+(wpsn.settings.defaultIconSize||14)+'" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'px;background-size:cover"/> '
 							);
 						}
 					},
 					{
 						'sTitle': (selectNotes == 'note' ? '' : `
 							<span title="Select all notes">
-								<input type="checkbox" class="wpsn-scope-all" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> All
+								<input type="checkbox" class="wpsn-scope-all" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> All
 							</span><br/>
 							<span title="Select all filtered notes">
-								<input type="checkbox" class="wpsn-scope-all-filtered" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> Filtered
+								<input type="checkbox" class="wpsn-scope-all-filtered" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> Filtered
 							</span><br/>
 							<span title="Select all notes in the scope of the current page" style="white-space:nowrap">
-								<input type="checkbox" class="wpsn-scope wpsn-scope-in-scope" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> In-scope
+								<input type="checkbox" class="wpsn-scope wpsn-scope-in-scope" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> In-scope
 							</span>
 						`), 'bVisible': true, 'sClass': '', 'mDataProp': function (note) {
-							return '<input type="' + (selectNotes == 'note' ? 'radio' : 'checkbox') + '" name="wpsn-selected-note" class="' + (note.tag && note.tag.indexOf('#favorite') > -1 ? 'wpsn-favorite' : '') + ' wpsn-selected-note wpsn-scope wpsn-scope-' + note.id + '" data-id="' + note.id + '" ' + (managerTableSelected[note.id] ? 'checked="checked"' : '') + ' style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/>';
+							return '<input type="' + (selectNotes == 'note' ? 'radio' : 'checkbox') + '" name="wpsn-selected-note" class="' + (note.tag && note.tag.indexOf('#favorite') > -1 ? 'wpsn-favorite' : '') + ' wpsn-selected-note wpsn-scope wpsn-scope-' + note.id + '" data-id="' + note.id + '" ' + (managerTableSelected[note.id] ? 'checked="checked"' : '') + ' style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/>';
 						}
 					},
 					{ 'sTitle': 'Note', 'bVisible': false, 'sClass': '', 'mDataProp': function (note) { return escape(JSON.stringify(note)); } },
@@ -6692,14 +6692,14 @@
 					{
 						'sTitle': '<span title="Actions to be applied to selected notes"><span class="wpsn-selected-count"></span><br/>Selected<br/>' +
 						(selectNotes ? '' :
-							'<img class="wpsn-menu wpsn-menu-export" title="Export all selected notes" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/up.svg" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+';background-size:cover"/> ' +
-							'<img class="wpsn-menu wpsn-menu-delete" title="Delete all selected notes" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/multiply.svg" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+';background-size:cover"/></span>'
+							'<img class="wpsn-menu wpsn-menu-export" title="Export all selected notes" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/up.svg" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'px;background-size:cover"/> ' +
+							'<img class="wpsn-menu wpsn-menu-delete" title="Delete all selected notes" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/multiply.svg" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'px;background-size:cover"/></span>'
 						),
 						'bVisible': selectNotes != 'note', 'sClass': '', 'mDataProp': function (note) {
 							return '' +
 								(selectNotes ? '' :
-									'<img class="wpsn-menu wpsn-menu-export" data-id="' + note.id + '" title="Export current note" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/up.svg" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+';background-size:cover"/> ' +
-									'<img class="wpsn-menu wpsn-menu-delete" data-id="' + note.id + '" title="Delete current note" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/multiply.svg" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+';background-size:cover"/>'
+									'<img class="wpsn-menu wpsn-menu-export" data-id="' + note.id + '" title="Export current note" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/up.svg" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'px;background-size:cover"/> ' +
+									'<img class="wpsn-menu wpsn-menu-delete" data-id="' + note.id + '" title="Delete current note" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/multiply.svg" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'px;background-size:cover"/>'
 								);
 						}
 					}
@@ -6824,12 +6824,12 @@
 									<span style="display:inline-block;line-height:50%;top:-12px;position:relative;">
 									<label style="margin:0">
 										Match All Words:
-										<input type="radio" class="wpsn-manager-search-strategy wpsn-manager-search-strategy-and" name="wpsn-manager-search-strategy" checked="checked" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/>
+										<input type="radio" class="wpsn-manager-search-strategy wpsn-manager-search-strategy-and" name="wpsn-manager-search-strategy" checked="checked" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
 									</label>
 									<br/>
 									<label style="margin:0">
 										Match Any Words:
-										<input type="radio" class="wpsn-manager-search-strategy wpsn-manager-search-strategy-or" name="wpsn-manager-search-strategy" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/>
+										<input type="radio" class="wpsn-manager-search-strategy wpsn-manager-search-strategy-or" name="wpsn-manager-search-strategy" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
 									</label>
 									</span>
 								</div>
@@ -6971,7 +6971,7 @@
 			html += '</datalist></input><span class="wpsn_notesPerRow" style="padding-left:5px;"></span><br/><br/>' +
 				'<span style="display:inline-block;width:50px">Width:</span><input type="range" class="wpsn_slider wpsn_defaultWidth" style="width:100%;" name="wpsn_defaultWidth" min="25" max="1000" step="25" data-display="wpsn_defaultWidth" list="wpsn_defaultWidth"><datalist id="wpsn_defaultWidth"><option>25</option><option>250</option><option>500</option><option>750</option><option>1000</option></datalist></input><span class="wpsn_defaultWidth" style="padding-left:5px;"></span>px<br/><br/>' +
 				'<span style="display:inline-block;width:50px">Height:</span><input type="range" class="wpsn_slider wpsn_defaultHeight" style="width:100%;" name="wpsn_defaultHeight" min="25" max="1000" step="25" data-display="wpsn_defaultHeight" list="wpsn_defaultHeight"><datalist id="wpsn_defaultHeight"><option>25</option><option>250</option><option>500</option><option>750</option><option>1000</option></datalist></input><span class="wpsn_defaultHeight" style="padding-left:5px;"></span>px<br/><br/>' +
-				'<input type="checkbox" name="wpsn_lock" id="wpsn_lock" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_lock">Lock Notes</label>' +
+				'<input type="checkbox" name="wpsn_lock" id="wpsn_lock" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_lock">Lock Notes</label>' +
 				'</div>' +
 				'</div>';
 			let padding = 10;
@@ -7304,7 +7304,7 @@
 				popup: { minWidth: 600 },
 				refresh: true,
 				form: function () {
-					return '<div class="panel panel-default"><div class="panel-heading">Media:</div><div class="panel-body"><ol><li>Right click an image, music or video from another web page and copy its URL. </li><li>Paste the URL below.</li></ol>The note will <i>attempt</i> to render the media.<br/><br/>URL:<input type="text" style="width:100%" name="media" value="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/transparent.gif"/><br/>Caption:<textarea name="caption" style="width:100%;height:200px"/><br/>Tip: You can also drag and drop an image from another window into a note.</div></div><div class="panel panel-default"><div class="panel-heading">Background mode:</div><div class="panel-body"><input type="radio" name="canvas" id="wpsn-none" value="" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-none">None</label><br/><input type="radio" name="canvas" id="wpsn-frameless" value="frameless" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-frameless">Frameless (no background, no border, media fits to note)</label><br/><input type="radio" name="canvas" id="wpsn-sticker" value="' + wpsn.transparent + '|' + wpsn.transparent + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-sticker">Sticker Mode (transparent background & border)</label><br/><input type="radio" name="canvas" id="wpsn-whiteGray" value="#fff|#aaa" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-whiteGray">Canvas Mode (white background / gray border)</label></div></div>';
+					return '<div class="panel panel-default"><div class="panel-heading">Media:</div><div class="panel-body"><ol><li>Right click an image, music or video from another web page and copy its URL. </li><li>Paste the URL below.</li></ol>The note will <i>attempt</i> to render the media.<br/><br/>URL:<input type="text" style="width:100%" name="media" value="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/transparent.gif"/><br/>Caption:<textarea name="caption" style="width:100%;height:200px"/><br/>Tip: You can also drag and drop an image from another window into a note.</div></div><div class="panel panel-default"><div class="panel-heading">Background mode:</div><div class="panel-body"><input type="radio" name="canvas" id="wpsn-none" value="" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-none">None</label><br/><input type="radio" name="canvas" id="wpsn-frameless" value="frameless" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-frameless">Frameless (no background, no border, media fits to note)</label><br/><input type="radio" name="canvas" id="wpsn-sticker" value="' + wpsn.transparent + '|' + wpsn.transparent + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-sticker">Sticker Mode (transparent background & border)</label><br/><input type="radio" name="canvas" id="wpsn-whiteGray" value="#fff|#aaa" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn-whiteGray">Canvas Mode (white background / gray border)</label></div></div>';
 				},
 				callback: function (note) {
 					let props = note[wpsn.menu.media.modes.media.id];
@@ -7319,11 +7319,11 @@
 				wpsn.prompt(
 					{},
 					'<div class="panel panel-default"><div class="panel-heading">You selected the option of previewing a page element inside this note.</div><div class="panel-body"><ul>' +
-					'<li style="list-style-type:none"><input type="radio" name="wpsn_mode" value="raw" id="wpsn-mode-raw" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> ' +
+					'<li style="list-style-type:none"><input type="radio" name="wpsn_mode" value="raw" id="wpsn-mode-raw" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> ' +
 					'<label for="wpsn-mode-raw"><b>Preview Raw Text</b></label><span>: Renders preview of raw text of selected element.</span></li>' +
-					'<li style="list-style-type:none"><input type="radio" name="wpsn_mode" value="html" id="wpsn-mode-html" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> ' +
+					'<li style="list-style-type:none"><input type="radio" name="wpsn_mode" value="html" id="wpsn-mode-html" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> ' +
 					'<label for="wpsn-mode-html"><b>Preview HTML</b></label><span>: Renders preview of HTML text of selected element.</span></li>' +
-					'<li style="list-style-type:none"><input type="radio" name="wpsn_mode" value="none" id="wpsn-mode-none" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> ' +
+					'<li style="list-style-type:none"><input type="radio" name="wpsn_mode" value="none" id="wpsn-mode-none" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> ' +
 					'<label for="wpsn-mode-none"><b>Don\'t Preview</b></label></li>' +
 					'</ul>After clicking OK, click on the page element you wish to preview in this note.</div></div>',
 					{
@@ -7499,7 +7499,7 @@
 				}
 				if (formFound[formSelector]) { return; }
 				formFound[formSelector] = true;
-				formPromptHTML += '<br/><input type=\'radio\' name=\'formSelector\' id=\'' + formSelector + '\' value=\'' + formSelector + '\' ' + (count == 0 ? 'checked="checked"' : '') + ' style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for=\'' + formSelector + '\'>' + ($(this).attr('name') || formSelector) + '</label>';
+				formPromptHTML += '<br/><input type=\'radio\' name=\'formSelector\' id=\'' + formSelector + '\' value=\'' + formSelector + '\' ' + (count == 0 ? 'checked="checked"' : '') + ' style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for=\'' + formSelector + '\'>' + ($(this).attr('name') || formSelector) + '</label>';
 				count++;
 			});
 			if (formPromptHTML) {
@@ -7507,9 +7507,9 @@
 				promptHTML += formPromptHTML;
 				//promptHTML += '<br/><input type="radio" name="formSelector" id="none" value=""/><label for="none">None</label>';
 				//promptHTML += '<br/><br/>Comma Seperated Value of field names to prompt user for fast input?<br/><input type="text" style="width:100%" name="csvFieldNames" value=""/>';
-				promptHTML += '<br/><br/><input type="checkbox" name="submitForm" id="submitForm" value="true"' + (note[wpsn.menu.record.modes.formrecorder.id] ? '' : ' checked="checked"') + ' style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="submitForm">Submit form when generated link is clicked?</label> By unchecking this, the form will be filled when the generated link is clicked but the form will not be submitted';
+				promptHTML += '<br/><br/><input type="checkbox" name="submitForm" id="submitForm" value="true"' + (note[wpsn.menu.record.modes.formrecorder.id] ? '' : ' checked="checked"') + ' style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="submitForm">Submit form when generated link is clicked?</label> By unchecking this, the form will be filled when the generated link is clicked but the form will not be submitted';
 				if (note[wpsn.menu.record.modes.formrecorder.id]) {
-					promptHTML += '<br/><br/><input type="checkbox" name="keepPrevious" id="keepPrevious" value="true" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="keepPrevious">Keep previously recorded form values?</label> By unchecking this, the values on the current form will be saved instead';
+					promptHTML += '<br/><br/><input type="checkbox" name="keepPrevious" id="keepPrevious" value="true" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="keepPrevious">Keep previously recorded form values?</label> By unchecking this, the values on the current form will be saved instead';
 				}
 				promptHTML += '<br/><br/>Warning:<ul>';
 				promptHTML += '<li>The form may contain dynamic fields which depend on user interaction not replicable by the recorder.</li>';
@@ -7732,12 +7732,12 @@
 				function () {
 					let html = '' +
 						'<table width="100%">' +
-						'<tr><td></td><td><input type="radio" name="wpsn_position" id="wpsn_position_top" value="top" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_position_top">Top</label></td><td></td></tr>' +
-						'<tr><td><input type="radio" name="wpsn_position" id="wpsn_position_left" value="left" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_position_left">Left</label></td><td><input type="radio" name="wpsn_position" id="wpsn_position_none" value="" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_position_none">None</label></td><td><input type="radio" name="wpsn_position" id="wpsn_position_right" value="right" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_position_right">Right</label></td></tr>' +
-						'<tr><td></td><td><input type="radio" name="wpsn_position" id="wpsn_position_bottom" value="bottom" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_position_bottom">Bottom</label></td><td></td></tr>' +
+						'<tr><td></td><td><input type="radio" name="wpsn_position" id="wpsn_position_top" value="top" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_position_top">Top</label></td><td></td></tr>' +
+						'<tr><td><input type="radio" name="wpsn_position" id="wpsn_position_left" value="left" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_position_left">Left</label></td><td><input type="radio" name="wpsn_position" id="wpsn_position_none" value="" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_position_none">None</label></td><td><input type="radio" name="wpsn_position" id="wpsn_position_right" value="right" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_position_right">Right</label></td></tr>' +
+						'<tr><td></td><td><input type="radio" name="wpsn_position" id="wpsn_position_bottom" value="bottom" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_position_bottom">Bottom</label></td><td></td></tr>' +
 						'</table>' +
-						'<br/><input type="checkbox" name="wpsn_dockable" id="wpsn_dockable" value="top" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_dockable">Dockable</label> ' +
-						'<br/><input type="checkbox" name="wpsn_docked" id="wpsn_docked" value="top" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_docked">Docked</label> ';
+						'<br/><input type="checkbox" name="wpsn_dockable" id="wpsn_dockable" value="top" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_dockable">Dockable</label> ' +
+						'<br/><input type="checkbox" name="wpsn_docked" id="wpsn_docked" value="top" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_docked">Docked</label> ';
 
 					return wpsn.prompt(
 						{},
@@ -8127,7 +8127,7 @@
 					if (!modeKeys[i]) { continue; }
 					let modeKey = modeKeys[i];
 					let mode = wpsn.menu.diagram.modes[modeKey];
-					promptHTML += (i > 0 ? '<br/>' : '') + '<input type="radio" name="wpsn_mode" value="' + mode.id + '" id="wpsn-mode-' + mode.id + '" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/>' +
+					promptHTML += (i > 0 ? '<br/>' : '') + '<input type="radio" name="wpsn_mode" value="' + mode.id + '" id="wpsn-mode-' + mode.id + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/>' +
 						'<label for="wpsn-mode-' + mode.id + '"><b>' + mode.name + '</b></label>';
 					if (mode.options) {
 						promptHTML += ' <a href="#" class="wpsn_options" data-modekey="' + modeKey + '">Options</a>';
@@ -8835,7 +8835,7 @@ wpsn.menu.calculator = {
 					<table class="wpsn-scope form-inline" style="width:100%">
 						<tr>
 							<td><label for="wpsn_menu_all" style="display:block">All:</label></td>
-							<td><label for="wpsn_menu_all" style="display:block"><input type="checkbox" name="wpsn_menu_all" id="wpsn_menu_all" class="wpsn_menu_all" value="true" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/></label></td>
+							<td><label for="wpsn_menu_all" style="display:block"><input type="checkbox" name="wpsn_menu_all" id="wpsn_menu_all" class="wpsn_menu_all" value="true" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/></label></td>
 						</tr>
 				`;
 				let menuArray = wpsn.menu.settings.menuArray();
@@ -8846,7 +8846,7 @@ wpsn.menu.calculator = {
 					let title = await wpsn.menuDescription(note, menu);
 					promptHTML += '<tr>' +
 						'<td><label for="wpsn_menu_' + menuProperty + '" style="display:block"><img src="' + menu.icon + '" title="' + title + '" width="'+(wpsn.settings.defaultIconSize||14)+'"/></label></td>' +
-						'<td><label for="wpsn_menu_' + menuProperty + '" style="display:block"><input type="checkbox" name="wpsn_menu_' + menuProperty + '" id="wpsn_menu_' + menuProperty + '" class="wpsn_menu_item wpsn_menu_' + menuProperty + '" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></label></td>' +
+						'<td><label for="wpsn_menu_' + menuProperty + '" style="display:block"><input type="checkbox" name="wpsn_menu_' + menuProperty + '" id="wpsn_menu_' + menuProperty + '" class="wpsn_menu_item wpsn_menu_' + menuProperty + '" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></label></td>' +
 						'</tr>';
 				}
 				promptHTML += '' +
@@ -8895,13 +8895,13 @@ wpsn.menu.calculator = {
 					'<div class="panel panel-default"><div class="panel-heading">Default Scope</div><div class="panel-body">' +
 					'All newly created note will inherit the scope of the page where it is being created, but matching the criteria selected below:<br/>' +
 					'<table class="wpsn-scope form-inline" style="width:100%">' +
-					'<tr><td>Protocol</td>		<td><input type="checkbox" name="wpsn_scope_protocol" class="wpsn_scope_protocol" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
-					'<tr><td>Host name</td>		<td><input type="checkbox" name="wpsn_scope_hostname" class="wpsn_scope_hostname" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
-					'<tr><td>Port</td>		<td><input type="checkbox" name="wpsn_scope_port" class="wpsn_scope_port" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
-					'<tr><td>Path name</td>		<td><input type="checkbox" name="wpsn_scope_pathname" class="wpsn_scope_pathname" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
-					'<tr><td>Query string</td>	<td><input type="checkbox" name="wpsn_scope_search" class="wpsn_scope_search" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
-					'<tr><td>Hash name</td>		<td><input type="checkbox" name="wpsn_scope_hash" class="wpsn_scope_hash" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
-					'<tr><td>Page title</td>	<td><input type="checkbox" name="wpsn_scope_title" class="wpsn_scope_title" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
+					'<tr><td>Protocol</td>		<td><input type="checkbox" name="wpsn_scope_protocol" class="wpsn_scope_protocol" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
+					'<tr><td>Host name</td>		<td><input type="checkbox" name="wpsn_scope_hostname" class="wpsn_scope_hostname" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
+					'<tr><td>Port</td>		<td><input type="checkbox" name="wpsn_scope_port" class="wpsn_scope_port" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
+					'<tr><td>Path name</td>		<td><input type="checkbox" name="wpsn_scope_pathname" class="wpsn_scope_pathname" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
+					'<tr><td>Query string</td>	<td><input type="checkbox" name="wpsn_scope_search" class="wpsn_scope_search" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
+					'<tr><td>Hash name</td>		<td><input type="checkbox" name="wpsn_scope_hash" class="wpsn_scope_hash" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
+					'<tr><td>Page title</td>	<td><input type="checkbox" name="wpsn_scope_title" class="wpsn_scope_title" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/></td></tr>' +
 					'</table>' +
 					'</div></div>';
 				promptHTML += `
@@ -8911,40 +8911,40 @@ wpsn.menu.calculator = {
 					This is to prevent an abuse of the Google Drive API quota.<br/><br/>
 					The notes will be stored under <code>WebPageStickyNotes/sync.wpsn</code> on your Google Drive.<br/><br/>
 					Only select 'Yes' if you have a Google account.<br/>
-					<input type="radio" name="enableSynchronization" value="true" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="enableSynchronization" value="false" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
+					<input type="radio" name="enableSynchronization" value="true" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="enableSynchronization" value="false" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
 					`;
 				promptHTML +=
 					`
 					<div class="panel panel-default"><div class="panel-heading">Disable Auto Resize</div><div class="panel-body">
 					When initially empty and text is added to note, note will automatically resize around text.<br/>
-					<input type="radio" name="disableAutoresize" value="true" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="disableAutoresize" value="false" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
+					<input type="radio" name="disableAutoresize" value="true" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="disableAutoresize" value="false" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
 					`;
 				promptHTML +=
 					`
 					<div class="panel panel-default"><div class="panel-heading">Enable Note Positioning Per Page</div><div class="panel-body">
 					For notes that are scoped to many pages, the position of the notes can vary between pages.<br/>
-					<input type="radio" name="multiPosition" value="true" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="multiPosition" value="false" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
+					<input type="radio" name="multiPosition" value="true" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="multiPosition" value="false" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
 					`;
 				promptHTML +=
 					`
 					<div class="panel panel-default"><div class="panel-heading">Disable Meme Mode By Default</div><div class="panel-body">
 					Meme mode makes text on media be of a specific font with dynamic size and positioned at the bottom and at the top of media. <br/>
-					<input type="radio" name="disableMemeModeByDefault" value="true" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="disableMemeModeByDefault" value="false" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
+					<input type="radio" name="disableMemeModeByDefault" value="true" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="disableMemeModeByDefault" value="false" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
 					`;
 				promptHTML += wpsn.modePromptHTML('Default Rendering/Editing Mode');
 				promptHTML +=
 					'<div class="panel panel-default"><div class="panel-heading">Enable Source Formatting when Pasting from Clipboard in Markdown mode</div><div class="panel-body">' +
-					'<input type="radio" name="enableSmartPaste" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> Yes <input type="radio" name="enableSmartPaste" value="false" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> No<br/>' +
+					'<input type="radio" name="enableSmartPaste" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> Yes <input type="radio" name="enableSmartPaste" value="false" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> No<br/>' +
 					'With Source Formatting enabled, Ctrl+V will paste the formatting markup in the note in Markdown mode only. To paste as plain text, Ctrl+Shift+V.</div></div>';
 				promptHTML +=
 					'<div class="panel panel-default"><div class="panel-heading">Enable Web Page Sticky Notes Bookmarks</div><div class="panel-body">' +
-					'<input type="radio" name="enableBookmarks" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> Yes <input type="radio" name="enableBookmarks" value="false" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> No</div></div>';
+					'<input type="radio" name="enableBookmarks" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> Yes <input type="radio" name="enableBookmarks" value="false" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> No</div></div>';
 				if (!window.sessionStorage['wpsn.adFree']) {
 					let noteCount = wpsn.propertiesSize(wpsn.allNotes);
 					if (wpsn.adEnabled && noteCount > 20) {
 						promptHTML +=
 							'<div class="panel panel-default"><div class="panel-heading">Development Support Option</div><div class="panel-body">' +
-							'<input type="radio" name="monetizationOption" value="ad" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> Ad <input type="radio" name="monetizationOption" value="affiliate" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> Affiliate <br/> <a href="https://chrome.google.com/webstore/detail/web-page-sticky-notes-%3E-a/okmbdoenngkhmcijiamaeamgminpkdho?hl=en-US&gl=US&authuser=1">Purchase Ad-Free Add-On</a></div></div>';
+							'<input type="radio" name="monetizationOption" value="ad" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> Ad <input type="radio" name="monetizationOption" value="affiliate" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> Affiliate <br/> <a href="https://chrome.google.com/webstore/detail/web-page-sticky-notes-%3E-a/okmbdoenngkhmcijiamaeamgminpkdho?hl=en-US&gl=US&authuser=1">Purchase Ad-Free Add-On</a></div></div>';
 					}
 				}
 				wpsn.prompt(
@@ -9089,7 +9089,7 @@ wpsn.menu.calculator = {
 				wpsn.prompt(
 					{},
 					'<img height="75" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/logo/wpsn.png"/> has been developed for free for more than 2 years now. The growth ahead is not sustainable at this rate.<br/>There are several ways you can contribute today to show your support and help grow this invaluable extension:<br/>' +
-					'<ol><li><input type="radio" name="monetizationOption" value="ad" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> An ad will occasionally popup only when you create a new note</li><li><input type="radio" name="monetizationOption" value="affiliate" style="width:'+(wpsn.settings.defaultIconSize||14)+';height:'+(wpsn.settings.defaultIconSize||14)+'"/> An affiliate id will be appended to the URL when you visit certain sites</li>' +
+					'<ol><li><input type="radio" name="monetizationOption" value="ad" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> An ad will occasionally popup only when you create a new note</li><li><input type="radio" name="monetizationOption" value="affiliate" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> An affiliate id will be appended to the URL when you visit certain sites</li>' +
 					'<li>None of the above will occur if you purchase this <a href="https://chrome.google.com/webstore/detail/web-page-sticky-notes-%3E-a/okmbdoenngkhmcijiamaeamgminpkdho?hl=en-US&gl=US&authuser=1">Ad-Free Add-On</a></li></ol><input type="hidden" name="monetizationAffiliateWarning" value="true"/>',
 					{
 						'monetizationOption': wpsn.settings.monetizationOption || wpsn.defaultMonetizationOption
@@ -9264,7 +9264,7 @@ wpsn.menu.calculator = {
 			`;
 			for (let template of templates) {
 				formText += `
-				<tr><td style="border:0;display:${oneTemplate?'none':'block'}"><input type="radio" name="template" style="width:${(wpsn.settings.defaultIconSize||14)};height:${(wpsn.settings.defaultIconSize||14)}"/></td><td style="padding:5px 0;border:0;width:100%">
+				<tr><td style="border:0;display:${oneTemplate?'none':'block'}"><input type="radio" name="template" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/></td><td style="padding:5px 0;border:0;width:100%">
 					<input style="width:100%" type="text" name="templates" value="${template}"/>
 				</td></tr>
 				`;
