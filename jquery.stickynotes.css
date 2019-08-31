@@ -59,9 +59,9 @@
   display: inline-block;
   height: 14px;
   width: 14px;
-  position: relative;
-  top: 5px;
   cursor: pointer;
+  background-size:cover;
+  vertical-align: middle !important;
 }
 
 .wpsn-md-checkbox:hover {
@@ -3335,10 +3335,13 @@ z-index: 1000 !important;
   border: 0;
   border-bottom: 1px solid #e5e5e5;
 }
+.wpsn-frame span {
+  vertical-align: middle;
+}
 .wpsn-frame label {
   display: inline-block;
   max-width: 100%;
-  margin-bottom: 5px;
+  vertical-align: middle;
   font-weight: bold;
 }
 .wpsn-frame input[type="search"] {
@@ -3348,8 +3351,7 @@ z-index: 1000 !important;
 }
 .wpsn-frame input[type="radio"],
 .wpsn-frame input[type="checkbox"] {
-  margin: 4px 0 0;
-  margin-top: 1px \9;
+  vertical-align: middle;
   line-height: normal;
 }
 .wpsn-frame input[type="file"] {

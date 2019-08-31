@@ -3999,7 +3999,7 @@
 				window['wpsn_' + note.id + '_' + (_menu ? _menu.name : '') + '_dblclick'] = 2;
 				window.setTimeout(function () {
 					delete window['wpsn_' + note.id + '_' + (_menu ? _menu.name : '') + '_dblclick'];
-				}, 200);
+				}, 2000);
 				if (_menu.doubleClick) {
 					if (_menu.doubleClick.action) {
 						_menu.doubleClick.action(note, $that, noteDiv, e);
@@ -4067,7 +4067,7 @@
 							}
 						}
 					}
-				}, _menu.doubleClick ? 200 : 0);
+				}, _menu.doubleClick ? 500 : 0);
 			
 				if (_menu.name != 'more' && _menu.name != 'color') {
 					noteDiv.find('>.wpsn-submenu').hide('slide');
@@ -4937,8 +4937,8 @@
 		let text = note.text;
 		
 		text = text
-			.replace(/(^|\n)(\s*|\t*)-\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-unchecked"></span> ')
-			.replace(/(^|\n)(\s*|\t*)x\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-checked"></span> ')
+			.replace(/(^|\n)(\s*|\t*)-\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-unchecked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"></span> ')
+			.replace(/(^|\n)(\s*|\t*)x\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-checked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"></span> ')
 			.replace(/  /g,'&nbsp;&nbsp;');
 
 		note.previewText = text;
@@ -6541,7 +6541,7 @@
 				<tbody></tbody></table><input type="hidden" name="wpsn_provided_notes" class="wpsn_provided_notes"/>
 		`;
 
-			let form = await wpsn.prompt({ background: '#fff', fullscreen: true, isNotPopup: true, order:1000, load: function () { wpsn.manager.renderManagerLoad(note, notes, message, selectNotes); } }, html);
+			let form = await wpsn.prompt({ background: '#fff', order: 10000, fullscreen: true, isNotPopup: true, load: function () { wpsn.manager.renderManagerLoad(note, notes, message, selectNotes); } }, html);
 			return form.wpsn_provided_notes ? JSON.parse(form.wpsn_provided_notes) : [];
 		},
 		renderManagerLoad: function (note, notes, message, selectNotes) {
