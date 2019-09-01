@@ -1410,7 +1410,7 @@
 			});
 			_note_frame.after($mediaMeme);
 		}
-		note.order = note.order || wpsn.nextOrder();
+		//note.order = note.order || wpsn.nextOrder();
 		let _div_wrap = $('<div id="note-' + note.id + '" style="z-index:' + wpsn.getZIndex(note) + ';position:absolute;'+
 		(wpsn.posx(note)?'left:' + wpsn.posx(note) + ';':'')+
 		(wpsn.posy(note)?'top:' + wpsn.posy(note) + ';':'')+
@@ -1452,7 +1452,7 @@
 			_div_wrap.addClass('wpsn-global');
 		}
 		if (note.minimized) {
-			wpsn.zIndex(_div_wrap, -2, false, true);
+			//wpsn.zIndex(_div_wrap, -2, false, true);
 			_div_wrap.css({ width: 0, height: 0 });
 			//TODO_div_delete.hide();
 		}
@@ -2422,7 +2422,7 @@
 			let note = {
 				isPopup: true,
 				htmlMode: true,
-				order: 1000
+				order: 10000
 			};
 			if (props.note) {
 				note = $.extend(true, note, props.note);
@@ -3344,8 +3344,18 @@
 	};
 
 	wpsn.getZIndex = function (note) {
-		let order = note.order || 0;
-		return note.zIndex || (note.isAlert ? (wpsn.defaultZIndex + order + 1000) : (wpsn.defaultZIndex+order));
+		if (note.zIndex) { return note.zIndex; }
+		let zIndex = wpsn.defaultZIndex;
+		if (note.isAlert) {
+			zIndex = defaultZIndexPopup;
+		}
+		if (note.lock) {
+			zIndex -= 1;
+		}
+		if (note.minimized) {
+			zIndex -= 2;
+		}
+		return zIndex;
 	}
 
 	wpsn.reorderNote = function (note) {
@@ -3473,7 +3483,7 @@
 	};
 
 	wpsn.inScope = function (note, url, parts) {
-		if (note.deleted) { return false; }
+		if (!note || note.deleted) { return false; }
 		let link = location;
 		if (url) {
 			link = document.createElement('a');
@@ -4608,10 +4618,23 @@
 		return await wpsn.actOnEffectiveNotesWithPrompt(
 			noteOrNotes,
 			'',//'Are you sure you want to update the font for {0}?', 
-			function () {
-				return wpsn.prompt(
+			async function () {
+				let imageAndCanvas = await wpsn.takeScreenshot($(document.body),{canvasWidth:1000});
+				let canvas = imageAndCanvas.canvas;
+				return await wpsn.prompt(
 					{
-						load: wpsn.fontPromptLoad,
+						load: function(note, preventResize){
+							wpsn.fontPromptLoad(note, preventResize);
+							
+							$('input[name="wpsn_background"]').data('predefinedColors', '#ffa|#fc9|#faf|#faa|#aaf|#9cf|#aff|#afa|#eee|#fff|'+wpsn.transparent);
+							$('input[name="wpsn_textcolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff');
+							$('input[name="wpsn_bordercolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff'+wpsn.transparent);
+							$('input[name="wpsn_mediatextcolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff');
+
+							let $input = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"],input[name="wpsn_mediatextcolor"]');
+							
+							wpsn.colorInput(note, $input, canvas);
+						},
 						minWidth: 600
 					},
 					'<div class="panel panel-default"><div class="panel-heading">Specify font properties for ' + effectiveNotes.label + '</div><div class="panel-body">' + wpsn.fontPromptHTML(note[wpsn.menu.media.modes.media.id] != null) + '</div></div>',
@@ -4679,37 +4702,6 @@
 			$sampleTextSpan.css('position', 'absolute');
 			if (!preventResize) wpsn.autoResize(note);
 		}).change();
-		let colorInput = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"],input[name="wpsn_mediatextcolor"]');
-		wpsn.colorPicker(colorInput);
-		colorInput.keyup(function () {
-			$(this).css('background', $(this).val());
-			$(this).change();
-		}).focus(function () {
-			$(this).siblings('canvas,div,span').show();
-			$(this).change();
-		}).blur(function () {
-			$(this).siblings('canvas,div,span').hide();
-			$(this).change();
-		}).change(function () {
-			if ($(this).is('input[name="wpsn_background"]')) {
-				$('.wpsn_sample_text').css('background', $(this).val());
-			}
-			if ($(this).is('input[name="wpsn_textcolor"]')) {
-				$('.wpsn_sample_text').css('color', $(this).val());
-			}
-			if ($(this).is('input[name="wpsn_bordercolor"]')) {
-				$('.wpsn_sample_text').css('border-color', $(this).val());
-			}
-			if ($(this).is('input[name="wpsn_mediatextcolor"]')) {
-				$('.wpsn_sample_text').css('color', $(this).val());
-			}
-		}).siblings('canvas,div,span').hide();
-		colorInput.each(function () {
-			$(this).css('background', $(this).val());
-		});
-		noteDiv.unbind('click.wpsn').bind('click.wpsn', function () {
-			colorInput.change();
-		}).click();
 
 		noteDiv.find('input[name="wpsn_textposition"]').unbind('change').bind('change', function () {
 			let pos = $(this).val();
@@ -4732,11 +4724,6 @@
 			}
 		});
 		noteDiv.find('input[name="wpsn_textshadow"]:checked').change();
-
-		let ul = $('ul.colorpicker').css({ 'list-style-type': 'none', 'list-style-image': 'none', 'padding-left': '5px' });
-		ul.find('li').css({ 'cursor': 'pointer', 'width': (wpsn.settings.defaultIconSize||14)+'px', 'height': (wpsn.settings.defaultIconSize||14)+'px', 'border': '1px solid #ccc', 'float': 'left' }).click(function () {
-			$('input[name="' + $(this).parent('ul').data('wpsn.input') + '"]').val($(this).css('background-color')).change();
-		});
 
 		$('input[name="wpsn_font_size"]').bind('change', function () {
 			let size = $(this).val() || 0;
@@ -4777,42 +4764,22 @@
 		prompt +=
 			'<label for="wpsn_background">Background</label><br/>' +
 			'<input type="text" name="wpsn_background" id="wpsn_background"/>' +
-			'<ul class="colorpicker" data-wpsn.input="wpsn_background">';
-		let background = ['#ffa', '#fc6', '#faf', '#faa', '#aaf', '#9cf', '#aff', '#afa', '#eee', '#fff', '#000', wpsn.transparent];
-		for (let i = 0; i < background.length; i++) {
-			prompt += '<li style="background-color:' + background[i] + '">&nbsp;</li>';
-		}
-		prompt += '</ul><br/>';
+			'<br/>';
 		prompt +=
 			'<label for="wpsn_bordercolor">Border Color</label><br/>' +
 			'<input type="text" name="wpsn_bordercolor" id="wpsn_bordercolor"/>' +
-			'<ul class="colorpicker" data-wpsn.input="wpsn_bordercolor">';
-		let bordercolor = ['#000', '#222', '#444', '#666', '#888', '#aaa', '#ccc', '#eee', '#fff', wpsn.transparent];
-		for (let i = 0; i < bordercolor.length; i++) {
-			prompt += '<li style="background-color:' + bordercolor[i] + '">&nbsp;</li>';
-		}
-		prompt += '</ul><br/>';
+			'<br/>';
 		if (!isMedia) {
 			prompt +=
 				'<label for="wpsn_textcolor">Text Color</label><br/>' +
 				'<input type="text" name="wpsn_textcolor" id="wpsn_textcolor"/>' +
-				'<ul class="colorpicker" data-wpsn.input="wpsn_textcolor">';
-			let textcolor = ['#000', '#222', '#444', '#666', '#888', '#aaa', '#ccc', '#eee', '#fff'];
-			for (let i = 0; i < textcolor.length; i++) {
-				prompt += '<li style="background-color:' + textcolor[i] + '">&nbsp;</li>';
-			}
-			prompt += '</ul><br/>';
+				'<br/>';
 		}
 		if (isMedia || includeMedia) {
 			prompt +=
 				'<label for="wpsn_mediatextcolor">Media Text Color</label><br/>' +
 				'<input type="text" name="wpsn_mediatextcolor" id="wpsn_mediatextcolor"/>' +
-				'<ul class="colorpicker" data-wpsn.input="wpsn_mediatextcolor">';
-			let textcolor = ['#000', '#222', '#444', '#666', '#888', '#aaa', '#ccc', '#eee', '#fff'];
-			for (let i = 0; i < textcolor.length; i++) {
-				prompt += '<li style="background-color:' + textcolor[i] + '">&nbsp;</li>';
-			}
-			prompt += '</ul><br/>';
+				'<br/>';
 			prompt += '<label>Media Text Shadow:</label><br/>';
 			prompt += '<input type="radio" name="wpsn_textshadow" value="true" id="wpsn-textshadow-true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-textshadow-true"><b>True</b></label> ';
 			prompt += '<input type="radio" name="wpsn_textshadow" value="false" id="wpsn-textshadow-false" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-textshadow-false"><b>False</b></label> ';
@@ -5341,79 +5308,130 @@
 		return wpsn.changeEffectiveNotesColorByType(note, color, background, 'border');
 	};
 
-	wpsn.getColor = async function (color, defaultColor, header) {
+	wpsn.cloneCanvas = function(oldCanvas) {
+
+		//create a new canvas
+		var newCanvas = document.createElement('canvas');
+		var context = newCanvas.getContext('2d');
+	
+		//set dimensions
+		newCanvas.width = oldCanvas.width;
+		newCanvas.height = oldCanvas.height;
+	
+		//apply the old canvas to the new one
+		context.drawImage(oldCanvas, 0, 0);
+	
+		//return the new canvas
+		return newCanvas;
+	}
+
+	wpsn.colorInput = function(note, $inputs, canvas) {
+		$inputs.each(function(){
+			let $input = $(this);
+	
+			let colors = $input.data('predefinedColors').split('|');
+			if (colors.length == 0) {
+				colors = ['#ffa', '#fc9', '#faf', '#faa', '#aaf', '#9cf', '#aff', '#afa', '#000', '#222', '#444', '#666', '#888', '#aaa', '#ccc', '#eee', '#fff', wpsn.transparent];
+			}
+			let defaultColor = $input.val();
+			let $predefined = $(wpsn.predifinedColors(colors));
+
+			$input.css('position','sticky');
+
+			if ($inputs.size() == 1) {
+				$input.after($('<span/>').css('font-size', 'x-small').append('<br/>Powered by ').append($('<a>Jquery UI Colorpicker</a>').attr('href', 'https://bitbucket.org/lindekleiv/jquery-ui-colorpicker')));
+			}
+			$input.after($('<div class="wpsn-canvas-color-div"></div>'));
+			$input.after($predefined);
+			wpsn.colorPicker($input);
+			$input.colorPicker('setColor', defaultColor);
+			if ($inputs.size() > 1) {
+				setTimeout(function(){
+					$inputs.siblings().hide();
+				}, 0);
+				$input.focus(function(){
+					$inputs.siblings().hide();
+					$input.siblings().show();
+					$('.wpsn-canvas-color').hide();
+				});
+			}
+			$input.keyup(function () {
+				let $this = $(this);
+				let newColor = $this.val();
+				$this.css('background', newColor);
+				try { $input.colorPicker('setColor', newColor); } catch (err) { wpsn.error(err); }
+			});
+			$($predefined).find('li').click(function () {
+				let color = $(this).data('color');
+				
+				$input.val(color);
+				$input.colorPicker('setColor', color);
+			});
+			$input.css('background', $input.val());
+
+
+			if (canvas) {
+				canvas = wpsn.cloneCanvas(canvas);
+				$predefined.append(
+					$('<li class="wpsn-eyedropper" style="display:none;break:left;cursor:hand;list-style-type:none;float:left;width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'px;border:1px solid #ddd;background:#fff url(\'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/eyedrop.svg\') no-repeat -1px -1px;background-size:cover">&nbsp;</li>')
+						.click(function(){
+							$('.wpsn-canvas-color').hi
+							let $canvas = $(this).parent().next('.wpsn-canvas-color-div').find('.wpsn-canvas-color');
+							if ($canvas.size() > 0) {
+								let visible = $canvas.is(':visible');
+								$('.wpsn-canvas-color').hide();
+								$canvas.toggle(!visible);
+								wpsn.autoResize(note);
+								$input.focus();
+								$canvas.toggle(!visible);
+							}
+						})
+				);
+
+				let $canvas = $(canvas).click(function(){
+					$(this).data('eyedropperActive', !$(this).data('eyedropperActive'));
+				}).mousemove(function(e){
+					if (!$(this).data('eyedropperActive')) { return; }
+					let boundingRect = this.getBoundingClientRect();
+					let mouseX=parseInt(e.clientX-boundingRect.left);
+					let mouseY=parseInt(e.clientY-boundingRect.top);
+					let ctx = this.getContext('2d');
+					let pxData = ctx.getImageData(mouseX,mouseY,1,1);
+					let color = `rgba(${pxData.data[0]},${pxData.data[1]},${pxData.data[2]},${pxData.data[3]})`;
+					$input.val(color);
+					$input.colorPicker('setColor', color);
+					$input.change();
+				}).attr('title','Click once to activate color selection. Click again to select color.');
+				$canvas.addClass('wpsn-canvas-color');
+				$canvas.css('border','1px solid #ccc').css('display','block').css('clear','both').hide();
+				$canvas.data('wpsn-loaded',true);
+				$input.parent().nextAll('.wpsn-canvas-color-div').first().empty().append($canvas);
+				$('.wpsn-eyedropper').show();
+			}
+		});
+	}
+
+	wpsn.getColor = async function (color, defaultColor, header, type) {
 		if (color && color.indexOf('#') === 0 || color.indexOf('.') === -1) {
 			return color;
 		}
 		defaultColor = defaultColor || color;
-
-		let $canvas;
-		wpsn.takeScreenshot($(document.body),{canvasWidth:1000}).then(async function(imageAndCanvas){
-			let canvas = imageAndCanvas.canvas;
-			$canvas = $(canvas).click(function(){
-				$(this).data('eyedropperActive', !$(this).data('eyedropperActive'));
-			}).mousemove(function(e){
-				if (!$(this).data('eyedropperActive')) { return; }
-				let boundingRect = canvas.getBoundingClientRect();
-				let mouseX=parseInt(e.clientX-boundingRect.left);
-				let mouseY=parseInt(e.clientY-boundingRect.top);
-				let ctx = this.getContext('2d');
-				let pxData = ctx.getImageData(mouseX,mouseY,1,1);
-				let color = `rgba(${pxData.data[0]},${pxData.data[1]},${pxData.data[2]},${pxData.data[3]})`;
-				let $color = $('input.wpsn-prompt');
-				$color.val(color);
-				$color.colorPicker('setColor', color);
-			}).attr('title','Click once to activate color selection. Click again to select color.');
-			$canvas.addClass('wpsn-canvas-color');
-			$canvas.css('border','1px solid #ccc').css('display','block').css('clear','both').hide();
-			$canvas.data('wpsn-loaded',true);
-			$('.wpsn-canvas-color-div').empty().append($canvas);
-			$('.wpsn-eyedropper').show();
-		});
-		await wpsn.wait(500);
+		let imageAndCanvas = await wpsn.takeScreenshot($(document.body),{canvasWidth:1000});
+		let canvas = imageAndCanvas.canvas;
 		return await wpsn.promptWithTextInput(
 			{
 				load: function (note) {
-					let input = $('input.wpsn-prompt');
-					let colors = ['#ffa', '#fc6', '#faf', '#faa', '#aaf', '#9cf', '#aff', '#afa', '#000', '#222', '#444', '#666', '#888', '#aaa', '#ccc', '#eee', '#fff', wpsn.transparent];
-					let $predefined = $(wpsn.predifinedColors(colors));
-
-					let $color = $('input.wpsn-prompt').css('position','sticky');
-
-					input.after($('<span/>').css('font-size', 'x-small').append('<br/>Powered by ').append($('<a>Jquery UI Colorpicker</a>').attr('href', 'https://bitbucket.org/lindekleiv/jquery-ui-colorpicker')));
-					input.after($('<div class="wpsn-canvas-color-div"></div>'));
-					input.after($predefined);
-					wpsn.colorPicker(input);
-					input.colorPicker('setColor', defaultColor);
-					input.keyup(function () {
-						let $this = $(this);
-						let newColor = $this.val();
-						$this.css('background', newColor);
-						try { input.colorPicker('setColor', newColor); } catch (err) { wpsn.error(err); }
-					});
-					$($predefined).find('li').click(function () {
-						let color = $(this).data('color');
-						
-						$color.val(color);
-						$color.colorPicker('setColor', color);
-					});
-					$predefined.append(
-						$('<li class="wpsn-eyedropper" style="display:none;break:left;cursor:hand;list-style-type:none;float:left;width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'px;border:1px solid #ddd;background:#fff url(\'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/eyedrop.svg\') no-repeat -1px -1px">&nbsp;</li>')
-							.click(function(){
-								let $canvas = $('.wpsn-canvas-color');
-								if ($canvas.size() > 0) {
-									$canvas.toggle();
-									wpsn.autoResize(note);
-								}
-							})
-					);
-					input.css('background', input.val());
-
-					if ($canvas.data('wpsn-loaded')){
-						$('.wpsn-canvas-color-div').empty().append($canvas);
-						$('.wpsn-eyedropper').show();
+					let $input = $('input.wpsn-prompt');
+					let colors = [];
+					if (type == 'border') {
+						colors = ['#000', '#222', '#444', '#666', '#888', '#aaa', '#ccc', '#eee', '#fff', wpsn.transparent];
+					} else if (type == "text") {
+						colors = ['#000', '#222', '#444', '#666', '#888', '#aaa', '#ccc', '#eee', '#fff'];
+					} else {
+						colors = ['#ffa', '#fc9', '#faf', '#faa', '#aaf', '#9cf', '#aff', '#afa', '#eee', '#fff', wpsn.transparent];
 					}
-
+					$input.data('predefinedColors', colors.join('|'))
+					wpsn.colorInput(note, $input, canvas);
 					wpsn.autoResize(note);
 					wpsn.centerNote(note);
 				}
@@ -5447,13 +5465,13 @@
 			let colorHeader = (type ? (wpsn.capitalize(type) + ' ') : '') + 'Color for ' + label + ':';
 			let defaultColor = effectiveNotes.notes[0][type ? type + 'color' : 'background'];
 			if (label == 'current note') {
-				color = await wpsn.getColor(color, defaultColor, colorHeader);
+				color = await wpsn.getColor(color, defaultColor, colorHeader, type);
 				for (let enote of effectiveNotes.notes) {
 					enote[type ? type + 'color' : 'background'] = color;
 					wpsn.refreshNote(enote);
 				}
 			} else {
-				color = await wpsn.getColor(color, defaultColor, colorHeader);
+				color = await wpsn.getColor(color, defaultColor, colorHeader, type);
 				for (let enote of effectiveNotes.notes) {
 					enote[type ? type + 'color' : 'background'] = color;
 					wpsn.refreshNote(enote);
@@ -5720,7 +5738,7 @@
 			applyToAll: true
 		},
 		doubleClick: {
-			description: 'Render note stored at provided URL (experimental). Please advise that remote note will not override most look and feel properties of current note',
+			description: 'Render note stored at provided URL (experimental). Please be advised that remote note will not override most look and feel properties of current note',
 			action: function (note) {
 				wpsn.prompt(
 					wpsn.menu.refresh.fetchNoteFormOptions(note),
@@ -6541,7 +6559,7 @@
 				<tbody></tbody></table><input type="hidden" name="wpsn_provided_notes" class="wpsn_provided_notes"/>
 		`;
 
-			let form = await wpsn.prompt({ background: '#fff', order: 10000, fullscreen: true, isNotPopup: true, load: function () { wpsn.manager.renderManagerLoad(note, notes, message, selectNotes); } }, html);
+			let form = await wpsn.prompt({ background: '#fff', fullscreen: true, isNotPopup: true, load: function () { wpsn.manager.renderManagerLoad(note, notes, message, selectNotes); } }, html);
 			return form.wpsn_provided_notes ? JSON.parse(form.wpsn_provided_notes) : [];
 		},
 		renderManagerLoad: function (note, notes, message, selectNotes) {
@@ -7819,8 +7837,8 @@
 			let text = note.text;
 		
 			text = text
-				.replace(/(^|\n)(\s*|\t*)-\s/g, '$1$2- <span class="wpsn-md-node wpsn-md-expanded"></span> ')
-				.replace(/(^|\n)(\s*|\t*)x\s/g, '$1$2- <span class="wpsn-md-node wpsn-md-collapsed"></span> ');
+				.replace(/(^|\n)(\s*|\t*)-\s/g, '$1$2- <span class="wpsn-md-node wpsn-md-expanded" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"></span> ')
+				.replace(/(^|\n)(\s*|\t*)x\s/g, '$1$2- <span class="wpsn-md-node wpsn-md-collapsed" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"></span> ');
 
 			note.previewText = text;
 
@@ -8857,7 +8875,7 @@ wpsn.menu.calculator = {
 				'<div class="panel panel-default"><div class="panel-heading">Default Background</div><div class="panel-body">'+
 				'<input type="text" name="background"/>'+
 				'<ul class="colorpicker" data-wpsn.input="background">';
-				let background = ['#ffa','#fc6','#faf','#faa','#aaf','#9cf','#aff','#afa','#eee','#fff','#000','hsla(0, 0, 0, 0)'];
+				let background = ['#ffa','#fc9','#faf','#faa','#aaf','#9cf','#aff','#afa','#eee','#fff','#000','hsla(0, 0, 0, 0)'];
 				for (let i = 0; i < background.length; i++) {
 					promptHTML += '<li style="background-color:'+background[i]+'">&nbsp;</li>';
 				}
@@ -8947,27 +8965,25 @@ wpsn.menu.calculator = {
 							'<input type="radio" name="monetizationOption" value="ad" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> Ad <input type="radio" name="monetizationOption" value="affiliate" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> Affiliate <br/> <a href="https://chrome.google.com/webstore/detail/web-page-sticky-notes-%3E-a/okmbdoenngkhmcijiamaeamgminpkdho?hl=en-US&gl=US&authuser=1">Purchase Ad-Free Add-On</a></div></div>';
 					}
 				}
-				wpsn.prompt(
+
+				let imageAndCanvas = await wpsn.takeScreenshot($(document.body),{canvasWidth:1000});
+				let canvas = imageAndCanvas.canvas;
+				
+				await wpsn.prompt(
 					{
-						maxWidth: 700, minWidth: 330, 
+						maxWidth: 1000, minWidth: 330, 
 						load: function (note) {
-							let colorInput = $('input[name="background"],input[name="textcolor"],input[name="bordercolor"]');
-							wpsn.colorPicker(colorInput);
-							colorInput.keyup(function () {
-								$(this).css('background', $(this).val());
-							}).focus(function () {
-								$(this).siblings('canvas,div,span').show();
-							}).blur(function () {
-								$(this).siblings('canvas,div,span').hide();
-							}).siblings('canvas,div,span').hide();
-							colorInput.each(function () {
-								$(this).css('background', $(this).val());
-							});
-							let ul = $('ul.colorpicker').css({ 'list-style-type': 'none', 'padding-left': '5px' });
-							ul.find('li').css({ 'cursor': 'pointer', 'width': (wpsn.settings.defaultIconSize||14)+'px', 'height': (wpsn.settings.defaultIconSize||14)+'px', 'border': '1px solid #ccc', 'float': 'left' }).click(function () {
-								$('input[name="' + $(this).parent('ul').data('wpsn.input') + '"]').val($(this).css('background-color')).change();
-							});
 							//input.eq(0).focus();
+
+							$('input[name="wpsn_background"]').data('predefinedColors', '#ffa|#fc9|#faf|#faa|#aaf|#9cf|#aff|#afa|#eee|#fff|'+wpsn.transparent);
+							$('input[name="wpsn_textcolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff');
+							$('input[name="wpsn_bordercolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff|'+wpsn.transparent);
+							$('input[name="wpsn_mediatextcolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff');
+
+							let $input = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"],input[name="wpsn_mediatextcolor"]');
+							
+							wpsn.colorInput(note, $input, canvas);
+							
 							let sizeInput = $('input[name="defaultWidth"],input[name="defaultHeight"],input[name="defaultIconSize"]').bind('change', function () {
 								$('span.' + $(this).data('display')).text($(this).val() + 'px');
 							});

@@ -88,8 +88,9 @@
   height: 14px;
   width: 14px;
   position: relative;
-  top: 5px;
+  vertical-align: middle;
   cursor: pointer;
+  background-size:cover;
 }
 
 .wpsn-md-node:hover {
