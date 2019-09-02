@@ -22,9 +22,9 @@
 			'domain': 'wpsn.DOMAIN.' + location.hostname,
 			'global': 'wpsn.GLOBAL'
 		};
-		wpsn.mainmenu_left = ['maximize', 'minimize', 'fullscreen', 'color', 'refresh', 'font', 'lock', 'mode', 'zoom', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'snapshot', 'checklist','code', 'diagram'];
+		wpsn.mainmenu_left = ['maximize', 'minimize', 'fullscreen', 'lookandfeel', 'refresh', 'lock', 'mode', 'zoom', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'snapshot', 'checklist','code', 'diagram'];
 		wpsn.mainmenu_right = ['synchronize', 'export', 'clone', 'add', 'more', 'remove', 'removePopup', 'tips', 'about', 'manager', 'settings', 'whatsnew'];
-		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'color', 'snapshot', 'zoom', 'lock', 'font', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'export', 'synchronize', 'removePopup', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'checklist', 'code', 'diagram', 'mode'];
+		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'lookandfeel', 'snapshot', 'zoom', 'lock', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'export', 'synchronize', 'removePopup', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'checklist', 'code', 'diagram', 'mode'];
 		wpsn.filters = {
 			'blur': { max: 4, unit: 'px', value: 0, step: 0.25, division: 4 },
 			'grayscale': { max: 100, unit: '%', value: 0, step: 1, division: 4 },
@@ -930,11 +930,11 @@
 					*/
 				);
 			if (wpsn.isMedia(note)) {
-				textarea.css('color', (note.mediatextcolor || wpsn.settings.mediatextcolor || '#fff;'));
-				textarea.addClass('wpsn-text-shadow');
+				textarea.css('color', (note.textcolor || wpsn.settings.textcolor || '#fff;'));
 			}
 			if (note.textshadow && note.textshadow != 'false') {
 				textarea.addClass('wpsn-text-shadow');
+				textarea.css('color', '#fff');
 			}
 			//if (note.textposition) {
 			//textarea.addClass('wpsn-text-'+note.textposition);
@@ -1794,7 +1794,7 @@
 		$input.colorPicker();
 	}
 
-	wpsn.mediaFilterPrompt = function (note) {
+	wpsn.mediaFilterPrompt = async function (note) {
 		{
 			$('.wpsn-media-filter-prompt').remove();
 			let filters = wpsn.filters;
@@ -1826,7 +1826,7 @@
 			promptHTML += '</tr><tr>';
 
 			filtersTransformsInit['wpsn_media_tracer_enabled'] = note.mediaTracer ? note.mediaTracer.enabled ? 'true' : 'false' : 'false';
-			promptHTML += '<td style="vertical-align:top;border:0" class="wpsn-media-tracer-td"><div class="panel panel-default"><div class="panel-heading">Convert To SVG <input type="checkbox" name="wpsn_media_tracer_enabled" class="wpsn_media_tracer_enabled" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/>:</div><div class="panel-body" style="height:455px"><table width="100%">';
+			promptHTML += '<td style="vertical-align:top;border:0" class="wpsn-media-tracer-td"><div class="panel panel-default"><div class="panel-heading">Convert To SVG <input type="checkbox" name="wpsn_media_tracer_enabled" class="wpsn_media_tracer_enabled" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/>:</div><div class="panel-body" style="height:496px"><table width="100%">';
 			for (let tracer in tracers) {
 				let options = '';
 				for (let i = (tracers[tracer].min || 0); i <= tracers[tracer].max; i = i + ((tracers[tracer].max - (tracers[tracer].min || 0)) / tracers[tracer].division)) {
@@ -1840,15 +1840,19 @@
 
 			filtersTransformsInit['wpsn_transparency_color'] = note.colorToTransparent ? note.colorToTransparent.color || '#ffffff' : '#ffffff';
 			filtersTransformsInit['wpsn_transparency_threshold'] = note.colorToTransparent ? note.colorToTransparent.threshold || 0 : 0;
-			promptHTML += '<td style="vertical-align:top;border:0" class="wpsn-color-to-transparent-td"><div class="panel panel-default"><div class="panel-heading">Media Color to Transparent:</div><div class="panel-body" style="height:455px"><table width="100%">';
+			promptHTML += '<td style="vertical-align:top;border:0" class="wpsn-color-to-transparent-td"><div class="panel panel-default"><div class="panel-heading">Media Color to Transparent:</div><div class="panel-body" style="height:500px"><table width="100%">';
 			promptHTML += '<input type="text" name="wpsn_transparency_color" class="wpsn_transparency_color" value="' + filtersTransformsInit['wpsn_transparency_color'] + '"/><br/><br/>Threshold:<br/><input type="range" style="width:100%;" name="wpsn_transparency_threshold" class="wpsn_transparency_threshold" min="0" max="255" step="5" value="' + filtersTransformsInit['wpsn_transparency_threshold'] + '"><span class="wpsn_transparency_threshold_display"/>';
 			promptHTML += '</table></div></div></td>';
 
 			promptHTML += '</tr></tbody></table>';
-			promptHTML = '<div style="zoom:75%">' + promptHTML + '</div>';
+			promptHTML = '<div>' + promptHTML + '</div>';
 			let $noteDiv = wpsn.getNoteDiv(note);
 			let originalNote = note;
-			wpsn.prompt(
+
+			let imageAndCanvas = await wpsn.takeScreenshot($(document.body),{canvasWidth:1000});
+			let canvas = imageAndCanvas.canvas;
+
+			await wpsn.prompt(
 				{
 					'maxWidth': 1200, note: { clazz: 'wpsn-media-filter-prompt', discard: true, isPopup: true, htmlMode: true, isNotPopup: true, pos_x: note.pos_x + parseInt(note.width), pos_y: note.pos_y, 'menu': ['removePopup', 'snapshot'] }, load: function () {
 						let $media = $('.wpsn-media', $noteDiv);
@@ -1905,20 +1909,14 @@
 					
 
 						$tracer.eq(0).change();
-						let $color = $('input.wpsn_transparency_color');
-						//$color.after($('<span/>').css('font-size','x-small').append('Powered by ').append($('<a>Jquery UI Colorpicker</a>').attr('href','https://bitbucket.org/lindekleiv/jquery-ui-colorpicker')));
-						wpsn.colorPicker($color);
-						$color.bind('change', function () {
+
+						let $color = $('input.wpsn_transparency_color').bind('change', function () {
 							transparentOptions.color = $(this).val();
 							wpsn.menu.media.renderTransparentAndVectorizer(originalNote, { transparentOptions: transparentOptions, vectorizerOptions: tracerValues });
-						}).keyup(function () {
-							$(this).css('background', $(this).val());
-							$(this).change();
-						}).bind('colorChange', function () {
-							$(this).change();
-						});
+						}).data('predefinedColors', '#ffa|#fc9|#fcf|#faa|#aaf|#9cf|#aff|#afa|#eee|#fff');
+						wpsn.colorInput($color, canvas);
+
 						$('.alpha.slider').hide();
-						$color.css('background', $color.val());
 						let $threshold = $('.wpsn_transparency_threshold').bind('change', function () {
 							transparentOptions.threshold = parseInt($(this).val() || 0);
 							$('span.wpsn_transparency_threshold_display').text(transparentOptions.threshold);
@@ -3748,9 +3746,6 @@
 		'b-stop-editing-note':  async function (commandName, info) { await wpsn.stopEditingEffectiveNotes(info.note); },
 		'minimize-note': async function (commandName, info) { await wpsn.minimizeEffectiveNotes(info.note); },
 		'maximize-note': async function (commandName, info) { await wpsn.maximizeEffectiveNotes(info.note); },
-		'change-color-note': async function (commandName, info) { await wpsn.changeEffectiveNotesColor(info.note, info.menuButton.data('color'), info.menuButton.css('background')); },
-		'change-text-color-note': async function (commandName, info) { await wpsn.changeEffectiveNotesTextColor(info.note, info.menuButton.data('color'), info.menuButton.css('background')); },
-		'change-border-color-note': async function (commandName, info) { await wpsn.changeEffectiveNotesBorderColor(info.note, info.menuButton.data('color'), info.menuButton.css('background')); },
 		'zoom-in-note': async function (commandName, info) { await wpsn.zoomInEffectiveNotes(info.note); },
 		'zoom-out-note': async function (commandName, info) { await wpsn.zoomOutEffectiveNotes(info.note); },
 		'zoom-on-note': async function (commandName, info) { await wpsn.zoomOnEffectiveNotes(info.note); },
@@ -3792,7 +3787,7 @@
 		'toggle-fullscreen-note': async function (commandName, info) { await wpsn.toggleFullscreenEffectiveNotes(info.note); },
 		'resize-note-paper-ratio': async function (commandName, info) { await wpsn.resizeEffectiveNotesToPaperRatio(info.note); },
 		'refresh-note': async function (commandName, info) { await wpsn.refreshEffectiveNotes(info.note, info); },
-		'update-font-note': async function (commandName, info) { await wpsn.updateFontForEffectiveNotes(info.note); },
+		'update-lookandfeel-note': async function (commandName, info) { await wpsn.updateLookAndFeelForEffectiveNotes(info.note); },
 		'toggle-lock-note': async function (commandName, info) { await wpsn.toggleLockEffectiveNotes(info.note); },
 		'update-mode-note': async function (commandName, info) { await wpsn.updateEffectiveNotesMode(info.note); },
 
@@ -4611,7 +4606,7 @@
 			'</div></div>';
 	};
 
-	wpsn.updateFontForEffectiveNotes = async function (noteOrNotes) {
+	wpsn.updateLookAndFeelForEffectiveNotes = async function (noteOrNotes) {
 		let effectiveNotes = await wpsn.getEffectiveNotes(noteOrNotes);
 		let note = effectiveNotes.notes[0];
 
@@ -4626,35 +4621,33 @@
 						load: function(note, preventResize){
 							wpsn.fontPromptLoad(note, preventResize);
 							
-							$('input[name="wpsn_background"]').data('predefinedColors', '#ffa|#fc9|#faf|#faa|#aaf|#9cf|#aff|#afa|#eee|#fff|'+wpsn.transparent);
+							$('input[name="wpsn_background"]').data('predefinedColors', '#ffa|#fc9|#fcf|#faa|#aaf|#9cf|#aff|#afa|#eee|#fff|'+wpsn.transparent);
 							$('input[name="wpsn_textcolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff');
-							$('input[name="wpsn_bordercolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff'+wpsn.transparent);
-							$('input[name="wpsn_mediatextcolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff');
+							$('input[name="wpsn_bordercolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff|'+wpsn.transparent);
 
-							let $input = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"],input[name="wpsn_mediatextcolor"]');
+							let $input = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"]');
 							
-							wpsn.colorInput(note, $input, canvas);
+							wpsn.colorInput($input, canvas);
 						},
 						minWidth: 600
 					},
-					'<div class="panel panel-default"><div class="panel-heading">Specify font properties for ' + effectiveNotes.label + '</div><div class="panel-body">' + wpsn.fontPromptHTML(note[wpsn.menu.media.modes.media.id] != null) + '</div></div>',
+					'<div class="panel panel-default"><div class="panel-heading">Specify look and feel properties for ' + effectiveNotes.label + '</div><div class="panel-body">' + wpsn.fontPromptHTML(note[wpsn.menu.media.modes.media.id] != null) + '</div></div>',
 					{
 						'wpsn_font_family': note.font ? note.font.family : '',
-						'wpsn_font_size': note.font ? note.font.size || '14' : '14',
+						'wpsn_font_size': note.font ? note.font.size || '0' : '0',
 						'wpsn_background': note.background || '',
 						'wpsn_textcolor': note.textcolor || '',
 						'wpsn_textposition': note.textposition || '',
-						'wpsn_mediatextcolor': note.mediatextcolor || '',
 						'wpsn_textshadow': note.textshadow || '',
 						'wpsn_bordercolor': note.bordercolor || ''
 					}
 				);
 			},
-			wpsn.updateFontForNote
+			wpsn.updateLookAndFeelForNote
 		);
 	};
 
-	wpsn.updateFontForNote = function (note, form) {
+	wpsn.updateLookAndFeelForNote = function (note, form) {
 		if (form) {
 			note.font = note.font || {};
 			note.font.family = form.wpsn_font_family;
@@ -4662,7 +4655,6 @@
 			note.background = form.wpsn_background;
 			note.textcolor = form.wpsn_textcolor;
 			note.textposition = form.wpsn_textposition;
-			note.mediatextcolor = form.wpsn_mediatextcolor;
 			note.textshadow = form.wpsn_textshadow;
 			note.bordercolor = form.wpsn_bordercolor;
 
@@ -4670,62 +4662,102 @@
 		}
 	};
 
+	wpsn.updateSampleNote = function(note, preventResize) {
+		let $noteDiv = wpsn.getNoteDiv(note);
+
+		let $sampleTextDiv = $noteDiv.find('.wpsn_sample_text_div');
+		let $sampleText = $sampleTextDiv.find('.wpsn_sample_text');
+		let $sampleTextSpan = $sampleText.children('span');
+
+		let $fontFamily = $noteDiv.find('[name="wpsn_font_family"]');
+		let $fontSize = $noteDiv.find('[name="wpsn_font_size"]');
+		let $backgroundColor = $noteDiv.find('[name="wpsn_background"]');
+		let $borderColor = $noteDiv.find('[name="wpsn_bordercolor"]');
+		let $textColor = $noteDiv.find('[name="wpsn_textcolor"]');
+		let $textPosition = $noteDiv.find('input[name="wpsn_textposition"]:checked');
+		let $textShadow = $noteDiv.find('input[name="wpsn_textshadow"]:checked');
+		let $withMedia = $noteDiv.find('input[name="wpsn_withmedia"]:checked');
+
+		let fontFamily = $fontFamily.val();
+		let fontSize = $fontSize.val();
+			fontSize = fontSize ? parseInt(fontSize) : null;
+		let backgroundColor = $backgroundColor.val();
+		let borderColor = $borderColor.val();
+		let textColor = $textColor.val();
+		let textPosition = $textPosition.val();
+		let textShadow = $textShadow.val() == 'true';
+		let withMedia = $withMedia.val() == 'true';
+		
+		$sampleText.css('font-family', fontFamily || 'inherit');
+		$sampleText.css('font-size', fontSize || 'inherit').css('line-height', fontSize ? (fontSize + 9) + 'px' : 'inherit');
+		$sampleText.css('background', (withMedia ? '#fff url(\'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/logo/wpsn-logo.svg\') repeat 0 0' : backgroundColor));
+		$sampleText.css('border', '1px solid '+borderColor);
+		$sampleText.css('color', textColor);
+		let positions = ['top-left', 'top-center', 'top-right', 'center-left', 'center-center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'];
+		for (let i = 0; i < positions.length; i++) { let tpos = positions[i]; $sampleTextSpan.removeClass('wpsn-text-' + tpos);}
+		$sampleTextSpan.addClass('wpsn-text-' + (withMedia ? textPosition: 'top-left'));
+		$sampleTextSpan.removeClass('wpsn-text-shadow');
+		if (withMedia && textShadow) { 
+			$sampleTextSpan.addClass('wpsn-text-shadow'); 
+			$sampleText.css('color', '#fff');
+		}
+
+		$sampleTextSpan.css('position', 'relative');
+		$sampleText.css('height', 'auto');
+		$sampleText.css('height', $sampleText.height() + 50);
+		$sampleTextSpan.css('position', 'absolute');
+
+		//wpsn.autoResize(note);
+	};
+
 	wpsn.fontPromptLoad = function (note, preventResize) {
 		let noteDiv = wpsn.getNoteDiv(note);
+
 		noteDiv.find('[name="wpsn_font_family"]').unbind('input').bind('input', function () {
 			let $that = $(this);
 			wpsn.delay(function () {
+				wpsn.updateSampleNote(note, preventResize);
 				let fontFamily = $that.val();
-				
-				$that.siblings('.wpsn_sample_text_div').find('.wpsn_sample_text').css('font-family', fontFamily || 'inherit');
 				if ($.inArray(fontFamily, wpsn.defaultGoogleFonts) && $.inArray(fontFamily, wpsn.loadedFonts) < 0) {
 					wpsn.loadFonts([fontFamily]);
 				}
-				//if (!preventResize) wpsn.autoResize(note);
+				if (!preventResize) wpsn.autoResize(note);
 			}, 1000);
-		}).trigger('input')
-		.focus(function () { 
+		}).focus(function () { 
 			$(this).select(); 
 		}).focus();
+
+		
+
 		noteDiv.find('[name="wpsn_font_size"]').unbind('change').bind('change', function () {
-			let size = $(this).val();
-			size = size ? parseInt(size) : null;
-			let $sampleTextDiv = $(this).siblings('.wpsn_sample_text_div');
-			let $sampleText = $sampleTextDiv.find('.wpsn_sample_text');
-			let $sampleTextSpan = $sampleText.children('span');
-			$sampleText.css('border', '1px solid #ccc').css('font-size', size || 'inherit').css('line-height', size ? (size + 9) + 'px' : 'inherit');
-			$sampleTextSpan.css('position', 'relative');
-			$sampleText.css('height', 'auto');
-			$sampleText.css('height', $sampleText.height() + 50);
-			//$sampleText.css('width','auto');
-			//$sampleText.css('width',$sampleText.width()+50);
-			$sampleTextSpan.css('position', 'absolute');
-			if (!preventResize) wpsn.autoResize(note);
-		}).change();
+			wpsn.updateSampleNote(note, preventResize);
+		});
+
+		noteDiv.find('input[name="wpsn_background"]').unbind('change').bind('change', function () {
+			wpsn.updateSampleNote(note, preventResize);
+		});
+
+		noteDiv.find('input[name="wpsn_bordercolor"]').unbind('change').bind('change', function () {
+			wpsn.updateSampleNote(note, preventResize);
+		});
+
+		noteDiv.find('input[name="wpsn_textcolor"]').unbind('change').bind('change', function () {
+			wpsn.updateSampleNote(note, preventResize);
+		});
 
 		noteDiv.find('input[name="wpsn_textposition"]').unbind('change').bind('change', function () {
-			let pos = $(this).val();
-			let sampleText = $(this).siblings('.wpsn_sample_text_div').find('.wpsn_sample_text').find('span');
-			let positions = ['top-left', 'top-center', 'top-right', 'center-left', 'center-center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'];
-			for (let i = 0; i < positions.length; i++) {
-				let tpos = positions[i];
-				sampleText.removeClass('wpsn-text-' + tpos);
-			}
-			sampleText.addClass('wpsn-text-' + pos);
+			wpsn.updateSampleNote(note, preventResize);
 		});
-		noteDiv.find('input[name="wpsn_textposition"]:checked').change();
 
 		noteDiv.find('input[name="wpsn_textshadow"]').unbind('change').bind('change', function () {
-			let bool = $(this).val();
-			let sampleText = $(this).siblings('.wpsn_sample_text_div').find('.wpsn_sample_text').find('span');
-			sampleText.removeClass('wpsn-text-shadow');
-			if (bool == 'true') {
-				sampleText.addClass('wpsn-text-shadow');
-			}
+			wpsn.updateSampleNote(note, preventResize);
 		});
-		noteDiv.find('input[name="wpsn_textshadow"]:checked').change();
 
-		$('input[name="wpsn_font_size"]').bind('change', function () {
+		noteDiv.find('input[name="wpsn_withmedia"]').unbind('change').bind('change', function () {
+			wpsn.updateSampleNote(note, preventResize);
+		});
+
+		noteDiv.find('input[name="wpsn_font_size"]').bind('change', function () {
 			let size = $(this).val() || 0;
 			size = parseInt(size) > 0 ? size + 'px' : 'browser default size';
 			$('span.' + $(this).data('display')).text(size);
@@ -4733,11 +4765,11 @@
 			let size = $(this).val() || 0;
 			size = parseInt(size) > 0 ? size + 'px' : 'browser default size';
 			$('span.' + $(this).data('display')).text(size);
-		});
+		}).change();
 
 	};
 
-	wpsn.fontPromptHTML = function (isMedia, includeMedia) {
+	wpsn.fontPromptHTML = function (isMedia, includeMedia, isSettings) {
 		let prompt = '';
 		prompt += '<label for="wpsn_font_family">Font Family:</label><br/><input id="wpsn_font_family" name="wpsn_font_family" class="form-control" type="text" list="wpsn_font_family_list"/>'
 			+ '<datalist id="wpsn_font_family_list">'
@@ -4769,23 +4801,19 @@
 			'<label for="wpsn_bordercolor">Border Color</label><br/>' +
 			'<input type="text" name="wpsn_bordercolor" id="wpsn_bordercolor"/>' +
 			'<br/>';
-		if (!isMedia) {
-			prompt +=
-				'<label for="wpsn_textcolor">Text Color</label><br/>' +
-				'<input type="text" name="wpsn_textcolor" id="wpsn_textcolor"/>' +
-				'<br/>';
-		}
+		prompt +=
+			'<label for="wpsn_textcolor">Text Color</label><br/>' +
+			'<input type="text" name="wpsn_textcolor" id="wpsn_textcolor"/>' +
+			'<br/>';
+		
 		if (isMedia || includeMedia) {
-			prompt +=
-				'<label for="wpsn_mediatextcolor">Media Text Color</label><br/>' +
-				'<input type="text" name="wpsn_mediatextcolor" id="wpsn_mediatextcolor"/>' +
-				'<br/>';
 			prompt += '<label>Media Text Shadow:</label><br/>';
 			prompt += '<input type="radio" name="wpsn_textshadow" value="true" id="wpsn-textshadow-true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-textshadow-true"><b>True</b></label> ';
 			prompt += '<input type="radio" name="wpsn_textshadow" value="false" id="wpsn-textshadow-false" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-textshadow-false"><b>False</b></label> ';
 			prompt += '<br/><br/>';
 		}
 
+		prompt+= '<div style="white-space:nowrap">';
 		if (isMedia || includeMedia) {
 			let positions = ['top-left', 'top-center', 'top-right', 'center-left', 'center-center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'];
 			prompt += '<label>Media Text Position:</label>';
@@ -4795,11 +4823,18 @@
 					prompt += '<br/>';
 				}
 				prompt += '<input type="radio" name="wpsn_textposition" value="' + pos + '" id="wpsn-textposition-' + pos + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/>' +
-					'<label for="wpsn-textposition-' + pos + '" style="width:150px;"><b>' + pos + '</b></label> ';
+					'<label for="wpsn-textposition-' + pos + '" style="width:150px;"><b>' + pos + '</b></label>&nbsp; ';
 			}
 			prompt += '<br/><br/>';
 		}
-		prompt += '<div class="wpsn_sample_text_div"><label>Sample Text:</label><br/><div class="wpsn_sample_text" style="min-height:100px;position:relative;"><span>The quick brown fox jumps over the lazy dog.</span></div></div>';
+		prompt+= '</div>';
+		prompt += '<div class="wpsn_sample_text_div"><label>Sample Note:</label>';
+		if (isSettings) {
+			prompt += '<br/><div class="wpsn_sample_text_div"><label>&nbsp;&nbsp;&nbsp;With Media:</label>';
+			prompt += '<input type="radio" name="wpsn_withmedia" value="true" id="wpsn-withmedia-true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-withmedia-true"><b>True</b></label> ';
+			prompt += '<input type="radio" name="wpsn_withmedia" value="false" id="wpsn-withmedia-false" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-withmedia-false"><b>False</b></label> ';
+		}
+		prompt += '<br/><div class="wpsn_sample_text" style="min-height:100px;position:relative;padding:14px"><span>The quick brown fox jumps over the lazy dog.</span></div></div>';
 		return prompt;
 	};
 
@@ -5295,19 +5330,6 @@
 		wpsn.refreshAllNotes();
 	};
 
-
-	wpsn.changeEffectiveNotesColor = function (note, color, background) {
-		return wpsn.changeEffectiveNotesColorByType(note, color, background, '');
-	};
-
-	wpsn.changeEffectiveNotesTextColor = function (note, color, background) {
-		return wpsn.changeEffectiveNotesColorByType(note, color, background, 'text');
-	};
-
-	wpsn.changeEffectiveNotesBorderColor = function (note, color, background) {
-		return wpsn.changeEffectiveNotesColorByType(note, color, background, 'border');
-	};
-
 	wpsn.cloneCanvas = function(oldCanvas) {
 
 		//create a new canvas
@@ -5325,15 +5347,13 @@
 		return newCanvas;
 	}
 
-	wpsn.colorInput = function(note, $inputs, canvas) {
+	wpsn.colorInput = function($inputs, canvas) {
 		$inputs.each(function(){
 			let $input = $(this);
-	
-			let colors = $input.data('predefinedColors').split('|');
-			if (colors.length == 0) {
-				colors = ['#ffa', '#fc9', '#faf', '#faa', '#aaf', '#9cf', '#aff', '#afa', '#000', '#222', '#444', '#666', '#888', '#aaa', '#ccc', '#eee', '#fff', wpsn.transparent];
-			}
-			let defaultColor = $input.val();
+			let note = wpsn.getNoteFromDiv($input.parents('.wpsn-sticky'))
+			let colors = $input.data('predefinedColors')||'';
+			colors = colors.split('|');
+			let defaultColor = $input.val() || '#fff';
 			let $predefined = $(wpsn.predifinedColors(colors));
 
 			$input.css('position','sticky');
@@ -5346,13 +5366,15 @@
 			wpsn.colorPicker($input);
 			$input.colorPicker('setColor', defaultColor);
 			if ($inputs.size() > 1) {
-				setTimeout(function(){
-					$inputs.siblings().hide();
-				}, 0);
+				//setTimeout(function(){
+					$inputs.siblings('.picker,.slider,.circle,canvas').hide();
+				//}, 0);
 				$input.focus(function(){
 					$inputs.siblings().hide();
 					$input.siblings().show();
 					$('.wpsn-canvas-color').hide();
+				}).blur(function(){
+					$input.siblings('.picker,.slider,.circle,canvas').hide();
 				});
 			}
 			$input.keyup(function () {
@@ -5388,19 +5410,19 @@
 						})
 				);
 
+				let ctx = canvas.getContext('2d');
 				let $canvas = $(canvas).click(function(){
 					$(this).data('eyedropperActive', !$(this).data('eyedropperActive'));
+					$input.change();
 				}).mousemove(function(e){
 					if (!$(this).data('eyedropperActive')) { return; }
 					let boundingRect = this.getBoundingClientRect();
 					let mouseX=parseInt(e.clientX-boundingRect.left);
 					let mouseY=parseInt(e.clientY-boundingRect.top);
-					let ctx = this.getContext('2d');
 					let pxData = ctx.getImageData(mouseX,mouseY,1,1);
 					let color = `rgba(${pxData.data[0]},${pxData.data[1]},${pxData.data[2]},${pxData.data[3]})`;
 					$input.val(color);
-					$input.colorPicker('setColor', color);
-					$input.change();
+					$input.css('background', color);
 				}).attr('title','Click once to activate color selection. Click again to select color.');
 				$canvas.addClass('wpsn-canvas-color');
 				$canvas.css('border','1px solid #ccc').css('display','block').css('clear','both').hide();
@@ -5428,10 +5450,10 @@
 					} else if (type == "text") {
 						colors = ['#000', '#222', '#444', '#666', '#888', '#aaa', '#ccc', '#eee', '#fff'];
 					} else {
-						colors = ['#ffa', '#fc9', '#faf', '#faa', '#aaf', '#9cf', '#aff', '#afa', '#eee', '#fff', wpsn.transparent];
+						colors = ['#ffa', '#fc9', '#fcf', '#faa', '#aaf', '#9cf', '#aff', '#afa', '#eee', '#fff', wpsn.transparent];
 					}
 					$input.data('predefinedColors', colors.join('|'))
-					wpsn.colorInput(note, $input, canvas);
+					wpsn.colorInput($input, canvas);
 					wpsn.autoResize(note);
 					wpsn.centerNote(note);
 				}
@@ -5454,30 +5476,7 @@
 	};
 	wpsn.predifinedColor = function (color) {
 		let background = (color == wpsn.transparent ? '#fff url(\'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/transparent_grid.png\') no-repeat -2px -2px' : color);
-		return '<li style="cursor:hand;list-style-type:none;float:left;background:' + background + ';width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'px;border:1px solid #ddd" data-color="' + color + '">&nbsp;</li>';
-	};
-
-	wpsn.changeEffectiveNotesColorByType = async function (note, color, background, type) {
-		try {
-			type = type || '';
-			let effectiveNotes = await wpsn.getEffectiveNotes(note);
-			let label = effectiveNotes.label;
-			let colorHeader = (type ? (wpsn.capitalize(type) + ' ') : '') + 'Color for ' + label + ':';
-			let defaultColor = effectiveNotes.notes[0][type ? type + 'color' : 'background'];
-			if (label == 'current note') {
-				color = await wpsn.getColor(color, defaultColor, colorHeader, type);
-				for (let enote of effectiveNotes.notes) {
-					enote[type ? type + 'color' : 'background'] = color;
-					wpsn.refreshNote(enote);
-				}
-			} else {
-				color = await wpsn.getColor(color, defaultColor, colorHeader, type);
-				for (let enote of effectiveNotes.notes) {
-					enote[type ? type + 'color' : 'background'] = color;
-					wpsn.refreshNote(enote);
-				}
-			}
-		} catch (err) { wpsn.error(err); }
+		return '<li title="'+background+'" style="cursor:hand;list-style-type:none;float:left;background:' + background + ';width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'px;border:1px solid #ddd" data-color="' + color + '">&nbsp;</li>';
 	};
 
 	wpsn.toggleEffectiveNotesCanvasMode = function (noteOrNotes) {
@@ -5669,32 +5668,13 @@
 		}
 	};
 
-
-	wpsn.menu.color = {
-		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/color.svg',
-		name: 'color',
-		description: '',
-		leftClick: {
-			command: 'change-color-note',
-			applyToAll: true
-		},
-		rightClick: {
-			command: 'change-text-color-note',
-			applyToAll: true
-		},
-		doubleClick: {
-			command: 'change-border-color-note',
-			applyToAll: true
-		}
-	};
-
-	wpsn.menu.font = {
-		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/feather.svg',
-		name: 'font',
+	wpsn.menu.lookandfeel = {
+		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/lookandfeel.svg',
+		name: 'look and feel',
 		description: '',
 		optional: false,
 		leftClick: {
-			command: 'update-font-note',
+			command: 'update-lookandfeel-note',
 			applyToAll: true
 		}
 	};
@@ -7110,10 +7090,10 @@
 					if (ind > -1) {
 						textArr = [note.text.substring(0, ind), note.text.substring(ind + 1)];
 					}
-					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' wpsn-text-top-center wpsn-text-shadow wpsn-meme" style="text-transform:uppercase;font-family:Impact,Verdana;color:' + (note.mediatextcolor || wpsn.settings.mediatextcolor || '#fff;') + '">' + wpsn.markdownConverter(textArr[0]) + '</div>');
-					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' wpsn-text-bottom-center wpsn-text-shadow wpsn-meme" style="text-transform:uppercase;font-family:Impact,Verdana;color:' + (note.mediatextcolor || wpsn.settings.mediatextcolor || '#fff;') + '">' + wpsn.markdownConverter(textArr[1]) + '</div>');
+					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' wpsn-text-top-center wpsn-text-shadow wpsn-meme" style="text-transform:uppercase;font-family:Impact,Verdana;color:' + (note.textcolor || wpsn.settings.textcolor || '#fff;') + '">' + wpsn.markdownConverter(textArr[0]) + '</div>');
+					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' wpsn-text-bottom-center wpsn-text-shadow wpsn-meme" style="text-transform:uppercase;font-family:Impact,Verdana;color:' + (note.textcolor || wpsn.settings.textcolor || '#fff;') + '">' + wpsn.markdownConverter(textArr[1]) + '</div>');
 				} else {
-					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' ' + _textPositionClass + ' ' + _textShadowClass + '" style="color:' + (note.mediatextcolor || wpsn.settings.mediatextcolor || '#fff;') + '">' + wpsn.markdownConverter(note.text) + '</div>');
+					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' ' + _textPositionClass + ' ' + _textShadowClass + '" style="color:' + (note.textcolor || wpsn.settings.textcolor || '#fff;') + '">' + wpsn.markdownConverter(note.text) + '</div>');
 				}
 			}
 			if (props.caption) {
@@ -8875,7 +8855,7 @@ wpsn.menu.calculator = {
 				'<div class="panel panel-default"><div class="panel-heading">Default Background</div><div class="panel-body">'+
 				'<input type="text" name="background"/>'+
 				'<ul class="colorpicker" data-wpsn.input="background">';
-				let background = ['#ffa','#fc9','#faf','#faa','#aaf','#9cf','#aff','#afa','#eee','#fff','#000','hsla(0, 0, 0, 0)'];
+				let background = ['#ffa','#fc9','#fcf','#faa','#aaf','#9cf','#aff','#afa','#eee','#fff','#000','hsla(0, 0, 0, 0)'];
 				for (let i = 0; i < background.length; i++) {
 					promptHTML += '<li style="background-color:'+background[i]+'">&nbsp;</li>';
 				}
@@ -8907,7 +8887,7 @@ wpsn.menu.calculator = {
 					'<div class="panel panel-default"><div class="panel-heading">Default Icon Size</div><div class="panel-body">' +
 					'<span style="display:inline-block;width:50px">Size:</span><input type="range" style="width:100%;" name="defaultIconSize" min="10" max="30" step="1" data-display="wpsn-defaultIconSize"list="wpsn_defaultIconSize"><datalist id="wpsn_defaultIconSize"><option>15</option><option>20</option><option>25</option><option>30</option><option>35</option><option>40</option><option>45</option></datalist></input><span class="wpsn-defaultIconSize" style="padding-left:5px;"></span></div></div>';
 				promptHTML +=
-					'<div class="panel panel-default"><div class="panel-heading">Default Font Properties</div><div class="panel-body">' + wpsn.fontPromptHTML(false, true) + '</div></div>';
+					'<div class="panel panel-default"><div class="panel-heading">Default Look And Feel Properties</div><div class="panel-body">' + wpsn.fontPromptHTML(false, true, true) + '</div></div>';
 
 				promptHTML +=
 					'<div class="panel panel-default"><div class="panel-heading">Default Scope</div><div class="panel-body">' +
@@ -8975,14 +8955,13 @@ wpsn.menu.calculator = {
 						load: function (note) {
 							//input.eq(0).focus();
 
-							$('input[name="wpsn_background"]').data('predefinedColors', '#ffa|#fc9|#faf|#faa|#aaf|#9cf|#aff|#afa|#eee|#fff|'+wpsn.transparent);
+							$('input[name="wpsn_background"]').data('predefinedColors', '#ffa|#fc9|#fcf|#faa|#aaf|#9cf|#aff|#afa|#eee|#fff|'+wpsn.transparent);
 							$('input[name="wpsn_textcolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff');
 							$('input[name="wpsn_bordercolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff|'+wpsn.transparent);
-							$('input[name="wpsn_mediatextcolor"]').data('predefinedColors', '#000|#222|#444|#666|#888|#aaa|#ccc|#eee|#fff');
 
-							let $input = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"],input[name="wpsn_mediatextcolor"]');
+							let $input = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"]');
 							
-							wpsn.colorInput(note, $input, canvas);
+							wpsn.colorInput($input, canvas);
 							
 							let sizeInput = $('input[name="defaultWidth"],input[name="defaultHeight"],input[name="defaultIconSize"]').bind('change', function () {
 								$('span.' + $(this).data('display')).text($(this).val() + 'px');
@@ -9008,7 +8987,6 @@ wpsn.menu.calculator = {
 							'wpsn_background': wpsn.settings.background || '#ffa',
 							'wpsn_textcolor': wpsn.settings.textcolor || '#444',
 							'wpsn_bordercolor': wpsn.settings.bordercolor || '#aaa',
-							'wpsn_mediatextcolor': wpsn.settings.mediatextcolor || '#fff',
 							'wpsn_textposition': wpsn.settings.textposition || 'bottom-center',
 							'wpsn_textshadow': wpsn.settings.textshadow || 'true',
 							'wpsn_mode': wpsn.settings.defaultMode || wpsn.getModeId(wpsn.defaultMode),
@@ -9049,7 +9027,6 @@ wpsn.menu.calculator = {
 							wpsn.settings.background = form.wpsn_background;
 							wpsn.settings.textcolor = form.wpsn_textcolor;
 							wpsn.settings.bordercolor = form.wpsn_bordercolor;
-							wpsn.settings.mediatextcolor = form.wpsn_wpsn_mediatextcolor;
 							wpsn.settings.textposition = form.wpsn_textposition;
 							wpsn.settings.textshadow = form.wpsn_textshadow;
 							wpsn.settings.defaultMode = form.wpsn_mode;

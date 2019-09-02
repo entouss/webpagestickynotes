@@ -539,10 +539,10 @@ z-index: 1000 !important;
 
 .wpsn-text-shadow {
 	text-shadow:
-   -1px -1px 0 #aaa,
-    1px -1px 0 #aaa,
-    -1px 1px 0 #aaa,
-     1px 1px 0 #aaa;
+   -1px -1px 0 #666,
+    1px -1px 0 #666,
+    -1px 1px 0 #666,
+     1px 1px 0 #666;
 }
 
 .wpsn-text-shadow.wpsn-meme, #wpsn-container input.colorInput, #wpsn-popup-container input.colorInput{
