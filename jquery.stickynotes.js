@@ -2674,7 +2674,7 @@
 		let a = array.concat();
 		for (let i = 0; i < a.length; ++i) {
 			for (let j = i + 1; j < a.length; ++j) {
-				if (a[i] === a[j])
+				if (JSON.stringify(a[i]) === JSON.stringify(a[j]))
 					a.splice(j--, 1);
 			}
 		}
@@ -6494,7 +6494,9 @@
 
 			let form = await wpsn.template.prompt({template:wpsn.settings.noteboard_url}, [wpsn.settings.noteboard_url], 'Go to Noteboard', example, {name:names}, true);
 			
-			wpsn.settings.noteboard_url = form.template;
+			let template = JSON.parse(unescape(form.template||"{}"));
+
+			wpsn.settings.noteboard_url = template.template;
 			wpsn.saveSettings();
 		
 			chrome.extension.sendMessage({ gotourl:  form.evaluated, title: form.board_name });
@@ -7677,11 +7679,12 @@
 				let props = Object.assign({},note[wpsn.menu.rss.modes.rssparam.id]);
 				props.template = props.rss;
 				await wpsn.getSettings();
-				wpsn.settings.RSSParams = wpsn.settings.RSSParams || ['http://rss.indeed.com/rss?q={keywords}&l={location}', 'http://rss.jobsearch.monster.com/rssquery.ashx?q={keywords}&where={location}', 'http://{city}.craigslist.org/search/jjj?query={keywords}&format=rss'];
+				wpsn.settings.RSSParams = wpsn.settings.RSSParams || [{'label':'indeed.com','template':'http://rss.indeed.com/rss?q={keywords}&l={location}'}, {'label':'monster.com','template':'http://rss.jobsearch.monster.com/rssquery.ashx?q={keywords}&where={location}'}, {'label':'craigslist.com','template':'http://{city}.craigslist.org/search/jjj?query={keywords}&format=rss'}];
 
 				let form = await wpsn.template.prompt(props, wpsn.settings.RSSParams, 'RSS Feed', 'http://rss.indeed.com/rss?q={keywords}&l={location}');
 				
-				form.rss = form.template;
+				let template = JSON.parse(unescape(form.template||"{}"));
+				form.rss = template.template;
 				delete form.template;
 				wpsn.settings.RSSParams = form.templates;
 				wpsn.saveSettings();
@@ -9101,6 +9104,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'3.0.29': [
+			'FEATURE: Ability to Label/Add/Remove/UpdateAll/InsertNew templates in "Go To URL" feature.'
+		],
 		'3.0.24': [
 			'FEATURE: Increase icon size by popular demand, with the ability to change icon size in  <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/settings.svg"/>'
 		],
@@ -9241,28 +9247,18 @@ wpsn.menu.calculator = {
 		wpsn.settings.GotoURLTemplates = form.templates;
 		wpsn.settings.GotoURLTemplate = form.template;
 		wpsn.saveSettings();
-		
-		window.open(form.evaluated, '_blank');
+		if (form.evaluated) {
+			window.open(form.evaluated, '_blank');
+		}
 	};
 
 	wpsn.template = {
 		promptHTML : function(oneTemplate, templates=[], header, example, formFieldName) {
-			if (!oneTemplate) {
-				templates = [''].concat(templates);
-			}
-			templates = wpsn.removeDuplicates(templates);
 			let formText = `
 			<div>
-				<div class="panel panel-default"><div class="panel-heading">Template:</div><div class="panel-body"><table style="width:100%">
+				<div class="panel panel-default"><div class="panel-heading">Template:</div><div class="panel-body"><table style="width:100%" class="wpsn_template_table"><tbody>
 			`;
-			for (let template of templates) {
-				formText += `
-				<tr><td style="border:0;display:${oneTemplate?'none':'block'}"><input type="radio" name="template" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/></td><td style="padding:5px 0;border:0;width:100%">
-					<input style="width:100%" type="text" name="templates" value="${template}"/>
-				</td></tr>
-				`;
-			}
-			formText += `</table><br/>i.e. ${example}</div></div>`;
+			formText += `</tbody></table></div></div>`;
 			formText += `
 			<div>
 				<div class="panel panel-default"><div class="panel-heading">Parameter(s):</div><div class="panel-body">
@@ -9274,6 +9270,22 @@ wpsn.menu.calculator = {
 				<div class="wpsn_link"></div>
 				</div>
 			</div>
+		${oneTemplate ? '' : `
+			<div>
+				<div class="panel panel-default"><div class="panel-heading">Update all templates:</div><div class="panel-body">
+				<div class="export">
+					<textarea style="width:100%" name="wpsn_templates_export" value="${templates}" placeholder="Update all templates"/>
+				</div>
+				</div>
+			</div>
+			<div>
+				<div class="panel panel-default"><div class="panel-heading">Add new templates:</div><div class="panel-body">
+				<div class="import">
+					<textarea style="width:100%" name="wpsn_templates_import" value="" placeholder="Add new templates"/>
+				</div>
+				</div>
+			</div>
+		`}
 			`;
 			return formText;
 		},
@@ -9289,92 +9301,275 @@ wpsn.menu.calculator = {
 			}
 			return evaledTemplate;
 		},
-		prompt : async function(props={},templates=[], header, example, fieldNames={}, oneTemplate) {
-			let form = await wpsn.prompt({
-				minWidth: 700, load: function () {
-					let checked = false;
-					let $templateRB = $('input[name="template"]');
-					$templateRB.change(function () {
-						let template = $(this).val();
-						var params = {};
-						$.each($(this).closest('form').serializeArray(), function(i, param) {
-							params[param.name] = param.value;
-						});
-						let evaledTemplate = wpsn.template.evaluate(template, params);
-						$('.fielddiv').hide();
-						if (template) {
-							let validFields = template.match(/{.*?}/g);
-							if (validFields) {
-								let $fieldsDiv = $('.fields');
-								for (let i = 0; i < validFields.length; i++) {
-									let validField = validFields[i].substring(1, validFields[i].length - 1);
-									let $validField = $('.fielddiv.' + validField);
-									let formFieldName = validField.toLowerCase().replace(' ', '_');
-									let $formField = $('[name="' + formFieldName + '"]');
-									if ($validField.size() > 0) {
-										$('.' + validField).show();
-									} else {
-										let formFieldExists = true;
-										if ($formField.size() == 0) {
-											formFieldExists = false;
-											let options = '';
-											let names = fieldNames[formFieldName] || [];
-											for (let name of names) {
-												options += `<option>${name}</option>`;
-											}
-											$formField = $(`
-												<div>
-													<input type="text" class="field" name="${formFieldName}" id="${formFieldName}" placeholder="{${formFieldName}}" value="${(props[formFieldName]||'')}" style="width:100% "list="${formFieldName}List" autocomplete="on"/>
-													<datalist id="${formFieldName}List">
-														<optgroup label="Template Names"></optgroup>
-														${options}
-													</datalist>
-												</div>
-											`);
-										}
-										if (!formFieldExists) {
-											$fieldsDiv.append($formField);
-										}
-									} 
-									$formField.off('keyup').on('keyup',function(){
-										$templateRB.filter(':checked').change();
-									});
-								}
-							}
-						}
-						$('.field').each(function () {
-							let $this = $(this);
-							if ($this.closest('.fielddiv').size() == 0) {
-								let $formFieldDiv = $('<div class="' + $this.attr('name') + ' fielddiv">' + $this.attr('name') + ':<br/><span class="fieldspot"></span><br/></div>');
-								$this.before($formFieldDiv);
-								$('.fieldspot', $formFieldDiv).append($this);
-							}
-						})
-						if(!$(document.activeElement).is('.field')) {
-							$('.field:visible').eq(0).focus();
-						}
-						$('.wpsn_link').empty().append($('<a href="'+evaledTemplate+'" target="_blank" style="margin-top:'+wpsn.defaultPadding+'px;">'+evaledTemplate+'</a>'));
-					}).each(function () {
-						let $this = $(this);
-						$this.attr('value', $this.closest('td').next('td').find('input[name="templates"]').val());
-						if (wpsn.htmlEncode(props.template) === wpsn.htmlEncode($this.val())) {
-							$this.attr('checked', 'checked').change();
-							checked = true;
-						}
-					});
-					if (!checked) {
-						$templateRB.eq(0).attr('checked', 'checked').change();
+		repaintTemplates : async function(props={},templates=[], header, example, fieldNames={}, oneTemplate) {
+			let formText = '';
+			//templates = wpsn.removeDuplicates(templates);
+			for (let template of templates) {
+				formText += `
+				<tr>
+					<td style="border:0;display:${oneTemplate?'none':'block'}">
+						<input type="radio" name="template" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}" value="${escape(JSON.stringify(template))}"/>
+					</td>
+				${oneTemplate?'':`
+					<td style="padding:5px 0;border:0;width:25%">
+						<input style="width:100%" type="text" name="template_labels" value="${template.label||""}" placeholder="label"/>
+					</td>
+				`}
+					<td style="padding:5px 0;border:0;width:75%">
+						<input style="width:100%" type="text" name="templates" value="${template.template||""}" placeholder="template (i.e. ${example})"/>
+					</td>
+				${oneTemplate?'':`
+					<td style="padding:5px 0;border:0;">
+						&nbsp;<img class="wpsn_template_remove" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/multiply.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
+					</td>
+				`}
+				</tr>
+				`;
+			}
+			formText += oneTemplate ? "" : `
+			<tr><td colspan="4" style="padding:5px 0;border:0;">
+				<img class="wpsn_template_add" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/plus.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
+			</td></tr>`;
+			$('table.wpsn_template_table tbody').html(formText);
+			wpsn.template.updateAllTemplates(templates);
+		},
+		updateAllTemplates : async function(templates) {
+			templates = templates || await wpsn.template.getAllTemplates();
+			$('[name="wpsn_templates_export"]').val(JSON.stringify(templates));
+		},
+		getAllTemplates : async function() {
+			let templates = [];
+			//$('input[name="template_labels"],input[name="templates"]').change();
+			$('input[name="template"]').each(function(){
+				let tmplt = $(this).val()
+				if (typeof tmplt === "string") {
+					tmplt = wpsn.htmlEncode(tmplt);
+					tmplt = unescape(tmplt||"");
+					try {
+						tmplt = JSON.parse(tmplt || "{}");
+					} catch(err){
+						tmplt = {template:tmplt};
 					}
-					$('input[name="templates"]').each(function () {
-						let $this = $(this);
-						$this.change(function () {
-							$this.closest('td').prev('td').find('input[name="template"]').val($this.val()).change();
-						});
+				}
+				templates.push(tmplt);
+			});
+			return templates;
+		},
+		reloadTemplates : async function(props={},templates=[], header, example, fieldNames={}, oneTemplate) {
+			$('table.wpsn_template_table tbody').sortable({
+				stop: function(){
+					wpsn.template.updateAllTemplates();
+				}
+			});
+				let checked = false;
+				let $templateRB = $('input[name="template"]');
+				$templateRB.change(function () {
+					let tmplt = $(this).val()
+					if (typeof tmplt === "string") {
+						tmplt = wpsn.htmlEncode(tmplt);
+						tmplt = unescape(tmplt||"");
+						try {
+							tmplt = JSON.parse(tmplt || "{}");
+						} catch(err){
+							tmplt = {template:tmplt};
+						}
+					}
+
+					let template = tmplt;
+					var params = {};
+					$.each($(this).closest('form').serializeArray(), function(i, param) {
+						params[param.name] = param.value;
 					});
+					let evaledTemplate = wpsn.template.evaluate(template.template||"", params);
+					$('.fielddiv').hide();
+					if (template) {
+						let validFields = (template.template||"").match(/{.*?}/g);
+						if (validFields) {
+							let $fieldsDiv = $('.fields');
+							for (let i = 0; i < validFields.length; i++) {
+								let validField = validFields[i].substring(1, validFields[i].length - 1);
+								let $validField = $('.fielddiv.' + validField);
+								let formFieldName = validField.toLowerCase().replace(' ', '_');
+								let $formField = $('[name="' + formFieldName + '"]');
+								if ($validField.size() > 0) {
+									$('.' + validField).show();
+								} else {
+									let formFieldExists = true;
+									if ($formField.size() == 0) {
+										formFieldExists = false;
+										let options = '';
+										let names = fieldNames[formFieldName] || [];
+										for (let name of names) {
+											options += `<option>${name}</option>`;
+										}
+										$formField = $(`
+											<div>
+												<input type="text" class="field" name="${formFieldName}" id="${formFieldName}" placeholder="{${formFieldName}}" value="${(props[formFieldName]||'')}" style="width:100% "list="${formFieldName}List" autocomplete="on"/>
+												<datalist id="${formFieldName}List">
+													<optgroup label="Template Names"></optgroup>
+													${options}
+												</datalist>
+											</div>
+										`);
+									}
+									if (!formFieldExists) {
+										$fieldsDiv.append($formField);
+									}
+								} 
+								$formField.off('keyup').on('keyup',function(){
+									$templateRB.filter(':checked').change();
+								});
+							}
+						}
+					}
+					$('.field').each(function () {
+						let $this = $(this);
+						if ($this.closest('.fielddiv').size() == 0) {
+							let $formFieldDiv = $('<div class="' + $this.attr('name') + ' fielddiv">' + $this.attr('name') + ':<br/><span class="fieldspot"></span><br/></div>');
+							$this.before($formFieldDiv);
+							$('.fieldspot', $formFieldDiv).append($this);
+						}
+					})
+					if($(this).data('focus') == true && !$(document.activeElement).is('.field')) {
+						$('.field:visible').eq(0).focus();
+						$(this).data('focus', 'false');
+					}
+					$('.wpsn_link').empty().append($('<a href="'+evaledTemplate+'" target="_blank" style="margin-top:'+wpsn.defaultPadding+'px;">'+evaledTemplate+'</a>'));
+					
+					//wpsn.template.updateAllTemplates();
+				}).each(function () {
+					let $this = $(this);
+					$this.attr('value', $this.closest('td').next('td').find('input[name="templates"]').val());
+					if (typeof props.template === "string") {
+						props.template = wpsn.htmlEncode(props.template);
+						props.template = unescape(props.template||"");
+						try {
+							props.template = JSON.parse(props.template || "{}");
+						} catch(err){}
+					}
+
+					if (typeof props.template === "string") {
+						props.template = {template:props.template};
+					}
+
+					let tmplt = $this.val()
+					if (typeof tmplt === "string") {
+						tmplt = wpsn.htmlEncode(tmplt);
+						tmplt = unescape(tmplt||"");
+						try {
+							tmplt = JSON.parse(tmplt || "{}");
+						} catch(err){
+							tmplt = {template:tmplt};
+						}
+					}
+
+					if (props.template && props.template.template ===  tmplt.template) {
+						$this.attr('checked', 'checked').data('focus', true).change();
+						checked = true;
+					}
+				});
+				if (!checked) {
+					$templateRB.eq(0).attr('checked', 'checked').change();
+				}
+				$('input[name="template_labels"]').each(function () {
+					let $this = $(this);
+					$this.keyup(function () {
+						let $radio = $this.closest('tr').find('input[name="template"]');
+						let tmplt = JSON.parse(unescape($radio.val() || "{}"));
+						tmplt.label = $this.val();
+						$radio.val(escape(JSON.stringify(tmplt))).change();
+						wpsn.template.updateAllTemplates();
+					}).keyup();
+					$this.focus(function () {
+						let $radio = $this.closest('tr').find('input[name="template"]');
+						$radio.prop('checked', 'checked').change();
+					});
+				});
+				$('input[name="templates"]').each(function () {
+					let $this = $(this);
+					$this.keyup(function () {
+						let $radio = $this.closest('tr').find('input[name="template"]');
+						let tmplt = $radio.val();
+						if (typeof tmplt === "string") {
+							tmplt = wpsn.htmlEncode(tmplt);
+							tmplt = unescape(tmplt||"");
+							try {
+								tmplt = JSON.parse(tmplt || "{}");
+							} catch(err){
+								tmplt = {template:tmplt};
+							}
+						}
+						tmplt.template = $this.val();
+						$radio.val(escape(JSON.stringify(tmplt))).change();
+						wpsn.template.updateAllTemplates();
+					}).keyup();
+					$this.focus(function () {
+						let $radio = $this.closest('tr').find('input[name="template"]');
+						$radio.prop('checked', 'checked').change();
+					});
+				});
+				$('.wpsn_template_add').click(async function() {
+					let templates = await wpsn.template.getAllTemplates();
+					templates.push({label:"",template:""});
+					//templates = wpsn.removeDuplicates(templates);
+					wpsn.template.updateAllTemplates(templates);
+					wpsn.template.repaintTemplates(props, templates, header, example, fieldNames, oneTemplate);
+					wpsn.template.reloadTemplates(props, templates, header, example, fieldNames, oneTemplate);
+				});
+				$('.wpsn_template_remove').each(function () {
+					let $this = $(this);
+					$this.click(function () {
+						let $row = $this.closest('tr');
+						$row.remove();
+						wpsn.template.updateAllTemplates();
+					});
+				});
+				$('[name="wpsn_templates_export"], [name="wpsn_templates_import"]').change(function(){
+					let templates = [];
+					templates = templates.concat(JSON.parse(unescape($('[name="wpsn_templates_export"]').val()||"[]")));
+					templates = templates.concat(JSON.parse(unescape($('[name="wpsn_templates_import"]').val()||"[]")));
+					templates = wpsn.removeDuplicates(templates);
+					wpsn.template.repaintTemplates(props, templates, header, example, fieldNames, oneTemplate);
+					wpsn.template.reloadTemplates(props, templates, header, example, fieldNames, oneTemplate);
+				});
+		},
+		prompt : async function(props={},templates=[], header, example, fieldNames={}, oneTemplate) {
+			if (!oneTemplate) {
+				templates = [''].concat(templates);
+			}
+			let templateObjs = [];
+			for (let template of templates) {
+				if (template) {
+					if (typeof template === "string") {
+						templateObjs.push({template:template, label:""});
+					} else {
+						templateObjs.push(template);
+					}
+				}
+			}
+			templates = templateObjs.length>0 ? templateObjs : [{}];
+			templates = wpsn.removeDuplicates(templates);
+
+			let form = await wpsn.prompt({
+				minWidth: 1000, minHeight: 500, load: function () {
+					wpsn.template.repaintTemplates(props, templates, header, example, fieldNames, oneTemplate);
+					wpsn.template.reloadTemplates(props, templates, header, example, fieldNames, oneTemplate);
 				}
 			}, wpsn.template.promptHTML(oneTemplate, templates, header, example));
 
-			form.evaluated = wpsn.template.evaluate(form.template, form);
+			let tmplt = form.template;
+			if (typeof tmplt === "string") {
+				tmplt = wpsn.htmlEncode(tmplt);
+				tmplt = unescape(tmplt||"");
+				try {
+					tmplt = JSON.parse(tmplt || "{}");
+				} catch(err){
+					tmplt = {template:tmplt};
+				}
+			}
+			form.evaluated = wpsn.template.evaluate(tmplt.template||"", form);
+			form.template = escape(JSON.stringify(tmplt));
+			form.templates = oneTemplate ? [].concat(tmplt) : JSON.parse(form.wpsn_templates_export||"[]").concat(JSON.parse(form.wpsn_templates_import||"[]"));
 			return form;
 		}
 	};
