@@ -7788,6 +7788,55 @@
 		wpsn.refreshAllNotes();
 	};
 
+	wpsn.encode64 = function (data) {
+		r = "";
+		for (i=0; i<data.length; i+=3) {
+		 if (i+2==data.length) {
+		  r +=wpsn.append3bytes(data.charCodeAt(i), data.charCodeAt(i+1), 0);
+		 } else if (i+1==data.length) {
+		  r += wpsn.append3bytes(data.charCodeAt(i), 0, 0);
+		 } else {
+		  r += wpsn.append3bytes(data.charCodeAt(i), data.charCodeAt(i+1), data.charCodeAt(i+2));
+		 }
+	   }
+	   return r;
+	};
+
+	wpsn.append3bytes = function(b1, b2, b3) {
+		c1 = b1 >> 2;
+		c2 = ((b1 & 0x3) << 4) | (b2 >> 4);
+		c3 = ((b2 & 0xF) << 2) | (b3 >> 6);
+		c4 = b3 & 0x3F;
+		r = "";
+		r += wpsn.encode6bit(c1 & 0x3F);
+		r += wpsn.encode6bit(c2 & 0x3F);
+		r += wpsn.encode6bit(c3 & 0x3F);
+		r += wpsn.encode6bit(c4 & 0x3F);
+		return r;
+		}
+		
+	wpsn.encode6bit = function(b) {
+		if (b < 10) {
+		 return String.fromCharCode(48 + b);
+		}
+		b -= 10;
+		if (b < 26) {
+		 return String.fromCharCode(65 + b);
+		}
+		b -= 26;
+		if (b < 26) {
+		 return String.fromCharCode(97 + b);
+		}
+		b -= 26;
+		if (b == 0) {
+		 return '-';
+		}
+		if (b == 1) {
+		 return '_';
+		}
+		return '?';
+	};
+
 	wpsn.parseJSON = function(jsonStr) {
 		let json = jsonStr;
 		try {
@@ -7815,6 +7864,7 @@
 			'chartjs': { name: 'Chart.js', id: 3747823508, render: function (note) { wpsn.menu.diagram.renderChartjs(note); }, description: 'Creates beautiful charts. <a href="http://www.chartjs.org/docs/latest/charts/" target="_blank">More information</a>. (Powered by <a href="http://www.chartjs.org/" target="_blank">Chart.js</a>)'},
 			'treediagram': { name: 'Tree Diagram(beta)', id: 7659346992, render: function (note) { wpsn.menu.diagram.renderTreeDiagram(note); }, description: 'Turns text into a UML tree diagram. (Powered by <a href="http://webpagestickynotes.com"><img height="24" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/logo/wpsn-logo.png"/></a> + <a href="http://d3js.org/" target="_blank">d3.js</a>)' },
 			'directory': { name: 'Directory Structure', id: 7632954307, render: function (note) { wpsn.menu.diagram.renderDirectoryStructure(note); }, description: 'Turns text into a directory structure. Lines beginning with - or x are transformed into open or closed folders and into files if no entries are found below the line. Renders into Markdown otherwise' },
+			'plantumldiagram': { name: 'PlantUML Diagrams', id: 8897654693, render: function (note) { wpsn.menu.diagram.renderPlantUMLDiagram(note); }, description: 'Turns text into a Plant UML diagram. <a href="http://plantuml.com" target="_blank">More information</a> (Powered by & Generated at <a href="http://plantuml.com" target="_blank">PlantUML</a>)' },
 		},
 		'renderDirectoryStructure': function (note) {
 			let text = note.text;
@@ -7914,6 +7964,45 @@
 					}
 					if (this.getAttribute('stroke') == '#000000') {
 						this.setAttribute('stroke', note.textcolor);
+					}
+				});
+			} catch (err) {
+				wpsn.error(err);
+			}
+			wpsn.resizeSVG(note);
+		},
+		'renderPlantUMLDiagram': async function (note) {
+			let noteDiv = wpsn.getNoteDiv(note);
+			let noteFrame = $('.wpsn-frame', noteDiv);
+			try {
+				let text = note.previewText || note.text;
+				//TODO
+				let data = wpsn.encode64(window.deflate(unescape(encodeURIComponent(text), 9)));
+				if (data) {
+					let svg = await wpsn.getUrlData(`http://www.plantuml.com/plantuml/svg/${data}`, 280);
+					noteFrame.html(svg);
+				}
+				$('svg', noteFrame).css('background', note.background);
+				$('*', noteFrame).each(function () {
+					let $this = $(this);
+					if (this.tagName == 'text') {
+						this.setAttribute('font', null);
+						$this.css('font-family', 'inherit')
+							.css('font-size', 'inherit');
+					}
+					if (this.getAttribute('fill') == 'none' || this.getAttribute('fill') == '#ffffff' || this.getAttribute('fill') == '#fff' || this.getAttribute('fill') == '#FEFECE') {
+						this.setAttribute('fill', note.background);
+					}
+					if (this.getAttribute('fill') == '#000000' || this.getAttribute('fill') == '#000') {
+						this.setAttribute('fill', note.textcolor);
+					} else if (this.getAttribute('fill')) {
+						//this.setAttribute('fill', note.background);
+					}
+					if (this.getAttribute('stroke') == '#000000') {
+						this.setAttribute('stroke', note.textcolor);
+					}
+					if (this.style.stroke == 'rgb(168, 0, 54)') {
+						this.style.stroke = note.textcolor;
 					}
 				});
 			} catch (err) {
@@ -8259,6 +8348,65 @@ function factorial(number) {
 `;
 						  note.text = note.text ? note.text : demo;
 						}
+						if (note.mode == wpsn.menu.diagram.modes.plantumldiagram.id) {
+							let demo = 
+`
+@startuml
+
+OneOrMany }|..|| ExactlyOne
+ZeroOrMany }o..o| ZeroOrOne
+ExactlyOne ||--o{ ZeroOrMany
+ZeroOrOne |o--|| ExactlyOne
+
+package com.webpagestickynotes {
+  class MyClass {
+    -private field1: String
+    #protected field2: Integer
+    ~package private method1(): Object
+    +public method2(): Boolean
+  }
+
+  interface MyInterface {
+    you
+    ..
+   can
+    ==
+    use
+    __
+    different
+    --
+   lines
+  }
+}
+
+rectangle Rectangle {
+  entity Entity
+}
+
+node Node {
+  interface Interface
+}
+
+folder Folder {
+  abstract Abstract
+}
+
+frame Frame {
+    enum Enum
+}
+
+cloud Cloud {
+   annotation Annotation
+}
+
+database Database {
+  class Custom<< (Z,grey) >>
+}
+@enduml
+`;
+							note.text = note.text ? note.text : demo;
+						}
+
 						wpsn.refreshNote(note);
 					},
 					note.id
@@ -9104,6 +9252,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'3.0.31': [
+			'FEATURE: Plant UML diagram in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/diagram.svg"/>'
+		],
 		'3.0.29': [
 			'FEATURE: Ability to Label/Add/Remove/UpdateAll/InsertNew templates in "Go To URL" feature.'
 		],
