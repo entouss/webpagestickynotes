@@ -8352,21 +8352,21 @@ function factorial(number) {
 							let demo = 
 `
 @startuml
+'skinparam linetype ortho
+'hide circle
+'top to bottom direction
+'left to right direction
 
-OneOrMany }|..|| ExactlyOne
-ZeroOrMany }o..o| ZeroOrOne
-ExactlyOne ||--o{ ZeroOrMany
-ZeroOrOne |o--|| ExactlyOne
+header Header
+footer Footer
 
-package com.webpagestickynotes {
-  class MyClass {
-    -private field1: String
-    #protected field2: Integer
-    ~package private method1(): Object
-    +public method2(): Boolean
-  }
+title Title
 
-  interface MyInterface {
+rectangle Rectangle {
+package Package {
+
+folder Folder {
+  entity Entity {
     you
     ..
    can
@@ -8379,28 +8379,50 @@ package com.webpagestickynotes {
   }
 }
 
-rectangle Rectangle {
-  entity Entity
-}
-
 node Node {
-  interface Interface
-}
-
-folder Folder {
-  abstract Abstract
-}
-
-frame Frame {
-    enum Enum
-}
-
-cloud Cloud {
-   annotation Annotation
+  class MyClass {
+    -field1: String //private
+    #field2: Integer //protected
+    ~method1(): Object //package private
+    +method2(): Boolean //public 
+  }
 }
 
 database Database {
+  interface Interface
+
+  abstract Abstract
+  
+  enum Enum
+
+  annotation Annotation
+
   class Custom<< (Z,grey) >>
+
+  Interface -left-> Abstract
+  Interface -up-> Enum
+  Interface -down-> Annotation
+  Interface -right-> Custom
+}
+
+cloud Cloud {
+  OneOrMany }|..|| ExactlyOne
+  ZeroOrMany }o..o| ZeroOrOne
+  ExactlyOne ||--o{ ZeroOrMany
+  ZeroOrOne |o--|| ExactlyOne
+}
+
+note top of Node
+  Note top of Node.
+end note
+
+note as Note
+  This note is <u>also</u>
+  <b><color:royalBlue>on several</color>
+  <s>words</s> lines
+end note
+
+}
 }
 @enduml
 `;
