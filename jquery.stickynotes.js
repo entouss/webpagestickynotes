@@ -9316,7 +9316,7 @@ wpsn.menu.calculator = {
 					</td>
 				`}
 					<td style="padding:5px 0;border:0;width:75%">
-						<input style="width:100%" type="text" name="templates" value="${template.template||""}" placeholder="template (i.e. ${example})"/>
+						<input style="width:99%" type="text" name="templates" value="${template.template||""}" placeholder="template (i.e. ${example})"/>
 					</td>
 				${oneTemplate?'':`
 					<td style="padding:5px 0;border:0;">
