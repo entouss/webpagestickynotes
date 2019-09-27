@@ -9429,7 +9429,8 @@ wpsn.menu.calculator = {
 		promptHTML : function(oneTemplate, templates=[], header, example, formFieldName) {
 			let formText = `
 			<div>
-				<div class="panel panel-default"><div class="panel-heading">Template:</div><div class="panel-body"><table style="width:1000px" class="wpsn_template_table"><tbody>
+				<div class="panel panel-default"><div class="panel-heading">Template:</div><div class="panel-body"><table style="width:1000px" class="wpsn_template_table">
+					<tbody style="display:block;overflow:auto;max-height:600px;width:100%">
 			`;
 			formText += `</tbody></table></div></div>`;
 			formText += `
@@ -9480,19 +9481,19 @@ wpsn.menu.calculator = {
 			for (let template of templates) {
 				formText += `
 				<tr>
-					<td style="border:0;display:${oneTemplate?'none':'block'}">
+					<td style="border:0;margin:0;display:${oneTemplate?'none':'block'}">
 						<input type="radio" name="template" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}" value="${escape(JSON.stringify(template))}"/>
 					</td>
 				${oneTemplate?'':`
-					<td style="padding:5px 0;border:0;width:25%">
+					<td style="padding:5px 0;margin:0;border:0;width:25%">
 						<input style="width:100%" type="text" name="template_labels" value="${template.label||""}" placeholder="label"/>
 					</td>
 				`}
-					<td style="padding:5px 0;border:0;width:75%">
-						<input style="width:99%" type="text" name="templates" value="${template.template||""}" placeholder="template (i.e. ${example})"/>
+					<td style="padding:5px 0;margin:0;border:0;width:800px">
+						<input style="width:790px" type="text" name="templates" value="${template.template||""}" placeholder="template (i.e. ${example})"/>
 					</td>
 				${oneTemplate?'':`
-					<td style="padding:5px 0;border:0;">
+					<td style="padding:5px 0;margin:0;border:0;">
 						&nbsp;<img class="wpsn_template_remove" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/multiply.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
 					</td>
 				`}
@@ -9500,7 +9501,7 @@ wpsn.menu.calculator = {
 				`;
 			}
 			formText += oneTemplate ? "" : `
-			<tr><td colspan="4" style="padding:5px 0;border:0;">
+			<tr><td colspan="4" style="padding:5px 0;margin:0;border:0;">
 				<img class="wpsn_template_add" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/plus.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
 			</td></tr>`;
 			$('table.wpsn_template_table tbody').html(formText);
