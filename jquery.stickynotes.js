@@ -9429,7 +9429,7 @@ wpsn.menu.calculator = {
 		promptHTML : function(oneTemplate, templates=[], header, example, formFieldName) {
 			let formText = `
 			<div>
-				<div class="panel panel-default"><div class="panel-heading">Template:</div><div class="panel-body"><table style="width:100%" class="wpsn_template_table"><tbody>
+				<div class="panel panel-default"><div class="panel-heading">Template:</div><div class="panel-body"><table style="width:1000px" class="wpsn_template_table"><tbody>
 			`;
 			formText += `</tbody></table></div></div>`;
 			formText += `
@@ -9652,11 +9652,15 @@ wpsn.menu.calculator = {
 						tmplt.label = $this.val();
 						$radio.val(escape(JSON.stringify(tmplt))).change();
 						wpsn.template.updateAllTemplates();
-					}).keyup();
+					});
 					$this.focus(function () {
 						let $radio = $this.closest('tr').find('input[name="template"]');
 						$radio.prop('checked', 'checked').change();
 					});
+					let $radio = $this.closest('tr').find('input[name="template"]');
+					if ($radio.prop('checked')=='checked') {
+						$this.keyup();
+					}
 				});
 				$('input[name="templates"]').each(function () {
 					let $this = $(this);
@@ -9675,11 +9679,15 @@ wpsn.menu.calculator = {
 						tmplt.template = $this.val();
 						$radio.val(escape(JSON.stringify(tmplt))).change();
 						wpsn.template.updateAllTemplates();
-					}).keyup();
+					});
 					$this.focus(function () {
 						let $radio = $this.closest('tr').find('input[name="template"]');
 						$radio.prop('checked', 'checked').change();
 					});
+					let $radio = $this.closest('tr').find('input[name="template"]');
+					if ($radio.prop('checked')=='checked') {
+						$this.keyup();
+					}
 				});
 				$('.wpsn_template_add').click(async function() {
 					let templates = await wpsn.template.getAllTemplates();
