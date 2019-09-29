@@ -9429,10 +9429,13 @@ wpsn.menu.calculator = {
 		promptHTML : function(oneTemplate, templates=[], header, example, formFieldName) {
 			let formText = `
 			<div>
-				<div class="panel panel-default"><div class="panel-heading">Template:</div><div class="panel-body"><table style="width:1000px" class="wpsn_template_table">
-					<tbody style="display:block;overflow:auto;max-height:600px;width:100%">
-			`;
-			formText += `</tbody></table></div></div>`;
+				<div class="panel panel-default"><div class="panel-heading">Template:</div>
+				<div class="panel-body">
+					<table style="width:100%" class="wpsn_template_table">
+						<tbody style="display:table-row-group;overflow:auto;max-height:500px;width:100%"></tbody>
+					</table>
+				</div>
+			</div>`;
 			formText += `
 			<div>
 				<div class="panel panel-default"><div class="panel-heading">Parameter(s):</div><div class="panel-body">
@@ -9485,15 +9488,15 @@ wpsn.menu.calculator = {
 						<input type="radio" name="template" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}" value="${escape(JSON.stringify(template))}"/>
 					</td>
 				${oneTemplate?'':`
-					<td style="padding:5px 0;margin:0;border:0;width:25%">
-						<input style="width:100%" type="text" name="template_labels" value="${template.label||""}" placeholder="label"/>
+					<td style="padding:5px;margin:0;border:0;width:25%;">
+						<input style="width:100%;box-sizing: border-box;" type="text" name="template_labels" value="${template.label||""}" placeholder="label"/>
 					</td>
 				`}
-					<td style="padding:5px 0;margin:0;border:0;width:800px">
-						<input style="width:790px" type="text" name="templates" value="${template.template||""}" placeholder="template (i.e. ${example})"/>
+					<td style="padding:5px;margin:0;border:0;width:100%;">
+						<input style="width:100%;box-sizing: border-box;" type="text" name="templates" value="${template.template||""}" placeholder="template (i.e. ${example})"/>
 					</td>
 				${oneTemplate?'':`
-					<td style="padding:5px 0;margin:0;border:0;">
+					<td style="padding:5px;margin:0;border:0;">
 						&nbsp;<img class="wpsn_template_remove" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/multiply.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
 					</td>
 				`}
