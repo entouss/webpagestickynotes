@@ -9489,11 +9489,11 @@ wpsn.menu.calculator = {
 					</td>
 				${oneTemplate?'':`
 					<td style="padding:5px;margin:0;border:0;width:25%;">
-						<input style="width:100%;box-sizing: border-box;" type="text" name="template_labels" value="${template.label||""}" placeholder="label"/>
+						<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="template_labels" value="${template.label||""}" placeholder="label"/>
 					</td>
 				`}
 					<td style="padding:5px;margin:0;border:0;width:100%;">
-						<input style="width:100%;box-sizing: border-box;" type="text" name="templates" value="${template.template||""}" placeholder="template (i.e. ${example})"/>
+						<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="templates" value="${template.template||""}" placeholder="template (i.e. ${example})"/>
 					</td>
 				${oneTemplate?'':`
 					<td style="padding:5px;margin:0;border:0;">
