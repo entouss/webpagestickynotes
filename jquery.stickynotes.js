@@ -9488,12 +9488,12 @@ wpsn.menu.calculator = {
 						<input type="radio" name="template" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}" value="${escape(JSON.stringify(template))}"/>
 					</td>
 				${oneTemplate?'':`
-					<td style="padding:5px;margin:0;border:0;width:25%;">
-						<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="template_labels" value="${template.label||""}" placeholder="label"/>
+					<td style="padding:5px;margin:0;border:0;width:30%;">
+						<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="template_labels" value="${(template.label||"").replace(/"/g, '&quot;')}" placeholder="label"/>
 					</td>
 				`}
 					<td style="padding:5px;margin:0;border:0;width:100%;">
-						<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="templates" value="${template.template||""}" placeholder="template (i.e. ${example})"/>
+						<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="templates" value="${(template.template||"").replace(/"/g, '&quot;')}" placeholder="template (i.e. ${example})"/>
 					</td>
 				${oneTemplate?'':`
 					<td style="padding:5px;margin:0;border:0;">
@@ -9539,8 +9539,10 @@ wpsn.menu.calculator = {
 				}
 			});
 				let checked = false;
-				let $templateRB = $('input[name="template"]');
+				let $templateRB = $('input[name="template"]').hide();
 				$templateRB.change(function () {
+					$(this).closest('table').find('tr').removeClass('wpsn-selected');
+					$(this).closest('tr').addClass('wpsn-selected');
 					let tmplt = $(this).val()
 					if (typeof tmplt === "string") {
 						tmplt = wpsn.htmlEncode(tmplt);
