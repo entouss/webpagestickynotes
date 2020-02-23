@@ -3753,6 +3753,7 @@
 		'render-checklist': async function (commandName, info) { await wpsn.renderChecklistEffectiveNotes(info.note); },
 		'indent-prettify-note': async function (commandName, info) { await wpsn.indentPrettifyEffectiveNotes(info.note); },
 		'minify-prettify-note': async function (commandName, info) { await wpsn.minifyPrettifyEffectiveNotes(info.note); },
+		'json-schema-viewer-note': async function (commandName, info) { await wpsn.jsonSchemaViewerEffectiveNotes(info.note); },
 		'indent-minify-prettify-note-undo': async function (commandName, info) { await wpsn.undoIndentMinifyPrettifyEffectiveNotes(info.note); },
 		'bring-to-top-note': async function (commandName, info) { await wpsn.bringToTopEffectiveNotes(info.note); },
 		'send-to-bottom-note': async function (commandName, info) { await wpsn.sendToBottomEffectiveNotes(info.note); },
@@ -8467,6 +8468,7 @@ end note
 		modes: {
 			code: { name: 'Code', id: 4734532438, render: async function (note) { await wpsn.renderCode(note); }, description: 'Pretty prints the text. Especially useful when the text represents code or markup.' },
 			minify: { name: 'Minify', id: 7584398324, render: async function (note) { await wpsn.renderMinify(note); }, description: 'Minifies JSON & XML.' },
+			jsonSchemaViewer: { name: 'JSON Schema Viewer', id: 4365896345, render: async function (note) { await wpsn.renderJsonSchemaViewer(note); }, description: 'JSON Schema Viewer.' },
 		},
 		leftClick: {
 			command: 'indent-prettify-note',
@@ -8478,7 +8480,7 @@ end note
 		},
 		doubleClick: {
 			command: 'indent-minify-prettify-note-undo',
-			applyToAll: true
+			applyToAll: false
 		}
 	};
 
@@ -8489,6 +8491,31 @@ end note
 		let text = wpsn.indent(preRenderedText);
 		noteFrame.html('<pre class="prettyprint">' + text + '</pre>');
 		if (window.prettyPrint) { await window.prettyPrint(); }
+	};
+
+	wpsn.renderJsonSchemaViewer = function (note) {
+		let noteDiv = wpsn.getNoteDiv(note);
+		let noteFrame = $('.wpsn-frame', noteDiv).addClass('wpsn-scrollbar');
+		let text = wpsn.unindent(note.previewText || note.text);
+		noteFrame.html(`<div id="main-body" style="height:100%;width:100%;"></div>`);
+		//let json = JSON.parse(text)
+		//console.log(json)
+		var loc = window.location;
+		//if not already set, set the root schema location
+		//this allows dev ENV to override the schema location
+		var schema = JSV.schema ? JSV.schema : loc.href//loc.origin + loc.pathname.substring(0, loc.pathname.lastIndexOf('/') + 1) + 'schemas/schema/schema.json';
+		JSV.init({
+			schema : schema,
+			plain : true, //don't use JQM
+			viewerHeight : $('#main-body').height(), //set initial dimensions of SVG
+			viewerWidth : $('#main-body').width()
+		}, function() {
+			$('#jsv-tree').css('width', '100%');
+			//set diagram width to 100%, this DOES NOT resize the svg container
+			//it will not adjust to window resize, needs a listener to support that
+			JSV.resetViewer();
+			$('#loading').fadeOut('slow');
+		});
 	};
 
 	wpsn.renderMinify = function (note) {
@@ -8576,6 +8603,18 @@ end note
 			await wpsn.autoResize(note);
 			//await wpsn.refreshNote(note);
 		}
+	};
+
+	wpsn.jsonSchemaViewerEffectiveNotes = function (noteOrNotes) {
+		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.jsonSchemaViewerNote, 'Are you sure you want to convert {0} into JSON Schema Viewer?');
+	};
+
+	wpsn.jsonSchemaViewerNote = async function (note) {
+		wpsn.stopEditing(note);
+		note.mode = wpsn.menu.code.modes.jsonSchemaViewer.id;
+		await wpsn.refreshNote(note);
+		await wpsn.autoResize(note);
+		await wpsn.refreshNote(note);
 	};
 
 	wpsn.minifyPrettifyEffectiveNotes = function (noteOrNotes) {

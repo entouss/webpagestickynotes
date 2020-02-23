@@ -1,7 +1,7 @@
 {
   "name": "Web Page Sticky Notes",
   "short_name": "WPSN",
-  "version": "3.0.38",
+  "version": "3.0.39",
   "manifest_version": 2,
   "description": "Sticky Notes For Web Pages",
   "icons": { "16":"icon16.png","48":"icon48.png","128":"icon128.png" },
@@ -53,7 +53,10 @@
 		"vendor/aes.js",
 		"vendor/js2flowchart.js",
 		"vendor/Chart.min.js",
-		"vendor/rawdeflate.js"
+		"vendor/rawdeflate.js",
+		"vendor/json-schema-viewer.js",
+		"vendor/tv4.min.js",
+		"vendor/tv4.async-load-jquery.js"
       ],
 	  "css" : [
 		  "jquery.stickynotes.rebase.css",
@@ -218,6 +221,7 @@
 		"render-checklist"								: { "description": "        Render note(s) as checklist" },
 		"indent-prettify-note"							: { "description": "        Indent JSON/XML/CSV & prettify code" },
 		"minify-prettify-note"							: { "description": "        Minify JSON/XML/CSV & prettify code" },
+		"json-schema-viewer-note"						: { "description": "        Viewer for JSON schema if URL is schema URL" },
 		"indent-minify-prettify-note-undo"				: { "description": "        Undo indentation/minification/prettification of JSON/XML/CSV code" },
 		"bring-to-top-note"								: { "description": "        Bring note(s) to top" },
 		"send-to-bottom-note"							: { "description": "        Send note(s) to bottom" },
