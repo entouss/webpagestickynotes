@@ -2884,7 +2884,7 @@
 			let link = document.querySelector('link[rel*=\'icon\']') || document.createElement('link');
 			link.type = 'image/x-icon';
 			link.rel = 'shortcut icon';
-			link.href = 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/logo/wpsn-logo.svg';
+			link.href = 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/logo/wpsn-logo.png';
 			document.getElementsByTagName('head')[0].appendChild(link);
 		}
 	};
