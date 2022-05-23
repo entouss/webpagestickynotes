@@ -894,6 +894,25 @@ z-index: 1000 !important;
 	zoom: 125%;
   padding: 0;
 }
+
+/* HIDE RADIO */
+.wpsn-frame input[type="radio"].wpsn_radio_img { 
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* IMAGE STYLES */
+.wpsn-frame input[type="radio"].wpsn_radio_img + img {
+  cursor: pointer;
+}
+
+/* CHECKED STYLES */
+.wpsn-frame input[type="radio"].wpsn_radio_img:checked + img {
+  outline: 2px solid #00f;
+}
+
 .wpsn-frame input[type="number"]::-webkit-inner-spin-button,
 .wpsn-frame input[type="number"]::-webkit-outer-spin-button {
   height: auto;

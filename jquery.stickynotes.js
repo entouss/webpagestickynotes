@@ -129,6 +129,7 @@
 					wpsn.resizeSnappedElements(_note, ui, true);
 				}
 				wpsn.resizedNote(_note, ui);
+				wpsn.settings.enableAutoresizeHeight?wpsn.autoResizeHeight(_note):false;
 				$el.find('.wpsn-auto-fit-text').fitText(wpsn.fittextcompressor, wpsn.fittextoptions);
 			}
 		};
@@ -706,6 +707,7 @@
 		}
 
 		wpsn.reorderNote(note);
+		wpsn.settings.enableAutoresizeHeight?wpsn.autoResizeHeight(note):false;
 	};
 
 	wpsn.cloneProvidedNotes = function (noteOrNotes, selectNotes) {
@@ -1329,7 +1331,7 @@
 			});
 			try { note.previewText = previewedElement.val() || ((note.previewMode == 'raw' && previewedElement.get(0)) ? previewedElement.get(0).innerText : previewedElement.get(0).innerHTML); } catch (err) { wpsn.error(err); }
 		}
-		let _note_frame = $('<div id="wpsn-frame-' + note.id + '" class="wpsn-frame" style="zoom:' + (note.zoom || 100) + '%;"/>');
+		let _note_frame = $('<div id="wpsn-frame-' + note.id + '" class="wpsn-frame" style="zoom:' + (note.zoom || 100) + '%;text-align:'+(note.textAlign?note.textAlign:'left')+';"/>');
 		note.font = note.font ? note.font : { family: 'Verdana' };
 		wpsn.loadFont(note);
 		wpsn.updateFont(note, _note_frame);
@@ -1411,6 +1413,7 @@
 			_note_frame.after($mediaMeme);
 		}
 		//note.order = note.order || wpsn.nextOrder();
+
 		let _div_wrap = $('<div id="note-' + note.id + '" style="z-index:' + wpsn.getZIndex(note) + ';position:absolute;'+
 		(wpsn.posx(note)?'left:' + wpsn.posx(note) + ';':'')+
 		(wpsn.posy(note)?'top:' + wpsn.posy(note) + ';':'')+
@@ -1523,7 +1526,7 @@
 				top = 0;
 				left = 0;
 				if (targetElement.is('.wpsn-sticky')) {
-					targetElement.append(_div_wrap);
+					targetElement.append(_div_wrap);					
 					_div_wrap.css({
 						'z-index': '999',
 						'top': wpsn.defaultPadding,
@@ -1535,6 +1538,9 @@
 					top = _div_wrap.position().top;
 					left = _div_wrap.position().left;
 				} else {
+					if (note.targetUpdate) {
+						targetElement.html(note.text)
+					}
 					if (targetElement.offset()) {
 						top = targetElement.offset().top - 6;
 						left = targetElement.offset().left + targetElement.width() - 8;
@@ -1615,7 +1621,7 @@
 			wpsn.command($(this).data('wpsn-command'), note);
 			return false;
 		});
-		if (note.lock || note.fullscreen || note.target) {
+		if (note.lock || note.fullscreen) {
 			try {
 				_div_wrap.draggable('disable');
 				_div_wrap.resizable('disable');
@@ -1623,6 +1629,7 @@
 			} catch (err) { wpsn.error(err,true); }
 		} else {
 			wpsn.initRotatable(note, {});
+			//wpsn.settings.enableAutoresizeHeight?wpsn.autoResizeHeight(note):false;
 		}
 
 		if (note.position && !note.minimized && !note.fullscreen) {
@@ -1702,6 +1709,8 @@
 		}
 		else { delete note.nextInterval; }
 
+		wpsn.updateTabWithTextAndFaviconColorOrImage(note.documentTitle, note.documentFavicon)
+		
 		return note;
 	};
 
@@ -2070,30 +2079,36 @@
 				e.stopPropagation();
 				wpsn.saveNoteStateForUndo(note);
 				wpsn.autoResizeHeight(note);
+				wpsn.settings.enableAutoresizeHeight?wpsn.autoResizeHeight(note):false;
 				let selectedNotes = wpsn.getSelectedNotes();
 				for (let i = 0; i < selectedNotes.length; i++) {
 					let selectedNote = selectedNotes[i];
 					wpsn.autoResizeHeight(selectedNote);
+					wpsn.settings.enableAutoresizeHeight?wpsn.autoResizeHeight(selectedNote):false;
 				}
 			});
 			$('>.ui-resizable-e,>.ui-resizable-w', noteDiv).dblclick(function (e) {
 				e.stopPropagation();
 				wpsn.saveNoteStateForUndo(note);
 				wpsn.autoResizeWidth(note);
+				wpsn.settings.enableAutoresizeHeight?wpsn.autoResizeHeight(note):false;
 				let selectedNotes = wpsn.getSelectedNotes();
 				for (let i = 0; i < selectedNotes.length; i++) {
 					let selectedNote = selectedNotes[i];
 					wpsn.autoResizeWidth(selectedNote);
+					wpsn.settings.enableAutoresizeHeight?wpsn.autoResizeHeight(selectedNote):false;
 				}
 			});
 			$('>.ui-resizable-se,>.ui-resizable-ne,>.ui-resizable-sw,>.ui-resizable-nw', noteDiv).dblclick(function (e) {
 				e.stopPropagation();
 				wpsn.saveNoteStateForUndo(note);
 				wpsn.autoResize(note);
+				wpsn.settings.enableAutoresizeHeight?wpsn.autoResizeHeight(note):false;
 				let selectedNotes = wpsn.getSelectedNotes();
 				for (let i = 0; i < selectedNotes.length; i++) {
 					let selectedNote = selectedNotes[i];
 					wpsn.autoResize(selectedNote);
+					wpsn.settings.enableAutoresizeHeight?wpsn.autoResizeHeight(selectedNote):false;
 				}
 			}).bind('contextmenu', function () {
 				wpsn.resizeNote(note);
@@ -3345,7 +3360,7 @@
 		if (note.zIndex) { return note.zIndex; }
 		let zIndex = wpsn.defaultZIndex;
 		if (note.isAlert) {
-			zIndex = defaultZIndexPopup;
+			zIndex = wpsn.defaultZIndexPopup;
 		}
 		if (note.lock) {
 			zIndex -= 1;
@@ -3930,7 +3945,7 @@
 						'<div class="panel-body">' +
 						'<span style="display:inline-block;width:50px">Width:</span><input type="range" class="wpsn_slider" style="width:100%;" name="wpsn_defaultWidth" min="25" max="1000" step="25" data-display="wpsn_defaultWidth" list="wpsn_defaultWidth"><datalist id="wpsn_defaultWidth"><option>25</option><option>250</option><option>500</option><option>750</option><option>1000</option></datalist></input><span class="wpsn_defaultWidth" style="padding-left:5px;"></span><br/><br/>' +
 						'<span style="display:inline-block;width:50px">Height:</span><input type="range" class="wpsn_slider" style="width:100%;" name="wpsn_defaultHeight" min="25" max="1000" step="25" data-display="wpsn_defaultHeight" list="wpsn_defaultHeight"><datalist id="wpsn_defaultHeight"><option>25</option><option>250</option><option>500</option><option>750</option><option>1000</option></datalist></input><span class="wpsn_defaultHeight" style="padding-left:5px;"></span><br/><br/>' +
-						'<input type="checkbox" name="wpsn_applyToAll" id="wpsn_applyAll" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_applyAll">Apply to all notes</label>' +
+						'<br/><input type="checkbox" name="wpsn_applyToAll" id="wpsn_applyAll" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/> <label for="wpsn_applyAll">Apply to all notes</label>' +
 						'</div>' +
 						'</div>';
 				},
@@ -4640,7 +4655,8 @@
 						'wpsn_textcolor': note.textcolor || '',
 						'wpsn_textposition': note.textposition || '',
 						'wpsn_textshadow': note.textshadow || '',
-						'wpsn_bordercolor': note.bordercolor || ''
+						'wpsn_bordercolor': note.bordercolor || '',
+						'wpsn_text_align': note.textAlign || ''
 					}
 				);
 			},
@@ -4658,7 +4674,7 @@
 			note.textposition = form.wpsn_textposition;
 			note.textshadow = form.wpsn_textshadow;
 			note.bordercolor = form.wpsn_bordercolor;
-
+			note.textAlign = form.wpsn_text_align;
 			wpsn.refreshNote(note);
 		}
 	};
@@ -4678,6 +4694,7 @@
 		let $textPosition = $noteDiv.find('input[name="wpsn_textposition"]:checked');
 		let $textShadow = $noteDiv.find('input[name="wpsn_textshadow"]:checked');
 		let $withMedia = $noteDiv.find('input[name="wpsn_withmedia"]:checked');
+		let $textAlign = $noteDiv.find('input[name="wpsn_text_align"]:checked')
 
 		let fontFamily = $fontFamily.val();
 		let fontSize = $fontSize.val();
@@ -4688,6 +4705,7 @@
 		let textPosition = $textPosition.val();
 		let textShadow = $textShadow.val() == 'true';
 		let withMedia = $withMedia.val() == 'true';
+		let textAlign = $textAlign.val();
 		
 		$sampleText.css('font-family', fontFamily || 'inherit');
 		$sampleText.css('font-size', fontSize || 'inherit').css('line-height', fontSize ? (fontSize + 9) + 'px' : 'inherit');
@@ -4702,11 +4720,12 @@
 			$sampleTextSpan.addClass('wpsn-text-shadow'); 
 			$sampleText.css('color', '#fff');
 		}
-
+		$sampleTextSpan.css('text-align', textAlign);
 		$sampleTextSpan.css('position', 'relative');
 		$sampleText.css('height', 'auto');
 		$sampleText.css('height', $sampleText.height() + 50);
 		$sampleTextSpan.css('position', 'absolute');
+
 
 		//wpsn.autoResize(note);
 	};
@@ -4758,6 +4777,10 @@
 			wpsn.updateSampleNote(note, preventResize);
 		});
 
+		noteDiv.find('input[name="wpsn_text_align"]').unbind('change').bind('change', function () {
+			wpsn.updateSampleNote(note, preventResize);
+		});
+
 		noteDiv.find('input[name="wpsn_font_size"]').bind('change', function () {
 			let size = $(this).val() || 0;
 			size = parseInt(size) > 0 ? size + 'px' : 'browser default size';
@@ -4785,7 +4808,6 @@
 			prompt += '<option>' + font + '</option>';
 		}
 		prompt += '</optgroup></datalist><a href="https://fonts.google.com/" target="_blank">Research or Find more Fonts</a><br/><br/>';
-
 		prompt += '<label for="wpsn_font_size">Font Size:</label><br/>'
 			+ '<input type="range" style="width:100%;" name="wpsn_font_size" min="0" max="100" step="1" data-display="wpsn-wpsn_font_size" list="wpsn_font_size_list"><datalist id="wpsn_font_size_list">';
 		for (let i = 0; i < wpsn.defaultFontSizes.length; i++) {
@@ -4814,6 +4836,18 @@
 			prompt += '<br/><br/>';
 		}
 
+		prompt +=
+		'<label for="wpsn_background">Text Alignment</label><br/>' +
+		'<label><input type="radio" class="wpsn_radio_img" name="wpsn_text_align" id="wpsn_text_align" value="left"/>' +
+		'<img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/format_align_left.svg" title="Text Align Left"/></label> ' +
+		'<label><input type="radio" class="wpsn_radio_img" name="wpsn_text_align" id="wpsn_text_align" value="center"/>' +
+		'<img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/format_align_center.svg" title="Text Align Center"/></label> ' +
+		'<label><input type="radio" class="wpsn_radio_img" name="wpsn_text_align" id="wpsn_text_align" value="right"/>' +
+		'<img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/format_align_right.svg" title="Text Align Right"/></label> ' +
+		'<label><input type="radio" class="wpsn_radio_img" name="wpsn_text_align" id="wpsn_text_align" value="justify"/>' +
+		'<img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/format_align_justify.svg" title="Text Align Justify"/></label> ' +
+		'<br/><br/>';
+
 		prompt+= '<div style="white-space:nowrap">';
 		if (isMedia || includeMedia) {
 			let positions = ['top-left', 'top-center', 'top-right', 'center-left', 'center-center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'];
@@ -4835,7 +4869,7 @@
 			prompt += '<input type="radio" name="wpsn_withmedia" value="true" id="wpsn-withmedia-true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-withmedia-true"><b>True</b></label> ';
 			prompt += '<input type="radio" name="wpsn_withmedia" value="false" id="wpsn-withmedia-false" checked="checked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-withmedia-false"><b>False</b></label> ';
 		}
-		prompt += '<br/><div class="wpsn_sample_text" style="min-height:100px;position:relative;padding:14px"><span>The quick brown fox jumps over the lazy dog.</span></div></div>';
+		prompt += '<br/><div class="wpsn_sample_text" style="min-height:100px;position:relative;padding:14px"><span>The quick brown fox jumps over the lazy dog. <br/><br/> Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam semper diam at erat pulvinar, at pulvinar felis blandit. Vestibulum volutpat tellus diam, consequat gravida libero rhoncus ut.</span></div></div>';
 		return prompt;
 	};
 
@@ -6043,16 +6077,48 @@
 			description: 'Pin note to HTML element by specifying selector',
 			action: async function (note) {
 				try {
-					let target = await wpsn.promptWithTextInput(
+					await wpsn.prompt(
 						{},
-						'<div class="panel panel-default"><div class="panel-heading">Specify JQuery selector</div><div class="panel-body">(i.e. \'body table#main tbody tr td:first-child\'). <br/><br/>The note will adopt the top right position of the first element matching the selector and will be pinned to it. If no element matches selector, the note will be pinned to the top left of the page. <br/><br/> To unpin note, set selector to blank. <br/><br/>Note: This feature is dependent on underlying HTML. This will not always work as expected.</div></div>',
-						note.target
+						`<div class="panel panel-default"><div class="panel-heading">Specify JQuery selector</div><div class="panel-body">(i.e. \'body table#main tbody tr td:first-child\'). </div>
+						<div class="panel-body">
+						The note will adopt the top right position of the first element matching the selector and will be pinned to it. If no element matches selector, the note will be pinned to the top left of the page. 
+						<br/><br/> 
+						To unpin note, set selector to blank. 
+						<br/><br/>
+						Note: This feature is dependent on underlying HTML. This will not always work as expected.
+						<br/>
+						<textarea name="wpsn_target" id="wpsn-target" style="width:100%"/>					
+						<br/><br/>
+						Do you also want to update the underlying element with the note text?
+						<br/>
+						<input type="radio" name="wpsn_target_update" value="true" id="wpsn-target-update" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}px"/> Yes
+						<input type="radio" name="wpsn_target_update" value="false" id="wpsn-target-update" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}px"/> No
+						<br/><br/>
+						Do you also want to update the title of the window? (Leave blank if you don't)
+						<br/>
+						<input type="text" name="wpsn_document_title" value="true" id="wpsn-document-title"/>
+						<br/><br/>
+						Do you also want to update the favicon of the window? (Leave blank if you don't)
+						<br/>
+						<input type="text" name="wpsn_document_favicon" value="true" id="wpsn-document-favicon" placeholder="Image URL or Color"/>
+						</div></div>`,
+						{
+							'wpsn_target': note.target,
+							'wpsn_target_update': note.targetUpdate ? "true" : "false",
+							"wpsn_document_title": note.documentTitle,
+							"wpsn_document_favicon": note.documentFavicon
+						},
+						function (form) {
+							if (form) {
+								wpsn.saveNoteStateForUndo(note);
+								note.target = form.wpsn_target;
+								note.targetUpdate = form.wpsn_target_update == "true"
+								note.documentTitle = form.wpsn_document_title
+								note.documentFavicon = form.wpsn_document_favicon
+								wpsn.refreshNote(note);
+							}
+						}
 					);
-					if (target !== null) {
-						wpsn.saveNoteStateForUndo(note);
-						note.target = target;
-						wpsn.refreshNote(note);
-					}
 				} catch (err) { wpsn.error(err); }
 			}
 		},
@@ -6067,12 +6133,41 @@
 		leftClick: {
 			description: 'Pin note to another note or page element',
 			action: async function (note) {
-				await wpsn.confirm(
+				await wpsn.prompt(
 					{},
-					'<div class="panel panel-default"><div class="panel-heading">You selected the option of pinning this note to another note or page element.</div><div class="panel-body">After clicking OK, click on the note or page element you want to pin this note to. <br/><br/>Click cancel if you don\'t want to proceed.</div></div>',
+					`<div class="panel panel-default"><div class="panel-heading">You selected the option of pinning this note to another note or page element.</div>
+					<div class="panel-body">After clicking OK, click on the note or page element you want to pin this note to. 
+					<br/><br/>Click cancel if you don\'t want to proceed.
+					<br/><br/>
+					Do you also want to update the underlying element with the note text?
+					<br/>
+					<input type="radio" name="wpsn_target_update" value="true" id="wpsn-target-update" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}px"/> Yes
+					<input type="radio" name="wpsn_target_update" value="false" id="wpsn-target-update" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}px"/> No
+					<br/><br/>
+					Do you also want to update the title of the window? (Leave blank if you don't)
+					<br/>
+					<input type="text" name="wpsn_document_title" value="true" id="wpsn-document-title"/>
+					<br/><br/>
+					Do you also want to update the favicon of the window? (Leave blank if you don't)
+					<br/>
+					<input type="text" name="wpsn_document_favicon" value="true" id="wpsn-document-favicon" placeholder="Image URL or Color"/>
+					</div></div>`,
+					{
+						'wpsn_target_update': note.targetUpdate ? "true" : "false",
+						'wpsn_document_title': note.documentTitle,
+						'wpsn_document_favicon': note.documentFavicon
+					},
+					function (form) {
+						if (form) {
+							wpsn.saveNoteStateForUndo(note);
+							note.targetUpdate = form.wpsn_target_update == "true"
+							note.documentTitle = form.wpsn_document_title
+							note.documentFavicon = form.wpsn_document_favicon
+						}
+					}
 				);
 				let childNoteId = note.id;
-				$('*').bind('click.wpsn-pin', function () {
+				$('*').bind('click.wpsn-pin', function () {								
 					if (window.sessionStorage.getItem('wpsn-childnote')) {
 						let childNoteId = window.sessionStorage.getItem('wpsn-childnote');
 						let childNote = wpsn.getNote(childNoteId);
@@ -6089,7 +6184,6 @@
 				window.sessionStorage.setItem('wpsn-childnote', childNoteId); 
 				wpsn.selectElement(wpsn.getNoteDiv(wpsn.getNote(childNoteId)));
 				wpsn.updateHasSelection();
-
 			}
 		}
 	};
@@ -7205,13 +7299,13 @@
 				let fallbackHTML = props.html;
 				let html = '';
 				if (media.toLowerCase().match(/\.(mp4|webm|ogg)$/) != null) {
-					html = '<video controls><source src="' + media + '"></video> ';
+					html = '<video controls loop><source src="' + media + '"></video> ';
 					wpsn.menu.media.renderMedia(note, html).then(function () {
 						wpsn.getNoteDiv(note).find('.wpsn-frameless').removeClass('wpsn-frameless');
 						resolve();
 					});
 				} else if (media.toLowerCase().match(/\.(mp3|wav)$/) != null) {
-					html = '<audio controls><source src="' + media + '"></audio> ';
+					html = '<audio controls loop><source src="' + media + '"></audio> ';
 					wpsn.menu.media.renderMedia(note, html).then(function () {
 						wpsn.getNoteDiv(note).find('.wpsn-frameless').removeClass('wpsn-frameless');
 						resolve();
@@ -8956,7 +9050,7 @@ wpsn.menu.calculator = {
 		let prompt = '' +
 		'<table width="100%">' +
 		'<tr><td><label for="wpsn_username">Username</label>:</td><td><input type="text" name="wpsn_username" id="wpsn_username" style="width:100%"/></td></tr>' +
-		'<tr><td><label for="wpsn_password">Password</label>:</td><td><input type="password" name="wpsn_password" id="wpsn_password" style="width:100%"/></td></tr>' +
+		'<tr><td><label for="wpsn_password"><a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token" target="_blank">Personal Access Token</a></label>:</td><td><input type="password" name="wpsn_password" id="wpsn_password" style="width:100%"/></td></tr>' +
 		'<tr><td><label for="wpsn_repository">Repository</label>:</td><td><input type="text" name="wpsn_repository" id="wpsn_repository" style="width:100%"/></td></tr>' +
 		'<tr><td><label for="wpsn_path">Commit As</label>:</td><td><input type="text" name="wpsn_path" id="wpsn_path" style="width:100%"/></td></tr>' +
 		'<tr><td><label for="wpsn_message">Commit Message</label>:</td><td><textarea name="wpsn_message" id="wpsn_message" style="width:100%;height:100px"/></td></tr>' +
@@ -9003,7 +9097,7 @@ wpsn.menu.calculator = {
 			username: form.wpsn_username,
 			authorization: btoa(form.wpsn_username + ':' + form.wpsn_password),
 			repository: form.wpsn_repository,
-			branch: form.wpsn_branch || 'master',
+			branch: form.wpsn_branch || 'main',
 			path: form.wpsn_path,
 			content: form.wpsn_content || JSON.stringify(notes, null, 4),
 			message: form.wpsn_message || 'Committed from WebPageStickyNotes'
@@ -9091,7 +9185,7 @@ wpsn.menu.calculator = {
 				}
 				promptHTML += '</ul></div></div>';
 				*/
-				promptHTML +=
+				promptHTML += 
 					'<div class="panel panel-default"><div class="panel-heading">Default Width & Height</div><div class="panel-body">' +
 					'<span style="display:inline-block;width:50px">Width:</span><input type="range" style="width:100%;" name="defaultWidth" min="100" max="1000" step="25" data-display="wpsn-defaultWidth"list="wpsn_defaultWidth"><datalist id="wpsn_defaultWidth"><option>25</option><option>250</option><option>500</option><option>750</option><option>1000</option></datalist></input><span class="wpsn-defaultWidth" style="padding-left:5px;"></span><br/>' +
 					'<span style="display:inline-block;width:50px">Height:</span><input type="range" style="width:100%;" name="defaultHeight" min="100" max="1000" step="25" data-display="wpsn-defaultHeight"list="wpsn_defaultHeight"><datalist id="wpsn_defaultHeight"><option>25</option><option>250</option><option>500</option><option>750</option><option>1000</option></datalist></input><span class="wpsn-defaultHeight" style="padding-left:5px;"></span></div></div>';
@@ -9129,6 +9223,12 @@ wpsn.menu.calculator = {
 					When initially empty and text is added to note, note will automatically resize around text.<br/>
 					<input type="radio" name="disableAutoresize" value="true" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="disableAutoresize" value="false" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
 					`;
+				promptHTML +=
+					`
+					<div class="panel panel-default"><div class="panel-heading">Enable Auto Resize Height</div><div class="panel-body">
+					Always auto resize height.<br/>
+					<input type="radio" name="enableAutoresizeHeight" value="true" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> Yes <input type="radio" name="enableAutoresizeHeight" value="false" style="width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/> No</div></div>
+					`
 				promptHTML +=
 					`
 					<div class="panel panel-default"><div class="panel-heading">Enable Note Positioning Per Page</div><div class="panel-body">
@@ -9216,6 +9316,7 @@ wpsn.menu.calculator = {
 							'wpsn_font_size': wpsn.settings.font ? wpsn.settings.font.size || '0' : '0',
 							'multiPosition': wpsn.settings.multiPosition ? 'true' : 'false' || 'false',
 							'disableAutoresize': wpsn.settings.disableAutoresize ? 'true' : 'false' || 'false',
+							'enableAutoresizeHeight': wpsn.settings.enableAutoresizeHeight ? 'true' : 'false' || 'false',
 							'disableMemeModeByDefault': wpsn.settings.disableMemeModeByDefault ? 'true' : 'false' || 'false',
 							'enableSynchronization': wpsn.settings.enableSynchronization ? 'true' : 'false' || 'false',
 							'enableSmartPaste': wpsn.settings.enableSmartPaste ? 'true' : 'false' || 'false',
@@ -9258,6 +9359,7 @@ wpsn.menu.calculator = {
 							wpsn.loadFonts([form.wpsn_font_family]);
 							wpsn.settings.font.size = parseInt(form.wpsn_font_size) || null;
 							wpsn.settings.disableAutoresize = form.disableAutoresize === 'true';
+							wpsn.settings.enableAutoresizeHeight = form.enableAutoresizeHeight === 'true';
 							wpsn.settings.multiPosition = form.multiPosition === 'true';
 							wpsn.settings.disableMemeModeByDefault = form.disableMemeModeByDefault === 'true';
 							wpsn.settings.enableSynchronization = form.enableSynchronization === 'true';
@@ -9313,6 +9415,11 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'3.0.41': [
+			'FEATURE: Text Alignment in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/feather.svg"/>',
+			'FEATURE: Ability to Always Auto Resize Height in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/settings.svg"/> (Disabled by default)',
+			'FEATURE: Ability to update underlying page in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/pushpin.svg"/>',
+		],
 		'3.0.31': [
 			'FEATURE: Plant UML diagram in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/diagram.svg"/>'
 		],
@@ -10494,13 +10601,20 @@ wpsn.menu.calculator = {
 		return base64;
 	};
 
-	wpsn.updateTabWithFaviconColorAndText = function (color, text) {
-		let link = document.querySelector('link[rel*=\'icon\']') || document.createElement('link');
-		link.type = 'image/x-icon';
-		link.rel = 'shortcut icon';
-		link.href = wpsn.colorToBase64(color, 1, 1, true);
-		document.getElementsByTagName('head')[0].appendChild(link);
-		document.title = text || document.title;
+	wpsn.updateTabWithTextAndFaviconColorOrImage = function (text, colorOrHref) {
+		if (colorOrHref) {
+			let link = document.querySelector('link[rel*=\'icon\']') || document.createElement('link');
+			link.type = 'image/x-icon';
+			link.rel = 'shortcut icon';
+			let colorBase64 = colorOrHref.indexOf("://")==-1?wpsn.colorToBase64(colorOrHref, 1, 1, true):null;
+			link.href = colorBase64?colorBase64:colorOrHref;
+			document.getElementsByTagName('head')[0].appendChild(link);
+			let faviconHref = colorBase64?colorBase64:colorOrHref;
+			//chrome.extension.sendMessage({ favicon: faviconHref });
+		}
+		if (text) {
+			document.title = text;
+		}
 	};
 
 

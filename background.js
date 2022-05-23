@@ -612,7 +612,7 @@ function getSha(commit) {
 			}
 			if (!commit.sha) {
 				let xhr2 = new XMLHttpRequest();
-				xhr2.open('GET', api+'/git/refs/heads/master', true);
+				xhr2.open('GET', api+'/git/refs/heads/main', true);
 				xhr2.onreadystatechange = function () {
 					if (xhr2.readyState == 4) {
 						if (xhr2.status === 200 && xhr2.responseText && xhr2.responseText.length !== '') {
