@@ -23,8 +23,8 @@
 			'global': 'wpsn.GLOBAL'
 		};
 		wpsn.mainmenu_left = ['maximize', 'minimize', 'fullscreen', 'lookandfeel', 'refresh', 'lock', 'mode', 'zoom', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'snapshot', 'checklist','code', 'diagram'];
-		wpsn.mainmenu_right = ['synchronize', 'export', 'clone', 'add', 'more', 'remove', 'removePopup', 'tips', 'about', 'manager', 'settings', 'whatsnew'];
-		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'lookandfeel', 'snapshot', 'zoom', 'lock', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'export', 'synchronize', 'removePopup', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'checklist', 'code', 'diagram', 'mode'];
+		wpsn.mainmenu_right = ['synchronize', 'export', 'copynotetext', 'clone', 'add', 'more', 'remove', 'removePopup', 'tips', 'about', 'manager', 'settings', 'whatsnew'];
+		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'copynotetext', 'lookandfeel', 'snapshot', 'zoom', 'lock', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'export', 'synchronize', 'removePopup', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'checklist', 'code', 'diagram', 'mode'];
 		wpsn.filters = {
 			'blur': { max: 4, unit: 'px', value: 0, step: 0.25, division: 4 },
 			'grayscale': { max: 100, unit: '%', value: 0, step: 1, division: 4 },
@@ -735,12 +735,41 @@
 		wpsn.notes.push(newNote);
 		wpsn.save();
 	};
+
 	wpsn.cloneNotes = function (notes, updateScopeToCurrentScope, keepOriginalCoordinates) {
 		if (notes) {
 			for (let i = 0; i < notes.length; i++) {
 				wpsn.cloneNote(notes[i], updateScopeToCurrentScope, keepOriginalCoordinates);
 			}
 		}
+	};
+
+	wpsn.copyEffectiveNotesText = function (noteOrNotes) {
+		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.copyNoteText);
+	};
+
+	wpsn.copyNoteText = function (note) {
+		wpsn.copyToClipboard(note.text);
+	};
+
+	wpsn.copyEffectiveNoteHtmlText = function (noteOrNotes) {
+		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.copyNoteHtmlText);
+	};
+
+	wpsn.copyNoteHtmlText = function (note) {
+		let noteDiv = wpsn.getNoteDiv(note);
+		let frame = noteDiv.find('#wpsn-frame-' + note.id);
+		wpsn.copyToClipboard(frame.text());
+	};
+
+	wpsn.copyEffectiveNoteHtmlFormattedText = function (noteOrNotes) {
+		return wpsn.actOnEffectiveNotes(noteOrNotes, wpsn.copyNoteHtmlFormattedText);
+	};
+
+	wpsn.copyNoteHtmlFormattedText = function (note) {
+		let noteDiv = wpsn.getNoteDiv(note);
+		let frame = noteDiv.find('#wpsn-frame-' + note.id);
+		wpsn.copyToClipboard(frame.html());
 	};
 
 	wpsn.noteOrNotesToArray = function(noteOrNotes) {
@@ -3711,6 +3740,13 @@
 			wpsn.centerNote(note);
 			wpsn.save(note);
 		},
+		'b-deformat-clipboard': async function () {
+			let pasteContent = await wpsn.getPasteContent();
+			let $div = $('<div/>');
+			$div.html(pasteContent);
+			let deformatedPasteContent = $div.text();
+			wpsn.copyToClipboard(deformatedPasteContent);
+		},
 		'b-copy-to-note-prettify': async function () {
 			let note = await wpsn.copyTextToNote(false);
 			note.mode = wpsn.menu.code.modes.code.id;
@@ -3749,6 +3785,9 @@
 		'b-export-note': async function (commandName, info) { await wpsn.exportEffectiveNotes(info.note); },
 		'b-export-provided-notes': async function () { await wpsn.exportEffectiveNotes(null, 'notes'); },
 		'b-import-note': async function () { await wpsn.import(); },
+		'b-copy-note-text': async function (commandName, info) { await wpsn.copyEffectiveNotesText(info.note); },
+		'b-copy-note-html-text': async function (commandName, info) { await wpsn.copyEffectiveNoteHtmlText(info.note); },
+		'b-copy-note-html-formatted-text': async function (commandName, info) { await wpsn.copyEffectiveNoteHtmlFormattedText(info.note); },
 		'b-clone-note': async function (commandName, info) { await wpsn.cloneEffectiveNotes(info.note); },
 		'b-clone-provided-notes': async function () { await wpsn.cloneProvidedNotes(null, 'note'); },
 		'b-clone-favorite-note': async function () { await wpsn.cloneFavoriteNotes(); },
@@ -3790,6 +3829,7 @@
 		'b-download-note-as-html': async function (commandName, info) { await wpsn.downloadAsHTML(info.note); },
 		'b-download-clipboard-as-html': async function (commandName, info) { await wpsn.command_actions[commandName](commandName, info); },
 		'b-paste-clipboard-to-note-prettify': async function (commandName, info) { await wpsn.command_actions[commandName](commandName, info); },
+		'b-deformat-clipboard': async function (commandName, info) { await wpsn.command_actions[commandName](commandName, info); },
 		'b-smart-copy-to-clipboard': async function () { await wpsn.smartCopy(); },
 		'b-copy-to-note': async function () { await wpsn.copyTextToNote(false); },
 		'b-copy-html-to-note': async function () { await wpsn.copyTextToNote(true); },
@@ -6048,6 +6088,22 @@
 		},
 		doubleClick: {
 			command: 'b-clone-favorite-note'
+		}
+	};
+
+	wpsn.menu.copynotetext = {
+		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/copy_text.svg',
+		name: 'copy-note-text',
+		description: '',
+		optional: false,
+		leftClick: {
+			command: 'b-copy-note-text'
+		},
+		rightClick: {
+			command: 'b-copy-note-html-text'
+		},
+		doubleClick: {
+			command: 'b-copy-note-html-formatted-text'
 		}
 	};
 
@@ -9415,6 +9471,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'3.0.43': [
+			'FEATURE: Copy note text <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/copy_text.svg"/>'
+		],
 		'3.0.41': [
 			'FEATURE: Text Alignment in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/feather.svg"/>',
 			'FEATURE: Ability to Always Auto Resize Height in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/settings.svg"/> (Disabled by default)',
