@@ -95,6 +95,7 @@
 		wpsn.defaultGoogleFonts.sort();
 		wpsn.defaultFontSizes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 		wpsn.defaultBorderSizes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+		wpsn.defaultTextShadowSizes = [1, 2, 3];
 		wpsn.resizableOptions = {
 			snap: '.wpsn-snappable', handles: 'all'/*,aspectRatio:hasMedia*/, 
 			resize: function (event, ui) {
@@ -572,8 +573,10 @@
 		note.height = note.height ? note.height : wpsn.settings.defaultHeight || 600;
 		note.pos_x = note.pos_x != null ? note.pos_x : Math.max(0, $(window).scrollLeft() + window.innerWidth / 2 - note.width / 2);
 		note.pos_y = note.pos_y != null ? note.pos_y : Math.max(0, $(window).scrollTop() + window.innerHeight / 2 - note.height / 2);
-		note.background = note.background ? note.background : wpsn.settings.background || '#ff3';
+		note.background = note.background ? note.background : wpsn.settings.background || '#ffc';
 		note.textcolor = note.textcolor ? note.textcolor : wpsn.settings.textcolor || '#333';
+		note.textshadowcolor = note.textshadowcolor ? note.textshadowcolor : wpsn.settings.textshadowcolor || wpsn.transparent;
+		note.textshadowwidth = note.textshadowwidth ? note.textshadowwidth : wpsn.settings.textshadowwidth || 1;
 		note.bordercolor = note.bordercolor ? note.bordercolor : wpsn.settings.bordercolor || '#999';
 		note.borderwidth= note.borderwidth ? note.borderwidth : wpsn.settings.borderwidth || 1;
 		note.font = note.font ? note.font : (wpsn.settings.font ? $.extend(true, {}, wpsn.settings.font) : { family: 'Verdana' });
@@ -946,12 +949,14 @@
 		let noteDiv = wpsn.getNoteDiv(note);
 		noteDiv.addClass('wpsn-editing')
 		let noteFrame = noteDiv.find('#wpsn-frame-' + note.id);
+
 		if (note && !note.isPopup && !note.deleted) {
 			let textarea = $(document.createElement('textarea'))
 				.attr('id', 'wpsn-textarea-' + note.id)
 				.addClass('wpsn-textarea')
 				.addClass('wpsn-scrollbar')
 				.css('color', noteFrame.css('color'))
+				.css('text-shadow', noteFrame.css('text-shadow'))
 				.css('background', noteFrame.css('background-color'))
 				.css('zoom', (note.zoom || 100) + '%')
 				.val(
@@ -962,16 +967,6 @@
 					.html().toString().replace(/<br\/?>/g,"\n").replace(/(&nbsp;)/g," "))
 					*/
 				);
-			if (wpsn.isMedia(note)) {
-				textarea.css('color', (note.textcolor || wpsn.settings.textcolor || '#fff;'));
-			}
-			if (note.textshadow && note.textshadow != 'false') {
-				textarea.addClass('wpsn-text-shadow');
-				textarea.css('color', '#fff');
-			}
-			//if (note.textposition) {
-			//textarea.addClass('wpsn-text-'+note.textposition);
-			//}
 			if (note.htmlMode) {
 				if (note.text == null) { note.text = ''; }
 				textarea.val(note.text);
@@ -1388,7 +1383,8 @@
 		if (note.isAlert) {
 			_alertClass = 'wpsn-alert';
 		}
-		let _div_note = $('<div class="wpsn-note ' + _popupClass + ' ' + _alertClass + ' ' + _noteClass +'" style="background:' + _background + ';color:' + note.textcolor + ';box-shadow:0px 0px '+(note.borderwidth||1)+'px 0px ' + _bordercolor + '"></div>');
+
+		let _div_note = $('<div class="wpsn-note ' + _popupClass + ' ' + _alertClass + ' ' + _noteClass +'" style="background:' + _background + ';box-shadow:0px 0px '+(note.borderwidth||1)+'px 0px ' + _bordercolor + ';"></div>');
 		let _top_bar = $('<div class="wpsn-topbar">&nbsp;</div>');
 		if (note.canvas == 'frameless') {
 			_div_note.addClass('wpsn-frameless');
@@ -1445,6 +1441,10 @@
 		}
 		//note.order = note.order || wpsn.nextOrder();
 
+		let textColor = wpsn.isMeme(note)?'#fff':note.textcolor
+		let textShadowColor = wpsn.isMeme(note)?'#666':(note.textshadowcolor?note.textshadowcolor:'transparent');
+		let textShadowWidth = wpsn.isMeme(note)?'1':(note.textshadowwidth?note.textshadowwidth:'1');
+
 		let _div_wrap = $('<div id="note-' + note.id + '" style="z-index:' + wpsn.getZIndex(note) + ';position:absolute;'+
 		(wpsn.posx(note)?'left:' + wpsn.posx(note) + ';':'')+
 		(wpsn.posy(note)?'top:' + wpsn.posy(note) + ';':'')+
@@ -1455,6 +1455,8 @@
 		(note.height?'height:' + note.height + 'px;':'')+
 		(note.minHeight?'min-height:' + note.minHeight + 'px;':'')+
 		(note.maxHeight?'max-height:' + note.maxHeight + 'px;':'')+
+		'color: '+ textColor+ ';'+
+		'text-shadow: -'+textShadowWidth+'px -'+textShadowWidth+'px 0 '+textShadowColor+', '+textShadowWidth+'px -'+textShadowWidth+'px 0 '+textShadowColor+', -'+textShadowWidth+'px '+textShadowWidth+'px 0 '+textShadowColor+', '+textShadowWidth+'px '+textShadowWidth+'px 0 '+textShadowColor+';'+
 		'"><a name="' + note.id + '"/></div>').append(_div_note);
 
 		if (!wpsn.inScope(note)) {
@@ -4677,14 +4679,15 @@
 				let canvas = imageAndCanvas.canvas;
 				return await wpsn.prompt(
 					{
-						load: function(note, preventResize){
-							wpsn.fontPromptLoad(note, preventResize);
+						load: function(_note, preventResize){
+							wpsn.fontPromptLoad(_note, preventResize);
 							
 							$('input[name="wpsn_background"]').data('predefinedColors', '#eee|#fff|#ffc|#fc9|#fcc|#ccf|#9cf|#cfc|'+wpsn.transparent);
 							$('input[name="wpsn_textcolor"]').data('predefinedColors', '#000|#333|#666|#999|#ccc|#fff|#fc3|#f93|#c33|#93c|#33c|#3c3');
 							$('input[name="wpsn_bordercolor"]').data('predefinedColors', '#000|#333|#666|#999|#ccc|#fff|#fc3|#f93|#c33|#93c|#33c|#3c3|'+wpsn.transparent);
+							$('input[name="wpsn_textshadowcolor"]').data('predefinedColors', '#000|#333|#666|#999|#ccc|#fff|#fc3|#f93|#c33|#93c|#33c|#3c3|'+wpsn.transparent).val(note.textshadowcolor||wpsn.transparent);
 
-							let $input = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"]');
+							let $input = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"],input[name="wpsn_textshadowcolor"]');
 							
 							wpsn.colorInput($input, canvas);
 						},
@@ -4698,6 +4701,8 @@
 						'wpsn_textcolor': note.textcolor || '',
 						'wpsn_textposition': note.textposition || '',
 						'wpsn_textshadow': note.textshadow || '',
+						'wpsn_textshadowcolor': note.textshadowcolor || '',
+						'wpsn_textshadowwidth': note.textshadowwidth || 0,
 						'wpsn_bordercolor': note.bordercolor || '',
 						'wpsn_borderwidth': note.borderwidth || 1,
 						'wpsn_text_align': note.textAlign || ''
@@ -4716,7 +4721,8 @@
 			note.background = form.wpsn_background;
 			note.textcolor = form.wpsn_textcolor;
 			note.textposition = form.wpsn_textposition;
-			note.textshadow = form.wpsn_textshadow;
+			note.textshadowcolor = form.wpsn_textshadowcolor;
+			// note.textshadowwidth = parseInt(form.wpsn_textshadowwidth) || null;
 			note.bordercolor = form.wpsn_bordercolor;
 			note.borderwidth = parseInt(form.wpsn_borderwidth) || null;
 			note.textAlign = form.wpsn_text_align;
@@ -4738,6 +4744,8 @@
 		let $borderWidth = $noteDiv.find('[name="wpsn_borderwidth"]');
 		let $textColor = $noteDiv.find('[name="wpsn_textcolor"]');
 		let $textPosition = $noteDiv.find('input[name="wpsn_textposition"]:checked');
+		let $textShadowColor = $noteDiv.find('[name="wpsn_textshadowcolor"]');
+		let $textShadowWidth = $noteDiv.find('[name="wpsn_textshadowwidth"]');
 		let $textShadow = $noteDiv.find('input[name="wpsn_textshadow"]:checked');
 		let $withMedia = $noteDiv.find('input[name="wpsn_withmedia"]:checked');
 		let $textAlign = $noteDiv.find('input[name="wpsn_text_align"]:checked')
@@ -4750,10 +4758,13 @@
 		let borderWidth = $borderWidth.val();
 		let textColor = $textColor.val();
 		let textPosition = $textPosition.val();
+		let textShadowColor = $textShadowColor.val();
+		let textShadowWidth = $textShadowWidth.val() || '1';
 		let textShadow = $textShadow.val() == 'true';
 		let withMedia = $withMedia.val() == 'true';
 		let textAlign = $textAlign.val();
 		
+
 		$sampleText.css('font-family', fontFamily || 'inherit');
 		$sampleText.css('font-size', fontSize || 'inherit').css('line-height', fontSize ? (fontSize + 9) + 'px' : 'inherit');
 		$sampleText.css('background', (withMedia ? '#fff url(\'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/logo/wpsn-logo.svg\') repeat 0 0' : backgroundColor));
@@ -4762,11 +4773,7 @@
 		let positions = ['top-left', 'top-center', 'top-right', 'center-left', 'center-center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'];
 		for (let i = 0; i < positions.length; i++) { let tpos = positions[i]; $sampleTextSpan.removeClass('wpsn-text-' + tpos);}
 		$sampleTextSpan.addClass('wpsn-text-' + (withMedia ? textPosition: 'top-left'));
-		$sampleTextSpan.removeClass('wpsn-text-shadow');
-		if (withMedia && textShadow) { 
-			$sampleTextSpan.addClass('wpsn-text-shadow'); 
-			$sampleText.css('color', '#fff');
-		}
+		$sampleTextSpan.css('text-shadow', '-'+textShadowWidth+'px -'+textShadowWidth+'px 0 '+textShadowColor+', '+textShadowWidth+'px -'+textShadowWidth+'px 0 '+textShadowColor+', -'+textShadowWidth+'px '+textShadowWidth+'px 0 '+textShadowColor+', '+textShadowWidth+'px '+textShadowWidth+'px 0 '+textShadowColor);
 		$sampleTextSpan.css('text-align', textAlign);
 		$sampleTextSpan.css('position', 'relative');
 		$sampleText.css('height', 'auto');
@@ -4817,6 +4824,14 @@
 		});
 
 		noteDiv.find('input[name="wpsn_textposition"]').unbind('change').bind('change', function () {
+			wpsn.updateSampleNote(note, preventResize);
+		});
+
+		noteDiv.find('input[name="wpsn_textshadowcolor"]').unbind('change').bind('change', function () {
+			wpsn.updateSampleNote(note, preventResize);
+		});
+
+		noteDiv.find('input[name="wpsn_textshadowwidth"]').unbind('change').bind('change', function () {
 			wpsn.updateSampleNote(note, preventResize);
 		});
 
@@ -4878,15 +4893,15 @@
 		prompt += '</datalist></input><span class="wpsn-wpsn_font_size" style="padding-left:5px;"></span><br/>';
 
 		prompt +=
-			'<label for="wpsn_background">Background</label><br/>' +
+			'<label for="wpsn_background">Background:</label><br/>' +
 			'<input type="text" name="wpsn_background" id="wpsn_background"/>' +
 			'<br/>';
 		prompt +=
-			'<label for="wpsn_bordercolor">Border Color</label><br/>' +
+			'<label for="wpsn_bordercolor">Border Color:</label><br/>' +
 			'<input type="text" name="wpsn_bordercolor" id="wpsn_bordercolor"/>' +
 			'<br/>';
 		prompt +=
-			'<label for="wpsn_borderwidth">Border Width</label><br/>' +
+			'<label for="wpsn_borderwidth">Border Width:</label><br/>' +
 			'<input type="range" style="width:100%;" name="wpsn_borderwidth" min="1" max="100" step="1" data-display="wpsn-wpsn_borderwidth" list="wpsn_borderwidth_list"><datalist id="wpsn_borderwidth_list">';
 			for (let i = 0; i < wpsn.defaultBorderSizes.length; i++) {
 				let borderSize = wpsn.defaultBorderSizes[i];
@@ -4894,19 +4909,27 @@
 			}
 			prompt += '</datalist></input><span class="wpsn-wpsn_borderwidth" style="padding-left:5px;"></span><br/>';
 		prompt +=
-			'<label for="wpsn_textcolor">Text Color</label><br/>' +
+			'<label for="wpsn_textcolor">Text Color:</label><br/>' +
 			'<input type="text" name="wpsn_textcolor" id="wpsn_textcolor"/>' +
 			'<br/>';
 		
-		if (isMedia || includeMedia) {
-			prompt += '<label>Media Text Shadow:</label><br/>';
-			prompt += '<input type="radio" name="wpsn_textshadow" value="true" id="wpsn-textshadow-true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-textshadow-true"><b>True</b></label> ';
-			prompt += '<input type="radio" name="wpsn_textshadow" value="false" id="wpsn-textshadow-false" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/><label for="wpsn-textshadow-false"><b>False</b></label> ';
-			prompt += '<br/><br/>';
-		}
-
 		prompt +=
-		'<label for="wpsn_background">Text Alignment</label><br/>' +
+			'<label for="wpsn_textshadowcolor">Text Shadow Color:</label><br/>' +
+			'<input type="text" name="wpsn_textshadowcolor" id="wpsn_textshadowcolor"/>' +
+			'<br/>';
+
+		// prompt +=
+		// 	'<label for="wpsn_textshadowwidth">Text Shadow Width</label><br/>' +
+		// 	'<input type="range" style="width:100%;" name="wpsn_textshadowwidth" min="1" max="3" step="1" data-display="wpsn-wpsn_textshadowwidth" list="wpsn_textshadowwidth_list"><datalist id="wpsn_textshadowwidth_list">';
+		// 	for (let i = 0; i < wpsn.defaultTextShadowSizes.length; i++) {
+		// 		let textShadowSize = wpsn.defaultTextShadowSizes[i];
+		// 		prompt += '<option value="' + textShadowSize + '">' + textShadowSize + 'px</option>';
+		// 	}
+		// 	prompt += '</datalist></input><span class="wpsn-wpsn_textshadowwidth" style="padding-left:5px;"></span><br/>';
+
+		
+		prompt +=
+		'<label for="wpsn_background">Text Alignment:</label><br/>' +
 		'<label><input type="radio" class="wpsn_radio_img" name="wpsn_text_align" id="wpsn_text_align" value="left"/>' +
 		'<img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/format_align_left.svg" title="Text Align Left"/></label> ' +
 		'<label><input type="radio" class="wpsn_radio_img" name="wpsn_text_align" id="wpsn_text_align" value="center"/>' +
@@ -4917,21 +4940,21 @@
 		'<img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/format_align_justify.svg" title="Text Align Justify"/></label> ' +
 		'<br/><br/>';
 
-		prompt+= '<div style="white-space:nowrap">';
-		if (isMedia || includeMedia) {
-			let positions = ['top-left', 'top-center', 'top-right', 'center-left', 'center-center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'];
-			prompt += '<label>Media Text Position:</label>';
-			for (let i = 0; i < positions.length; i++) {
-				let pos = positions[i];
-				if (i % 3 == 0) {
-					prompt += '<br/>';
-				}
-				prompt += '<input type="radio" name="wpsn_textposition" value="' + pos + '" id="wpsn-textposition-' + pos + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/>' +
-					'<label for="wpsn-textposition-' + pos + '" style="width:150px;"><b>' + pos + '</b></label>&nbsp; ';
-			}
-			prompt += '<br/><br/>';
-		}
-		prompt+= '</div>';
+		// prompt+= '<div style="white-space:nowrap">';
+		// if (isMedia || includeMedia) {
+		// 	let positions = ['top-left', 'top-center', 'top-right', 'center-left', 'center-center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'];
+		// 	prompt += '<label>Media Text Position:</label>';
+		// 	for (let i = 0; i < positions.length; i++) {
+		// 		let pos = positions[i];
+		// 		if (i % 3 == 0) {
+		// 			prompt += '<br/>';
+		// 		}
+		// 		prompt += '<input type="radio" name="wpsn_textposition" value="' + pos + '" id="wpsn-textposition-' + pos + '" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"/>' +
+		// 			'<label for="wpsn-textposition-' + pos + '" style="width:150px;"><b>' + pos + '</b></label>&nbsp; ';
+		// 	}
+		// 	prompt += '<br/><br/>';
+		// }
+		// prompt+= '</div>';
 		prompt += '<div class="wpsn_sample_text_div"><label>Sample Note:</label>';
 		if (isSettings) {
 			prompt += '<br/><div class="wpsn_sample_text_div"><label>&nbsp;&nbsp;&nbsp;With Media:</label>';
@@ -7263,7 +7286,6 @@
 			}
 			if (note.text) {
 				let _textPositionClass = 'wpsn-text-' + note.textposition;
-				let _textShadowClass = note.textshadow && note.textshadow != 'false' ? 'wpsn-text-shadow' : '';
 				let meme = wpsn.isMeme(note);
 				let fontSize = wpsn.fontSize(note);
 				if (meme) {
@@ -7272,10 +7294,10 @@
 					if (ind > -1) {
 						textArr = [note.text.substring(0, ind), note.text.substring(ind + 1)];
 					}
-					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' wpsn-text-top-center wpsn-text-shadow wpsn-meme" style="text-transform:uppercase;font-family:Impact,Verdana;color:' + (note.textcolor || wpsn.settings.textcolor || '#fff;') + '">' + wpsn.markdownConverter(textArr[0]) + '</div>');
-					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' wpsn-text-bottom-center wpsn-text-shadow wpsn-meme" style="text-transform:uppercase;font-family:Impact,Verdana;color:' + (note.textcolor || wpsn.settings.textcolor || '#fff;') + '">' + wpsn.markdownConverter(textArr[1]) + '</div>');
+					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' wpsn-text-top-center wpsn-meme" style="text-transform:uppercase;font-family:Impact,Verdana;">' + wpsn.markdownConverter(textArr[0]) + '</div>');
+					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' wpsn-text-bottom-center wpsn-meme" style="text-transform:uppercase;font-family:Impact,Verdana;">' + wpsn.markdownConverter(textArr[1]) + '</div>');
 				} else {
-					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' ' + _textPositionClass + ' ' + _textShadowClass + '" style="color:' + (note.textcolor || wpsn.settings.textcolor || '#fff;') + '">' + wpsn.markdownConverter(note.text) + '</div>');
+					noteFrame.prepend('<div class="' + (fontSize ? '' : 'wpsn-auto-fit-text') + ' ' + _textPositionClass + '">' + wpsn.markdownConverter(note.text) + '</div>');
 				}
 			}
 			if (props.caption) {
@@ -9355,8 +9377,9 @@ wpsn.menu.calculator = {
 							$('input[name="wpsn_background"]').data('predefinedColors', '#eee|#fff|#ffc|#fc9|#fcc|#ccf|#9cf|#cfc|'+wpsn.transparent);
 							$('input[name="wpsn_textcolor"]').data('predefinedColors', '#000|#333|#666|#999|#ccc|#fff|#fc3|#f93|#c33|#93c|#33c|#3c3');
 							$('input[name="wpsn_bordercolor"]').data('predefinedColors', '#000|#333|#666|#999|#ccc|#fff|#fc3|#f93|#c33|#93c|#33c|#3c3|'+wpsn.transparent);
+							$('input[name="wpsn_textshadowcolor"]').data('predefinedColors', '#000|#333|#666|#999|#ccc|#fff|#fc3|#f93|#c33|#93c|#33c|#3c3|'+wpsn.transparent);
 
-							let $input = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"]');
+							let $input = $('input[name="wpsn_background"],input[name="wpsn_textcolor"],input[name="wpsn_bordercolor"],input[name="wpsn_textshadowcolor"]');
 							
 							wpsn.colorInput($input, canvas);
 							
@@ -9386,6 +9409,8 @@ wpsn.menu.calculator = {
 							'wpsn_bordercolor': wpsn.settings.bordercolor || '#999',
 							'wpsn_borderwidth': wpsn.settings.borderwidth || 1,
 							'wpsn_textposition': wpsn.settings.textposition || 'bottom-center',
+							'wpsn_textshadowcolor': wpsn.settings.textshadowcolor || wpsn.transparent,
+							'wpsn_textshadowwidth': wpsn.settings.textshadowwidth || 0,
 							'wpsn_textshadow': wpsn.settings.textshadow || 'true',
 							'wpsn_mode': wpsn.settings.defaultMode || wpsn.getModeId(wpsn.defaultMode),
 							'defaultWidth': wpsn.settings.defaultWidth || 500,
@@ -9428,6 +9453,8 @@ wpsn.menu.calculator = {
 							wpsn.settings.bordercolor = form.wpsn_bordercolor;
 							wpsn.settings.borderwidth = parseInt(form.wpsn_borderwidth) || null;
 							wpsn.settings.textposition = form.wpsn_textposition;
+							wpsn.settings.textshadowcolor = form.wpsn_textshadowcolor;
+							wpsn.settings.textshadowwidth = parseInt(form.wpsn_textshadowwidth) || null;
 							wpsn.settings.textshadow = form.wpsn_textshadow;
 							wpsn.settings.defaultMode = form.wpsn_mode;
 							wpsn.settings.defaultWidth = form.defaultWidth;
@@ -9502,6 +9529,9 @@ wpsn.menu.calculator = {
 	};
 
 	wpsn.features = {
+		'3.0.45': [
+			'FEATURE: Text shadow color in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/feather.svg"/>'
+		],
 		'3.0.44': [
 			'FEATURE: Border width and extra predefined colors in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/feather.svg"/>'
 		],
@@ -10082,7 +10112,7 @@ wpsn.menu.calculator = {
 		return { 'menu': ['removePopup', 'snapshot', 'position'], 'background': '#fff', 'textcolor': '#333', 'font': { 'family': 'Verdana' }, 'position': 'right', 'dockable': 'top', 'height': 688, 'width': 1024, 'htmlMode': false, 'id': 8369542886, 'mode': '6328746328', 'modified_date': 1439745294878, 'pos_x': 788, 'pos_y': 33, 'isPopup': true, 'isNotPopup': true, 'text': text };
 	};
 
-	wpsn.demo = { 'id': 842932278, 'text': '<iframe width="560" height="315" src="https://www.youtube.com/embed/videoseries?list=PLZsbN2-oeE3QiXP-EBxTb4bE9_0ymrqaZ" frameborder="0" allowfullscreen></iframe>', 'width': 588, 'height': 343, 'pos_x': 463, 'pos_y': 373, 'background': '#ff3', 'textcolor': '#333', 'created_date': 1419435274452, 'htmlMode': false, 'fullscreen': false, 'modified_date': 1436721876991, 'mode': '6328746328', 'font': { 'family': 'Verdana' }, 'title': '<iframe width="560" height="315" src="https://www.youtube.com/embed/videoseries?list=PLZsbN2-oeE3QiXP-EBxTb4bE9_0ymrqaZ" frameborder="0" allowfullscreen></iframe>' };
+	wpsn.demo = { 'id': 842932278, 'text': '<iframe width="560" height="315" src="https://www.youtube.com/embed/videoseries?list=PLZsbN2-oeE3QiXP-EBxTb4bE9_0ymrqaZ" frameborder="0" allowfullscreen></iframe>', 'width': 588, 'height': 343, 'pos_x': 463, 'pos_y': 373, 'background': '#ffc', 'textcolor': '#333', 'created_date': 1419435274452, 'htmlMode': false, 'fullscreen': false, 'modified_date': 1436721876991, 'mode': '6328746328', 'font': { 'family': 'Verdana' }, 'title': '<iframe width="560" height="315" src="https://www.youtube.com/embed/videoseries?list=PLZsbN2-oeE3QiXP-EBxTb4bE9_0ymrqaZ" frameborder="0" allowfullscreen></iframe>' };
 
 	wpsn.init = function () {
 		let $body = $('body');

@@ -20,6 +20,7 @@ Some suggested shortcuts:
 |`Paste copied note(s)` | `Ctrl+Shift+V`|
 |`Select all notes` | `Ctrl+Shift+A`|
 |`Delete note(s)` | `Ctrl+Shift+Del`|
+|`Take a snapshot of note(s)` | `Ctrl+Shift+S`|
 |`Zoom in note(s)` | `Ctrl+Shift+I`|
 |`Zoom out note(s)` | `Ctrl+Shift+O`|
 |`Zoom note(s) to 100%` | `Ctrl+Shift+U`|
