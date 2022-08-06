@@ -8553,22 +8553,156 @@ function factorial(number) {
 						if (note.mode == wpsn.menu.diagram.modes.plantumldiagram.id) {
 							let demo = 
 `
-@startuml
-'skinparam linetype ortho
-'hide circle
-'top to bottom direction
-'left to right direction
+hide stereotype
 
+<style>
+.bold {
+  LineThickness 3
+}
+.dashed {
+  LineStyle 3
+}
+
+.black,.fatal {
+  BackGroundColor #000
+  FontColor #fff
+  LineColor #fff
+  HorizontalAlignment center
+}
+.red,.error {
+  BackGroundColor #faa
+  FontColor #a33
+  LineColor #a33
+  HorizontalAlignment center
+}
+.orange,.warning {
+  BackGroundColor #fc9
+  FontColor #c63
+  LineColor #c63
+  HorizontalAlignment center
+}
+.green,.success {
+  BackGroundColor #cfc
+  FontColor #393
+  LineColor #393
+  HorizontalAlignment center
+}
+.blue,.info {
+  BackGroundColor #9cf
+  FontColor #33c
+  LineColor #33c
+  HorizontalAlignment center
+}
+.white,.foreground, {
+  BackGroundColor #fff
+  FontColor #333
+  LineColor #333
+  HorizontalAlignment center
+}
+.gray,.background {
+  BackGroundColor #eee
+  FontColor #999
+  LineColor #999
+  HorizontalAlignment center
+}
+.yellow,.highlight {
+  BackGroundColor #ffc
+  FontColor #c93
+  LineColor #c93
+  HorizontalAlignment center
+}
+.purple {
+  BackGroundColor #ccf
+  FontColor #93c
+  LineColor #93c
+  HorizontalAlignment center
+}
+.pink {
+  BackGroundColor #fdd
+  FontColor #a66
+  LineColor #a66
+  HorizontalAlignment center
+}
+.pink {
+  BackGroundColor #fdd
+  FontColor #a66
+  LineColor #a66
+  HorizontalAlignment center
+}
+.brown {
+  BackGroundColor #c96
+  FontColor #630
+  LineColor #630
+  HorizontalAlignment center
+}
+</style>
+
+
+title Title
 header Header
 footer Footer
 
-title Title
+note top of StylesStereotypes
+  Note
+end note
 
-rectangle Rectangle {
-package Package {
+rectangle StylesStereotypes <<dashed>> {
+rectangle BlackFatal <<fatal>><<black>> {
+}
+rectangle RedError <<error>><<red>> {
+}
+rectangle OrangeWarning <<warning>><<organge>> {
+}
+rectangle GreenSuccess <<success>><<green>> {
+}
+rectangle BlueInfo <<info>><<blue>> {
+}
+rectangle YellowHighlight <<highlight>><<yellow>> {
+}
+rectangle GrayBackground <<background>><<gray>> {
+}
+rectangle WhiteForeground <<foreground>><<white>> {
+}
+rectangle Purple <<purple>> {
+}
+rectangle Pink <<pink>> {
+}
+rectangle Brown <<brown>> {
+}
+rectangle Bold <<bold>> {
+}
+rectangle Dashed <<dashed>> {
+}
+rectangle Basic {
+}
 
-folder Folder {
-  entity Entity {
+Basic -[hidden]d-> Dashed
+Dashed -[hidden]d-> Bold
+WhiteForeground -[hidden]d-> GrayBackground
+GrayBackground -[hidden]d-> YellowHighlight
+YellowHighlight -[hidden]d-> BlueInfo
+GreenSuccess -[hidden]d-> OrangeWarning
+OrangeWarning -[hidden]d-> RedError
+RedError -[hidden]d-> BlackFatal
+Purple -[hidden]d-> Pink
+Pink -[hidden]d-> Brown
+}
+
+rectangle NestableDeploymentDiagram <<dashed>> {
+
+rectangle "<b>NestedComponent \\n <i>[Context]" as nc <<dashed>> {
+
+rectangle nc2 <<foreground>> [
+  <b>NestedComponent
+  <i>[Context]
+
+  Lorem ipsum dolor sit amet, 
+  consectetur adipiscing elit. 
+  In tempor molestie leo
+]
+
+}
+rectangle NestableElement [
     you
     ..
    can
@@ -8578,55 +8712,152 @@ folder Folder {
     different
     --
    lines
-  }
+]
+artifact artifact {
+}
+card card {
+}
+cloud cloud {
+}
+'component component {
+'}
+database database {
+}
+file file {
+}
+folder folder {
+}
+'frame frame {
+'}
+'hexagon hexagon {
+'}
+node node {
+}
+package package {
+}
+queue queue {
+}
+rectangle rectangle {
+}
+stack stack {
+}
+storage storage {
 }
 
-node Node {
-  class MyClass {
-    -field1: String //private
-    #field2: Integer //protected
-    ~method1(): Object //package private
-    +method2(): Boolean //public 
-  }
+database -[hidden]d-> queue
+package -[hidden]d-> artifact
+folder -[hidden]d-> file
+stack -[hidden]d-> card
+cloud -[hidden]d-> storage
+node -[hidden]d-> rectangle
+NestableElement -[hidden]d-> nc
 }
 
-database Database {
-  interface Interface
-
-  abstract Abstract
-  
-  enum Enum
-
-  annotation Annotation
-
-  class Custom<< (Z,grey) >>
-
-  Interface -left-> Abstract
-  Interface -up-> Enum
-  Interface -down-> Annotation
-  Interface -right-> Custom
+rectangle NonNestableDeploymentDiagram <<dashed>> {
+'actor actor
+'agent agent
+'boundary boundary
+circle circle
+collections collections
+'control control
+'entity entity
+'interface interface
+label label
+person person
+usecase usecase
 }
 
-cloud Cloud {
-  OneOrMany }|..|| ExactlyOne
-  ZeroOrMany }o..o| ZeroOrOne
-  ExactlyOne ||--o{ ZeroOrMany
-  ZeroOrOne |o--|| ExactlyOne
+/'
+ClassDiagram doesn't play well with DeploymentDiagram
+
+rectangle ClassDiagram {
+class Class
+interface Interface
+entity Entity
+annotation Annotation
+abstract Abstract
+entity Entity {
+    you
+    ..
+   can
+    ==
+    use
+    __
+    different
+    --
+   lines
+}
+class MyClass {
+  -field1: String //private
+  #field2: Integer //protected
+  ~method1(): Object //package private
+  +method2(): Boolean //public 
+}
+class OneOrMany
+class ExactlyOne
+class ZeroOrMany
+class ZeroOrOne
+OneOrMany }|..|| ExactlyOne
+ZeroOrMany }o..o| ZeroOrOne
+ExactlyOne ||--o{ ZeroOrMany
+ZeroOrOne |o--|| ExactlyOne
+}
+'/
+
+node Ports {
+port port
+portIn portIn
+portOut portOut
 }
 
-note top of Node
-  Note top of Node.
-end note
+rectangle Lines {
+rectangle Box1
+rectangle Box2
+rectangle Box3
+rectangle Box4
+rectangle Box5
 
-note as Note
-  This note is <u>also</u>
-  <b><color:royalBlue>on several</color>
-  <s>words</s> lines
-end note
+Box1 -- Box2
+Box1 .. Box3
+Box1 ~~ Box4
+Box1 == Box5
+
+artifact artifact1
+artifact artifact2
+artifact artifact3
+artifact artifact4
+artifact artifact5
+artifact artifact6
+artifact artifact7
+artifact artifact8
+artifact artifact9
+artifact artifact10
+artifact1 --> artifact2
+artifact1 --* artifact3
+artifact1 --o artifact4
+artifact1 --+ artifact5
+artifact1 --# artifact6
+artifact1 -->> artifact7
+artifact1 --0 artifact8
+artifact1 --^ artifact9
+artifact1 --(0 artifact10
 
 }
-}
-@enduml
+
+NestableDeploymentDiagram -[hidden]r-> NonNestableDeploymentDiagram
+NonNestableDeploymentDiagram -[hidden]r-> StylesStereotypes
+StylesStereotypes -[hidden]r-> Ports
+
+legend left
+    |<#000>    | Fatal |
+    |<#faa>| Error |
+    |<#fc9>| Warning |
+    |<#cfc>| Success |
+    |<#9cf>| Info |
+    |<#eee>| Background |
+    |<#fff>| Foreground |
+    |<#ffc>| Highlight |
+endlegend
 `;
 							note.text = note.text ? note.text : demo;
 						}
