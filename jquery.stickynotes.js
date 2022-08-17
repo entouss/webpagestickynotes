@@ -1883,8 +1883,10 @@
 
 			filtersTransformsInit['wpsn_transparency_color'] = note.colorToTransparent ? note.colorToTransparent.color || '#ffffff' : '#ffffff';
 			filtersTransformsInit['wpsn_transparency_threshold'] = note.colorToTransparent ? note.colorToTransparent.threshold || 0 : 0;
+			filtersTransformsInit['wpsn_transparency_invert'] = note.colorToTransparent ? note.colorToTransparent.invert : false;
 			promptHTML += '<td style="vertical-align:top;border:0" class="wpsn-color-to-transparent-td"><div class="panel panel-default"><div class="panel-heading">Media Color to Transparent:</div><div class="panel-body" style="height:500px"><table width="100%">';
-			promptHTML += '<input type="text" name="wpsn_transparency_color" class="wpsn_transparency_color" value="' + filtersTransformsInit['wpsn_transparency_color'] + '"/><br/><br/>Threshold:<br/><input type="range" style="width:100%;" name="wpsn_transparency_threshold" class="wpsn_transparency_threshold" min="0" max="255" step="5" value="' + filtersTransformsInit['wpsn_transparency_threshold'] + '"><span class="wpsn_transparency_threshold_display"/>';
+			promptHTML += '<input type="text" name="wpsn_transparency_color" class="wpsn_transparency_color" value="' + filtersTransformsInit['wpsn_transparency_color'] + '"/><br/><br/>Threshold:<br/><input type="range" style="width:100%;" name="wpsn_transparency_threshold" class="wpsn_transparency_threshold" min="0" max="256" step="1" value="' + filtersTransformsInit['wpsn_transparency_threshold'] + '"><span class="wpsn_transparency_threshold_display"/>';
+			promptHTML += '<br/>Invert: <input type="checkbox" name="wpsn_transparency_invert" class="wpsn_transparency_invert" value="true" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"'+(filtersTransformsInit['wpsn_transparency_invert']?' checked="checked"':'')+'/>';
 			promptHTML += '</table></div></div></td>';
 
 			promptHTML += '</tr></tbody></table>';
@@ -1968,7 +1970,10 @@
 						$threshold.each(function () {
 							$('span.wpsn_transparency_threshold_display').text($(this).val());
 						});
-
+						let $invert = $('.wpsn_transparency_invert').bind('change', function () {
+							transparentOptions.invert = $(this).is(':checked');						
+							wpsn.menu.media.renderTransparentAndVectorizer(originalNote, { transparentOptions: transparentOptions, vectorizerOptions: tracerValues });
+						}).change();
 					}
 				}, promptHTML,
 				filtersTransformsInit,
@@ -1998,6 +2003,7 @@
 					if (!note.colorToTransparent.threshold) {
 						delete note.colorToTransparent;
 					}
+					note.colorToTransparent.invert = form['wpsn_transparency_invert'] == 'true';
 					if (!note.isPopup && !note.deleted) {
 						wpsn.refreshNote(note);
 					}
@@ -11191,11 +11197,12 @@ wpsn.menu.calculator = {
 				let g = p[i + 1];
 				let b = p[i + 2];
 				//let a = p[i + 3];
-				if (
+				let dropColor = (
 					(red != null && red != r)
 					|| (green != null && green != g)
 					|| (blue != null && blue != b)
-				) { break; }
+				)
+				if (dropColor) { break; }
 				let key = r + '.' + g + '.' + b;
 				colors[key] = colors[key] || {};
 				colors[key].r = r;
@@ -11207,7 +11214,8 @@ wpsn.menu.calculator = {
 			for (let key in colors) {
 				if (!colors.hasOwnProperty(key)) continue;
 				let color = colors[key];
-				if (!mostColor || mostColor.count < color.count) {
+				let captureColor = (!mostColor || mostColor.count < color.count)
+				if (captureColor) {
 					mostColor = color;
 				}
 			}
@@ -11215,18 +11223,36 @@ wpsn.menu.calculator = {
 		if (!mostColor) {
 			return imageData;
 		}
+		
+		let threshold = options.threshold || 0
+		if (options.invert) {
+			threshold = 256 - threshold
+		}
 		for (let i = 0; i < p.length; i += 4) {
-			for (let v = 0; v < (options.threshold || 0); v++) {
-				if (
+			for(let v = 0; v < threshold; v++) {
+				let colorMatch = (
 					p[i] >= mostColor.r - v
 					&& p[i] <= mostColor.r + v
 					&& p[i + 1] >= mostColor.g - v
 					&& p[i + 1] <= mostColor.g + v
 					&& p[i + 2] >= mostColor.b - v
 					&& p[i + 2] <= mostColor.b + v
-				) {
-					p[i + 3] = v;
-					break;
+				)
+
+				if (options.invert) {
+					if (colorMatch) {
+						p[i + 3] = 256;
+						break;
+					} 
+					else if (v == threshold-1){
+						p[i + 3] = 0;
+						break;
+					}
+				} else {
+					if (colorMatch) {
+						p[i + 3] = 0;
+						break;
+					}
 				}
 			}
 		}
