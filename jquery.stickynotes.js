@@ -22,9 +22,9 @@
 			'domain': 'wpsn.DOMAIN.' + location.hostname,
 			'global': 'wpsn.GLOBAL'
 		};
-		wpsn.mainmenu_left = ['maximize', 'minimize', 'fullscreen', 'lookandfeel', 'refresh', 'lock', 'mode', 'zoom', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'snapshot', 'checklist','code', 'diagram'];
+		wpsn.mainmenu_left = ['maximize', 'minimize', 'fullscreen', 'lookandfeel', 'refresh', 'lock', 'mode', 'zoom', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'snapshot', 'checklist','code', 'diagram', 'chess'];
 		wpsn.mainmenu_right = ['synchronize', 'export', 'copynotetext', 'clone', 'add', 'more', 'remove', 'removePopup', 'tips', 'about', 'manager', 'settings', 'whatsnew'];
-		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'copynotetext', 'lookandfeel', 'snapshot', 'zoom', 'lock', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'export', 'synchronize', 'removePopup', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'checklist', 'code', 'diagram', 'mode'];
+		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'copynotetext', 'lookandfeel', 'snapshot', 'zoom', 'lock', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'export', 'synchronize', 'removePopup', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'checklist', 'code', 'diagram', 'mode', 'chess'];
 		wpsn.filters = {
 			'blur': { max: 4, unit: 'px', value: 0, step: 0.25, division: 4 },
 			'grayscale': { max: 100, unit: '%', value: 0, step: 1, division: 4 },
@@ -95,6 +95,7 @@
 		wpsn.defaultGoogleFonts.sort();
 		wpsn.defaultFontSizes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 		wpsn.defaultBorderSizes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+		wpsn.defaultLineHeights = [1,2,3,4,5];
 		wpsn.defaultTextShadowSizes = [1, 2, 3];
 		wpsn.resizableOptions = {
 			snap: '.wpsn-snappable', handles: 'all'/*,aspectRatio:hasMedia*/, 
@@ -1455,6 +1456,7 @@
 		(note.height?'height:' + note.height + 'px;':'')+
 		(note.minHeight?'min-height:' + note.minHeight + 'px;':'')+
 		(note.maxHeight?'max-height:' + note.maxHeight + 'px;':'')+
+		(note.lineheight?'line-height:' + note.lineheight + 'em;':'line-height:'+(parseInt(note.font.size) + 9) + 'px;')+
 		'color: '+ textColor+ ';'+
 		'text-shadow: -'+textShadowWidth+'px -'+textShadowWidth+'px 0 '+textShadowColor+', '+textShadowWidth+'px -'+textShadowWidth+'px 0 '+textShadowColor+', -'+textShadowWidth+'px '+textShadowWidth+'px 0 '+textShadowColor+', '+textShadowWidth+'px '+textShadowWidth+'px 0 '+textShadowColor+';'+
 		'"><a name="' + note.id + '"/></div>').append(_div_note);
@@ -2861,7 +2863,11 @@
 				fontSize += 'px';
 			}
 			element.css('font-size', fontSize);
-			element.css('line-height', (parseInt(note.font.size) + 9) + 'px');
+			if (note.lineheight) {
+				element.css('line-height', parseFloat(note.lineheight) + 'em');
+			} else {
+				element.css('line-height', (parseInt(note.font.size) + 9) + 'px');
+			}
 		} else {
 			element.css('font-size', 'inherit');
 			element.css('line-height', 'inherit');
@@ -3857,8 +3863,6 @@
 		'update-lookandfeel-note': async function (commandName, info) { await wpsn.updateLookAndFeelForEffectiveNotes(info.note); },
 		'toggle-lock-note': async function (commandName, info) { await wpsn.toggleLockEffectiveNotes(info.note); },
 		'update-mode-note': async function (commandName, info) { await wpsn.updateEffectiveNotesMode(info.note); },
-
-
 	};
 
 	wpsn.commandDiscrepencies = function () {
@@ -4711,6 +4715,7 @@
 						'wpsn_textshadowwidth': note.textshadowwidth || 0,
 						'wpsn_bordercolor': note.bordercolor || '',
 						'wpsn_borderwidth': note.borderwidth || 1,
+						'wpsn_lineheight': note.lineheight || 0,
 						'wpsn_text_align': note.textAlign || ''
 					}
 				);
@@ -4731,6 +4736,7 @@
 			// note.textshadowwidth = parseInt(form.wpsn_textshadowwidth) || null;
 			note.bordercolor = form.wpsn_bordercolor;
 			note.borderwidth = parseInt(form.wpsn_borderwidth) || null;
+			note.lineheight = parseFloat(form.wpsn_lineheight) || null;
 			note.textAlign = form.wpsn_text_align;
 			wpsn.refreshNote(note);
 		}
@@ -4748,6 +4754,7 @@
 		let $backgroundColor = $noteDiv.find('[name="wpsn_background"]');
 		let $borderColor = $noteDiv.find('[name="wpsn_bordercolor"]');
 		let $borderWidth = $noteDiv.find('[name="wpsn_borderwidth"]');
+		let $lineHeight = $noteDiv.find('[name="wpsn_lineheight"]');
 		let $textColor = $noteDiv.find('[name="wpsn_textcolor"]');
 		let $textPosition = $noteDiv.find('input[name="wpsn_textposition"]:checked');
 		let $textShadowColor = $noteDiv.find('[name="wpsn_textshadowcolor"]');
@@ -4762,6 +4769,8 @@
 		let backgroundColor = $backgroundColor.val();
 		let borderColor = $borderColor.val();
 		let borderWidth = $borderWidth.val();
+		let lineHeight = $lineHeight.val();
+			lineHeight = lineHeight ? parseFloat(lineHeight) : null;
 		let textColor = $textColor.val();
 		let textPosition = $textPosition.val();
 		let textShadowColor = $textShadowColor.val();
@@ -4772,9 +4781,10 @@
 		
 
 		$sampleText.css('font-family', fontFamily || 'inherit');
-		$sampleText.css('font-size', fontSize || 'inherit').css('line-height', fontSize ? (fontSize + 9) + 'px' : 'inherit');
+		$sampleText.css('font-size', fontSize || 'inherit');
 		$sampleText.css('background', (withMedia ? '#fff url(\'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/logo/wpsn-logo.svg\') repeat 0 0' : backgroundColor));
 		$sampleText.css('box-shadow', '0px 0px '+(borderWidth||1)+'px 0px '+borderColor);
+		$sampleText.css('line-height', lineHeight ? lineHeight+'em' : fontSize ? (fontSize + 9) + 'px' : 'inherit');
 		$sampleText.css('color', textColor);
 		let positions = ['top-left', 'top-center', 'top-right', 'center-left', 'center-center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'];
 		for (let i = 0; i < positions.length; i++) { let tpos = positions[i]; $sampleTextSpan.removeClass('wpsn-text-' + tpos);}
@@ -4825,6 +4835,10 @@
 			wpsn.updateSampleNote(note, preventResize);
 		});
 
+		noteDiv.find('input[name="wpsn_lineheight"]').unbind('change').bind('change', function () {
+			wpsn.updateSampleNote(note, preventResize);
+		});
+
 		noteDiv.find('input[name="wpsn_textcolor"]').unbind('change').bind('change', function () {
 			wpsn.updateSampleNote(note, preventResize);
 		});
@@ -4870,6 +4884,16 @@
 		}).each(function () {
 			let size = $(this).val() || 0;
 			size = parseInt(size) > 0 ? size + 'px' : '1px';
+			$('span.' + $(this).data('display')).text(size);
+		}).change();
+
+		noteDiv.find('input[name="wpsn_lineheight"]').bind('change', function () {
+			let size = $(this).val() || 0;
+			size = parseFloat(size) > 0 ? size + 'em' : 'default height';
+			$('span.' + $(this).data('display')).text(size);
+		}).each(function () {
+			let size = $(this).val() || 0;
+			size = parseFloat(size) > 0 ? size + 'em' : 'default height';
 			$('span.' + $(this).data('display')).text(size);
 		}).change();
 
@@ -4945,7 +4969,15 @@
 		'<label><input type="radio" class="wpsn_radio_img" name="wpsn_text_align" id="wpsn_text_align" value="justify"/>' +
 		'<img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/format_align_justify.svg" title="Text Align Justify"/></label> ' +
 		'<br/><br/>';
-
+		
+		prompt +=
+		'<label for="wpsn_lineheight">Line Height:</label><br/>' +
+		'<input type="range" style="width:100%;" name="wpsn_lineheight" min="0" max="5" step="0.25" data-display="wpsn-wpsn_lineheight" list="wpsn_lineheight_list"><datalist id="wpsn_lineheight_list">';
+		for (let i = 0; i < wpsn.defaultLineHeights.length; i++) {
+			let lineHeight = wpsn.defaultLineHeights[i];
+			prompt += '<option value="' + lineHeight + '">' + lineHeight + 'em</option>';
+		}
+		prompt += '</datalist></input><span class="wpsn-wpsn_lineheight" style="padding-left:5px;"></span><br/>';
 		// prompt+= '<div style="white-space:nowrap">';
 		// if (isMedia || includeMedia) {
 		// 	let positions = ['top-left', 'top-center', 'top-right', 'center-left', 'center-center', 'center-right', 'bottom-left', 'bottom-center', 'bottom-right'];
@@ -9645,6 +9677,7 @@ wpsn.menu.calculator = {
 							'wpsn_textcolor': wpsn.settings.textcolor || '#333',
 							'wpsn_bordercolor': wpsn.settings.bordercolor || '#999',
 							'wpsn_borderwidth': wpsn.settings.borderwidth || 1,
+							'wpsn_lineheight': wpsn.settings.lineheight || 0,
 							'wpsn_textposition': wpsn.settings.textposition || 'bottom-center',
 							'wpsn_textshadowcolor': wpsn.settings.textshadowcolor || wpsn.transparent,
 							'wpsn_textshadowwidth': wpsn.settings.textshadowwidth || 0,
@@ -9689,6 +9722,7 @@ wpsn.menu.calculator = {
 							wpsn.settings.textcolor = form.wpsn_textcolor;
 							wpsn.settings.bordercolor = form.wpsn_bordercolor;
 							wpsn.settings.borderwidth = parseInt(form.wpsn_borderwidth) || null;
+							wpsn.settings.lineheight = parseFloat(form.wpsn_lineheight) || null;
 							wpsn.settings.textposition = form.wpsn_textposition;
 							wpsn.settings.textshadowcolor = form.wpsn_textshadowcolor;
 							wpsn.settings.textshadowwidth = parseInt(form.wpsn_textshadowwidth) || null;
@@ -9764,6 +9798,865 @@ wpsn.menu.calculator = {
 			}
 		}
 	};
+
+	wpsn.command_index['chess-cmd'] = async function (commandName, info) { 
+		info.note.mode = 2767843278;
+		info.note.background = '#fff';
+		info.note.bordercolor = 'transparent';
+		info.note.minWidth = 600;
+		info.note.maxWidth = 600;
+		wpsn.refreshNote(info.note);
+		await wpsn.chess(info.note);
+	}
+	wpsn.command_index['chess-replay-demo-cmd'] = async function (commandName, info) { 
+		info.note.mode = 2767843278;
+		info.note.background = '#fff';
+		info.note.bordercolor = 'transparent';
+		info.note.minWidth = 600;
+		info.note.maxWidth = 600;
+		info.note.text = `[Event "Paris Opera"]
+[Date "1858"]
+[White "Paul Morphy"]
+[Black "Duke of Brunswick and Count Isouard"]
+[Result "1-0"]
+[ECO "C41"]
+[Plycount "33"]
+[Eventdate "1858"]
+[Eventtype "tourn"]
+[Eventcountry "FRA"]
+
+1. e4 {The most popular play in the nineteenth century and remains so today.
+White claimed the center and open the diagonal for the king bishop and queen.}
+1... e5 {Although Black has good options, this movement, which restores the
+symmetry, it is simple and effective.} 2. Nf3 {Perhaps the best answer. White
+develops a piece pointing to the center and take the initiative to threaten the
+black pawn. In addition, it accelerates the castle.} 2... d6 {The Philidor
+Defense. The black pawn argue strongly attacked, but it is a passive one move,
+and left closed the queen bishop. Today it is more common to play 2...Nc6, which
+also defend the pawn, develops a piece.} 3. d4 {Morphy initiates a direct
+struggle for control of the center, creating tension between d4 and e5 pawns. It
+also unlocks a new diagonal to the queen bishop.} 3... Bg4 $2 {A move doubtful,
+though very common at that time. Black nail the knight (a way to defend his e5
+pawn) but ended up losing one time, giving the white development and initiative.
+It was best, for example, 3...Nd2.} 4. dxe5 {Causing a problem for Black. If now
+you're taking the pawn: 4...dxe5, white exchange Queens: 5.Qxd8,Qxd8,  and then
+earn e5 pawn capturing with his horse, leaving the black king unable to castle.}
+4... Bxf3 {Response required if the black ones does not want to lose a pawn.} 5.
+Qxf3 {After the change of horse to bishop, the white ones has developed his
+queen. (Taking with 5.gxf3 have unnecessarily weakened the king's castle).} 5...
+dxe5 {The black ones regains the pawn, balancing the matter.} 6. Bc4 $1 {Morphy
+develop a second piece, by any of the black. Moreover, threats 7.Qxf7#. The
+black ones is forced to defend themselves.} 6... Nf6 $2 {It seems a logical way
+to defend against the threat, covering his f7 pawn and developing a knight. But
+now the white ones has a very strong response.} 7. Qb3 {Usually not good move
+twice a same piece in the opening, but in this case, Morphy attacks both f7 and
+b7. Both attacks are dangerous and threaten much more than a pawn: 8.Axf7 +
+could lead to threatening to mate and 8.Dxb7 threats the a8 rook.} 7... Qe7
+{Surely the best answer in a difficult position. This move protects the f7 pawn,
+and if the white ones plays 8.Qxf7, the  black ones can continue with 8...Qb4 +,
+forcing the exchange of queens. But now the king bishop is blocked, delaying
+castling and leaves dangerously the black king in the center.} 8. Nc3 $1 {Morphy
+is prefers his development and coordinate your pieces to attack the king,
+instead of gaining matter. Qxb7 or Bxf7 won a pawn. 8.Bxf7 also won the rook
+after 8...Qxf7 9.Qxb7.} 8... c6 {In order to prevent the white knight jump to b5
+or d5.} 9. Bg5 {An important nailed, because paralyzes a good defensive piece:
+the black king knight.} 9... b5 $2 {The black ones tries to solve their problems
+forcing the white bishop to retire, relieving pressure to f7. In this case,
+however, white ones would lose a time that would allow the black ones to improve
+their poor development. But Morphy finds a way to continue his attack.} 10. Nxb5
+$1 {This sacrifice can continue the pressure on the black king. If  the white
+ones had retired his bishop, 10...Qb4 forces the exchange of queens and the
+black ones would hold still.} 10... cxb5 {Exposing the king to attack.} 11.
+Bxb5+ {The white ones has changed a knight for a pawn and give check. They
+clearly dominate the space.} 11... Nbd7 {The most logical thing to defend the
+check. It was also possible 11... Kd8, but the king would be revealed in an area
+where many pieces can attack easily.} 12. O-O-O {Morphy full his development.
+Castling, a move usually defensive, this here an offensive move.The rook
+dominates the open file and nails the black king. It wasn&rsquo;t the same
+12.Rd1. The move of castling is stronger, because the towers have been
+connected.} 12... Rd8 {The black ones protects his knight nailed. Note the
+restricted mobility compared to the white ones.} 13. Rxd7 $1 {Eliminating one of
+the defenders of the king. Normally it would take the knight with the weaker
+piece: 13.Bxd7+, but considering the position, is best capture with the rook,
+keeping the pressure with the white bishop.} 13... Rxd7 {Morphy has changed a
+rook for two pawns, but the deficit matter is irrelevant.} 14. Rd1 {It develops
+last white piece. The difference between the two sides is overwhelming. Each
+white piece is in a position to attack while Black pieces are nailed and
+immobilized. The bishop and the black king rook have not moved yet.} 14... Qe6
+{The queen comes out of the nail, to release the knight on f6 and he bishop on
+f8. The black ones are desperate for some kind of activity for his pieces, which
+were trapped most of the game.} 15. Bxd7+ {The white ones eliminate another
+defender of the king. The black defense crumbles.} 15... Nxd7 {This movement
+leads to a beautiful end of the game. The black ones also clearly lost after 15
+... Qxd7, in a sequence must: 16.Qb8+ Ke7 17.Qxe5+ Kd8  18.Bxf6+ gxf6  19.Qxf6+
+Ke8  20.Qe5+ Kd8  21.Qxh8 Qxd1+ 22. Kxd1 with clearly victory.} 16. Qb8+ $1
+{Brilliant $1 Morphy ends with an elegant queen sacrifice that forces the knight
+to leave the &lsquo;d&rsquo; column discovered.} 16... Nxb8 {There is no way to
+avoid mate. The white ones only have two pieces, sufficient to execute the king.
+(\"The king is the weaker piece\" once said Paul Morphy).} 17. Rd8# {Checkmate $1
+... The final position of the Opera game makes a strong impression.(Notes from
+comments from various sources).} 1-0`;
+		wpsn.save(info.note);
+		wpsn.refreshNote(info.note);
+		//await wpsn.chess(info.note);
+	}
+	wpsn.menu.chess = {
+		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/chess.svg',
+		name: 'chess',
+		description: '1. Play Chess, player v player, player vs AI, AI vs AI.\n2. Replay famous Chess games by saving Chess PGN in note text.\n3. Annotate moves.\n\nA great way to learn Chess!',
+		optional: true,
+		modes: {
+			'chess': { name: 'Chess', id: 2767843278, render: async function (note) { await wpsn.menu.chess.render(note); }, description: 'Chess.' }
+		},
+		leftClick: {
+			mode: 2767843278,
+			command: 'chess-cmd',
+			description: 'Play/Replay Chess'
+		},
+		rightClick: {
+			mode: 2767843278,
+			command: 'chess-replay-demo-cmd',
+			description: 'Example Chess Replay'
+		},
+		render: function(note) {
+			wpsn.chess(note);
+		}		
+	};
+
+	wpsn.chessAI = function(game, minimaxDepth, turn) {
+		// minimax with alhpha-beta pruning and search depth d = 3 levels
+		var minimax = function (depth, alpha, beta, isMaximisingPlayer) {
+			if (depth === 0) {
+				return -evaluateBoard(game.board());
+			}
+
+			var possibleNextMoves = game.moves();
+			var numPossibleMoves = possibleNextMoves.length
+
+			if (isMaximisingPlayer) {
+				var bestMove = -9999;
+				for (var i = 0; i < numPossibleMoves; i++) {
+					game.move(possibleNextMoves[i]);
+					bestMove = Math.max(bestMove, minimax(depth - 1, alpha, beta, !isMaximisingPlayer));
+					game.undo();
+					alpha = Math.max(alpha, bestMove);
+					if(beta <= alpha){
+						return bestMove;
+					}
+				}
+
+			} else {
+				var bestMove = 9999;
+				for (var i = 0; i < numPossibleMoves; i++) {
+					game.move(possibleNextMoves[i]);
+					bestMove = Math.min(bestMove, minimax(depth - 1, alpha, beta, !isMaximisingPlayer));
+					game.undo();
+					beta = Math.min(beta, bestMove);
+					if(beta <= alpha){
+						return bestMove;
+					}
+				}
+			}
+
+			return bestMove;
+		};
+
+
+		// the evaluation function for minimax
+		var evaluateBoard = function (board) {
+			var totalEvaluation = 0;
+			for (var i = 0; i < 8; i++) {
+				for (var j = 0; j < 8; j++) {
+					totalEvaluation = totalEvaluation + getPieceValue(board[i][j], i, j);
+				}
+			}
+			return totalEvaluation;
+		};
+
+
+		var reverseArray = function(array) {
+			return array.slice().reverse();
+		};
+
+		var whitePawnEval =
+			[
+				[0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
+				[5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0,  5.0],
+				[1.0,  1.0,  2.0,  3.0,  3.0,  2.0,  1.0,  1.0],
+				[0.5,  0.5,  1.0,  2.5,  2.5,  1.0,  0.5,  0.5],
+				[0.0,  0.0,  0.0,  2.0,  2.0,  0.0,  0.0,  0.0],
+				[0.5, -0.5, -1.0,  0.0,  0.0, -1.0, -0.5,  0.5],
+				[0.5,  1.0,  1.0,  -2.0, -2.0,  1.0,  1.0,  0.5],
+				[0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0]
+			];
+
+		var blackPawnEval = reverseArray(whitePawnEval);
+
+		var knightEval =
+			[
+				[-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0],
+				[-4.0, -2.0,  0.0,  0.0,  0.0,  0.0, -2.0, -4.0],
+				[-3.0,  0.0,  1.0,  1.5,  1.5,  1.0,  0.0, -3.0],
+				[-3.0,  0.5,  1.5,  2.0,  2.0,  1.5,  0.5, -3.0],
+				[-3.0,  0.0,  1.5,  2.0,  2.0,  1.5,  0.0, -3.0],
+				[-3.0,  0.5,  1.0,  1.5,  1.5,  1.0,  0.5, -3.0],
+				[-4.0, -2.0,  0.0,  0.5,  0.5,  0.0, -2.0, -4.0],
+				[-5.0, -4.0, -3.0, -3.0, -3.0, -3.0, -4.0, -5.0]
+			];
+
+		var whiteBishopEval = [
+			[ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0],
+			[ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
+			[ -1.0,  0.0,  0.5,  1.0,  1.0,  0.5,  0.0, -1.0],
+			[ -1.0,  0.5,  0.5,  1.0,  1.0,  0.5,  0.5, -1.0],
+			[ -1.0,  0.0,  1.0,  1.0,  1.0,  1.0,  0.0, -1.0],
+			[ -1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, -1.0],
+			[ -1.0,  0.5,  0.0,  0.0,  0.0,  0.0,  0.5, -1.0],
+			[ -2.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -2.0]
+		];
+
+		var blackBishopEval = reverseArray(whiteBishopEval);
+
+		var whiteRookEval = [
+			[  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0],
+			[  0.5,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  0.5],
+			[ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+			[ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+			[ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+			[ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+			[ -0.5,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -0.5],
+			[  0.0,   0.0, 0.0,  0.5,  0.5,  0.0,  0.0,  0.0]
+		];
+
+		var blackRookEval = reverseArray(whiteRookEval);
+
+		var evalQueen = [
+			[ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0],
+			[ -1.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0, -1.0],
+			[ -1.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+			[ -0.5,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+			[  0.0,  0.0,  0.5,  0.5,  0.5,  0.5,  0.0, -0.5],
+			[ -1.0,  0.5,  0.5,  0.5,  0.5,  0.5,  0.0, -1.0],
+			[ -1.0,  0.0,  0.5,  0.0,  0.0,  0.0,  0.0, -1.0],
+			[ -2.0, -1.0, -1.0, -0.5, -0.5, -1.0, -1.0, -2.0]
+		];
+
+		var whiteKingEval = [
+
+			[ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+			[ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+			[ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+			[ -3.0, -4.0, -4.0, -5.0, -5.0, -4.0, -4.0, -3.0],
+			[ -2.0, -3.0, -3.0, -4.0, -4.0, -3.0, -3.0, -2.0],
+			[ -1.0, -2.0, -2.0, -2.0, -2.0, -2.0, -2.0, -1.0],
+			[  2.0,  2.0,  0.0,  0.0,  0.0,  0.0,  2.0,  2.0 ],
+			[  2.0,  3.0,  1.0,  0.0,  0.0,  1.0,  3.0,  2.0 ]
+		];
+
+		var blackKingEval = reverseArray(whiteKingEval);
+
+		var getPieceValue = function (piece, x, y) {
+			if (piece === null) {
+				return 0;
+			}
+
+			var absoluteValue = getAbsoluteValue(piece, piece.color === 'w', x ,y);
+
+			if(turn == 'b' && piece.color === 'w'){
+				return absoluteValue;
+			} else {
+				return -absoluteValue;
+			}
+		};
+
+
+		var getAbsoluteValue = function (piece, isWhite, x ,y) {
+			if (piece.type === 'p') {
+				return 10 + ( isWhite ? whitePawnEval[y][x] : blackPawnEval[y][x] );
+			} else if (piece.type === 'r') {
+				return 50 + ( isWhite ? whiteRookEval[y][x] : blackRookEval[y][x] );
+			} else if (piece.type === 'n') {
+				return 30 + knightEval[y][x];
+			} else if (piece.type === 'b') {
+				return 30 + ( isWhite ? whiteBishopEval[y][x] : blackBishopEval[y][x] );
+			} else if (piece.type === 'q') {
+				return 90 + evalQueen[y][x];
+			} else if (piece.type === 'k') {
+				return 900 + ( isWhite ? whiteKingEval[y][x] : blackKingEval[y][x] );
+			}
+		};
+
+		// uses the minimax algorithm with alpha beta pruning to caculate the best move
+		var calculateBestMove = function() {
+
+			var possibleNextMoves = game.moves();
+			var bestMove = -9999;
+			var bestMoveFound;
+
+			for(var i = 0; i < possibleNextMoves.length; i++) {
+				var possibleNextMove = possibleNextMoves[i]
+				game.move(possibleNextMove);
+				var value = minimax(minimaxDepth, -10000, 10000, false);//TODO: was hardcoded to false
+				game.undo();
+				if(value >= bestMove) {
+					bestMove = value;
+					bestMoveFound = possibleNextMove;
+				}
+			}
+			return bestMoveFound;
+		};
+
+		var makeAImove = function () {
+			var bestMove = calculateBestMove();
+			game.move(bestMove);
+		};
+
+		return {
+			makeAImove: makeAImove
+		}
+	}
+
+
+	wpsn.chess = async function(note) {
+		async function loadEco() {
+			wpsn.eco = wpsn.eco || await $.getJSON(chrome.extension.getURL('/vendor/eco.json'), function(eco) {
+				wpsn.eco = eco
+			  });
+			return wpsn.eco
+		}
+		await loadEco()
+
+		var game = loadGameFromNote(note)
+		var board = null
+		wpsn.initResizable(note, { aspectRatio: true });
+		var $noteDiv = wpsn.getNoteDiv(note)
+		var $noteFrame = $noteDiv.find('.wpsn-frame')
+		$noteFrame.append(`
+		<div id="wpsn-chesscontext-${note.id}"/><div id="wpsn-chessboard-${note.id}" style="width:100%" class="wpsn-no-draggable"/><div id="wpsn-chessinfo-${note.id}"/>
+		`)
+		var $board = $noteFrame.find(`#wpsn-chessboard-${note.id}`)
+		var $context = $noteFrame.find(`#wpsn-chesscontext-${note.id}`)
+		$context.append(`
+		<table class="wpsn-players" style="width:100%">
+			<tr>
+				<td class="wpsn-where" style="border:0;text-align:left;display:none">
+					<img width="24" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/where.svg" class="wpsn-where-img" style="cursor:pointer" title="Where"/>
+					<span class="wpsn-where-value"/>
+				</td>
+				<td class="wpsn-when" style="border:0;text-align:right;display:none">
+					<img width="24" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/when.svg" class="wpsn-when-img" style="cursor:pointer" title="When"/>
+					<span class="wpsn-when-value"/>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="2" class="wpsn-event" style="border:0;text-align:center;display:none">
+					<img width="20" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/chess.svg" class="wpsn-event-img" style="cursor:pointer" title="Event"/>
+					<span class="wpsn-event-value"/>
+				</td>
+			</tr>
+			<tr>
+				<td class="wpsn-player-white" style="border:0;text-align:left">
+					<span class="wpsn-player-white-piece" style="cursor:pointer"></span>
+					<span class="wpsn-player-white-name" style="font-weight:bold"></span>
+					<span class="wpsn-player-white-elo" style="font-size:x-small"></span>
+				</td>
+				<td class="wpsn-player-black" style="border:0;text-align:right">
+					<span class="wpsn-player-black-name" style="font-weight:bold"></span>
+					<span class="wpsn-player-black-elo" style="font-size:x-small"></span>
+					<span class="wpsn-player-black-piece" style="cursor:pointer"></span>
+				</td>
+			</tr>
+		</table>
+		`)
+
+		var $info = $noteFrame.find(`#wpsn-chessinfo-${note.id}`)
+		$info.append(`
+		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/dice_inverted.svg" class="wpsn-ai-black" style="cursor:pointer" title="AI Black Moves"/>
+		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/dice.svg" class="wpsn-ai-white" style="cursor:pointer" title="AI White Moves"/>
+		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/navigate_first_page.svg" class="wpsn-nav-first" style="cursor:pointer" title="Go to first step"/>
+		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/navigate_previous.svg" class="wpsn-nav-previous" style="cursor:pointer" title="Go to previous step"/>
+		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/navigate_pause.svg" class="wpsn-nav-pause" style="cursor:pointer;display:none" title="Pause steps"/>
+		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/navigate_play.svg" class="wpsn-nav-play" style="cursor:pointer" title="Play all steps"/>
+		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/navigate_speed.svg" class="wpsn-speed" style="cursor:pointer" title="Toggle Play Speed"/>
+		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/navigate_next.svg" class="wpsn-nav-next" style="cursor:pointer" title="Go to next step"/>
+		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/navigate_last_page.svg" class="wpsn-nav-last" style="cursor:pointer" title="Go to last step"/>
+		<div class="wpsn-move" style="cursor:pointer;font-weight:bold">&nbsp;</div>
+		<div class="wpsn-comments">&nbsp;</div>
+		`).css('text-align','center')
+
+		$info.dblclick(function(e){
+			e.stopPropagation()
+			e.preventDefault()
+		})
+
+		$context.find('.wpsn-where-img').click(async function(){
+			let name = await wpsn.promptWithTextInput(
+				{ minWidth: 500 },
+				'Site:',
+				gameHeader(game, 'Site')
+			)
+			gameHeader(game, 'Site', name)
+			updateNavigationState(game, note)
+			saveGameToNote(game, note)
+		})
+
+		$context.find('.wpsn-when-img').click(async function(){
+			let name = await wpsn.promptWithTextInput(
+				{ minWidth: 500 },
+				'Date:',
+				gameHeader(game, 'Date')
+			)
+			gameHeader(game, 'Date', name)
+			updateNavigationState(game, note)
+			saveGameToNote(game, note)
+		})
+
+		$context.find('.wpsn-event-img').click(async function(){
+			let name = await wpsn.promptWithTextInput(
+				{ minWidth: 500 },
+				'Event:',
+				gameHeader(game, 'Event')
+			)
+			gameHeader(game, 'Event', name)
+			updateNavigationState(game, note)
+			saveGameToNote(game, note)
+		})
+
+		$context.find('.wpsn-player-white-piece').click(async function(){
+			let name = await wpsn.promptWithTextInput(
+				{ minWidth: 500 },
+				'White Name:',
+				gameHeader(game, 'White')
+			)
+			gameHeader(game, 'White', name)
+			updateNavigationState(game, note)
+			saveGameToNote(game, note)
+		})
+
+		$context.find('.wpsn-player-black-piece').click(async function(){
+			let name = await wpsn.promptWithTextInput(
+				{ minWidth: 500 },
+				'Black Name:',
+				gameHeader(game, 'Black')
+			)
+			gameHeader(game, 'Black', name)
+			updateNavigationState(game, note)
+			saveGameToNote(game, note)
+		})
+
+		$info.find('.wpsn-ai-black').click(function(){
+			gameAIBlackMoves(game, ''+!(gameAIBlackMoves(game)=='true'))
+			updateNavigationState(game, note)
+			makeAIMoves()
+		})
+		$info.find('.wpsn-ai-white').click(function(){
+			gameAIWhiteMoves(game, ''+!(gameAIWhiteMoves(game)=='true'))
+			updateNavigationState(game, note)
+			makeAIMoves()
+		})
+		$info.find('.wpsn-speed').click(function(){
+			var toggle = true
+			gameSpeed(game, toggle)
+			updateNavigationState(game, note)
+		})
+		$info.find('.wpsn-nav-first').click(function(){
+			goToFirstMoveGame(game)
+			syncBoardWithGame(board, game)
+			updateNavigationState(game, note)
+		})
+		$info.find('.wpsn-nav-previous').click(function(){
+			undoMoveGame(game)
+			syncBoardWithGame(board, game)
+			updateNavigationState(game, note)
+		})
+		$info.find('.wpsn-nav-play').click(async function(){		
+			await playMovesGameBoard(game, board, note)
+			updateNavigationState(game, note)
+		})
+		$info.find('.wpsn-nav-pause').click(async function(){
+			var $noteDiv = wpsn.getNoteDiv(note)
+			$noteDiv.data('wpsn-chess-play', false)
+			updateNavigationState(game, note)
+		})
+		$info.find('.wpsn-nav-next').click(function(){
+			redoMoveGame(game, note)
+			syncBoardWithGame(board, game)
+			updateNavigationState(game, note)
+		})
+		$info.find('.wpsn-nav-last').click(function(){
+			goToLastMoveGame(game, note)
+			syncBoardWithGame(board, game)
+			updateNavigationState(game, note)
+		})
+		$info.find('.wpsn-move').click(async function(){
+			let comment = await wpsn.promptWithTextarea(
+				{ minWidth: 1000 },
+				'Move Comment:',
+				game.get_comment()
+			)
+			game.set_comment(comment)
+			updateNoteWithCurrentGameStatePlusLaterMovesFromNote(game, note)
+			updateNavigationState(game, note)
+		})
+
+		function updateNoteWithCurrentGameStatePlusLaterMovesFromNote(game, note) {
+			var pgn = notePgn(note)
+			var history = sanHistory(pgn)
+			var gamePgn = game.pgn()
+			while (history.length > game.history().length) {
+				var san = history[game.history().length]
+				if (san) { moveGame(game, san) }
+			}
+			saveGameToNote(game, note)
+			game.load_pgn(gamePgn)
+		}
+
+		var squareToHighlight = null
+		var squareClass = 'square-55d63'
+
+		function removeHighlights (color) {
+			$board.find('.' + squareClass).removeClass('highlight-' + color)
+		}
+
+		function onDragStart (source, piece, position, orientation) {
+			// do not pick up pieces if the game is over
+			if (game.game_over()) return false
+
+			// only pick up pieces for White
+			//if (piece.search(/^b/) !== -1) return false
+		}
+
+		function makeAIMove () {
+			var chessAI = wpsn.chessAI(game,2,game.turn())
+			chessAI.makeAImove()
+			syncBoardWithGame(board, game)
+		}
+
+		async function makeAIMoves () {
+			do {
+				if ((game.turn()=='b' && gameAIBlackMoves(game)=='true') || (game.turn()=='w' && gameAIWhiteMoves(game)=='true')) makeAIMove()
+				saveGameToNote(game, note)
+				await new Promise(r => setTimeout(r, gameSpeed(game)=='fast'?300:gameSpeed(game)=='slow'?1500:750))
+			} while(gameAIBlackMoves(game)=='true' && gameAIWhiteMoves(game)=='true' && !game.game_over())
+		}
+
+		function onDrop (source, target) {
+			// see if the move is legal
+			var move = game.move({
+				from: source,
+				to: target,
+				promotion: 'q' // NOTE: always promote to a queen for example simplicity
+			})
+
+			// illegal move
+			if (move === null) return 'snapback'
+
+			// highlight white's move
+			removeHighlights('white')
+			$board.find('.square-' + source).addClass('highlight-white')
+			$board.find('.square-' + target).addClass('highlight-white')
+
+			// make random move for black
+			window.setTimeout(async function(){
+				makeAIMoves()
+			}, 250)
+		}
+
+		function onMoveEnd () {
+			$board.find('.square-' + squareToHighlight).addClass('highlight-black')
+		}
+
+		// update the board position after the piece snap
+		// for castling, en passant, pawn promotion
+		function onSnapEnd () {
+			syncBoardWithGame(board, game)
+		}
+
+		var config = {
+			draggable: true,
+			position: noteFen(note)||'start',
+			onDragStart: onDragStart,
+			onDrop: onDrop,
+			onMoveEnd: onMoveEnd,
+			onSnapEnd: onSnapEnd,
+			pieceTheme: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/chess/{piece}.svg',
+		}
+		board = Chessboard('#'+$board.prop('id'), config)
+
+		function gameHeader(game, key, value) {
+			if (value) {
+				game.header(key, value)
+				return value
+			} else if (key) {
+				value = game.header()[key]
+				return value
+			}
+			return game.header()
+		}
+		function gameAIBlackMoves(game, value) {
+			return gameHeader(game, "BlackAI", value) || 'true'
+		}
+		function gameAIWhiteMoves(game, value) {
+			return gameHeader(game, "WhiteAI", value) || 'false'
+		}
+		function gameSpeed(game, toggle) {
+			var key = "Speed"
+			if (toggle) {
+				var speed = gameHeader(game, key) || 'normal'
+				if (speed == 'normal') {
+					speed = 'fast'
+				} else if (speed == 'fast') {
+					speed = 'slow'
+				} else {
+					speed = 'normal'
+				}
+				gameHeader(game, key, speed)
+			}
+			return gameHeader(game, key) || 'normal'
+		}
+		function sanHistory (pgn) {
+			var tempGame = new Chess()
+			tempGame.load_pgn(pgn)
+			return tempGame.history()
+		}
+
+		function moveGame(game, san) {
+			game.move(san)
+		}
+
+		function moveGameBoard (game, board, san) {
+			moveGame(game, san)
+			syncBoardWithGame(board, game)
+		}
+
+		function syncBoardWithGame(board, game) {
+			board.position(board.position(game.fen()),true)
+		}
+		
+		function undoMoveGame(game) {
+			game.undo()
+		}
+
+		function goToFirstMoveGame(game) {
+			while (game.history().length > 0) {
+				undoMoveGame(game)
+			}
+		}
+
+		function redoMoveGame(game, note) {
+			var pgn = notePgn(note)
+			var history = sanHistory(pgn)
+			var gameHistoryLength = game.history().length
+			var san = history.length > gameHistoryLength ? history[gameHistoryLength] : null
+			if (san) { moveGame(game, san) }
+		}
+
+		function goToLastMoveGame(game, note) {
+			var pgn = notePgn(note)
+			var history = sanHistory(pgn)
+			while (game.history().length < history.length) {
+				redoMoveGame(game, note)
+			}
+		}
+
+		async function playMovesGameBoard(game, board, note) {
+			var pgn = notePgn(note)
+			var history = sanHistory(pgn)
+			var $noteDiv = wpsn.getNoteDiv(note)
+			$noteDiv.data('wpsn-chess-play', true)
+			while (game.history().length < history.length && $noteDiv.data('wpsn-chess-play')) {
+				redoMoveGame(game, note)
+				updateNavigationState(game, note)
+				syncBoardWithGame(board, game)
+				await new Promise(r => setTimeout(r, gameSpeed(game)=='fast'?300:gameSpeed(game)=='slow'?1500:750));
+			}
+			$noteDiv.data('wpsn-chess-play', false)
+		}
+		
+		function updateNavigationState(game, note) {
+			var pgn = notePgn(note)
+			var history = sanHistory(pgn)
+			var gameHistoryLength = game.history().length
+			var $noteDiv = wpsn.getNoteDiv(note)
+
+			$noteDiv.find('.wpsn-where-value').html((gameHeader(game, 'Eventcountry')||'') + ((gameHeader(game, 'Eventcountry') && gameHeader(game, 'Site'))?' - ':'') + (gameHeader(game, 'Site')||''))
+			$noteDiv.find('.wpsn-when-value').html(gameHeader(game, 'Date')||gameHeader(game, 'Eventdate')||'')
+			$noteDiv.find('.wpsn-event-value').html((gameHeader(game, 'Event')||'') + ((gameHeader(game, 'Event') && gameHeader(game, 'Round'))?' - ':'') + ((gameHeader(game, 'Round')&&'Round '+gameHeader(game, 'Round'))||''))
+			
+			$noteDiv.find('.wpsn-player-white-name').html(gameHeader(game, 'White')||'')
+			$noteDiv.find('.wpsn-player-white-elo').html(gameHeader(game, 'WhiteElo')||'')
+			$noteDiv.find('.wpsn-player-white-piece').html(gameHeader(game, 'Result')=='1-0'?
+				`<img width="24px" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/chess/wK.svg"/>`:
+				`<img width="24px" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/chess/wP.svg"/>`
+			)
+			
+			$noteDiv.find('.wpsn-player-black-name').html(gameHeader(game, 'Black')||'')
+			$noteDiv.find('.wpsn-player-black-elo').html(gameHeader(game, 'BlackElo')||'')
+			$noteDiv.find('.wpsn-player-black-piece').html(gameHeader(game, 'Result')=='0-1'?
+				`<img width="24px" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/chess/bK.svg"/>`:
+				`<img width="24px" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/chess/bP.svg"/>`
+			)
+
+			if ($noteDiv.find('.wpsn-player-white-name').html() && $noteDiv.find('.wpsn-player-black-name').html()) {
+				$noteDiv.find('.wpsn-where, .wpsn-when, .wpsn-event').show()
+			} else {
+				$noteDiv.find('.wpsn-where, .wpsn-when, .wpsn-event').hide()
+			}
+
+			if ($noteDiv.find('.wpsn-where-value').html() && $noteDiv.find('.wpsn-when-value').html()) {
+				$noteDiv.find('.wpsn-event').show()
+			} else {
+				$noteDiv.find('.wpsn-event').hide()
+			}
+
+			if (history.length == 0 && gameHistoryLength == 0) {
+				$noteDiv.find('.wpsn-nav-first, .wpsn-nav-previous, .wpsn-nav-play, .wpsn-nav-next, .wpsn-nav-last').css('filter', 'opacity(.25)')
+			} else if (history.length > 0 && gameHistoryLength == 0) {
+				$noteDiv.find('.wpsn-nav-play, .wpsn-nav-next, .wpsn-nav-last').css('filter', 'opacity(1)')
+				$noteDiv.find('.wpsn-nav-first, .wpsn-nav-previous').css('filter', 'opacity(.25)')
+			} else if (history.length == gameHistoryLength) {
+				$noteDiv.find('.wpsn-nav-play, .wpsn-nav-next, .wpsn-nav-last').css('filter', 'opacity(.25)')
+				$noteDiv.find('.wpsn-nav-first, .wpsn-nav-previous').css('filter', 'opacity(1)')
+			} else {
+				$noteDiv.find('.wpsn-nav-first, .wpsn-nav-previous, .wpsn-nav-play, .wpsn-nav-next, .wpsn-nav-last').css('filter', 'opacity(1)')
+			}
+
+			if ($noteDiv.data('wpsn-chess-play') && history.length > gameHistoryLength) {
+				$noteDiv.find('.wpsn-nav-play').css('display', 'none')
+				$noteDiv.find('.wpsn-nav-pause').css('display', 'inline')
+			} else {
+				$noteDiv.find('.wpsn-nav-play').css('display', 'inline')
+				$noteDiv.find('.wpsn-nav-pause').css('display', 'none')
+			}
+
+			if (gameAIBlackMoves(game)=='true') {
+				$noteDiv.find('.wpsn-ai-black').css('filter', 'opacity(1)')
+			} else {
+				$noteDiv.find('.wpsn-ai-black').css('filter', 'opacity(.25)')
+			}
+
+			if (gameAIWhiteMoves(game)=='true') {
+				$noteDiv.find('.wpsn-ai-white').css('filter', 'opacity(1)')
+			} else {
+				$noteDiv.find('.wpsn-ai-white').css('filter', 'opacity(.25)')
+			}
+
+
+			if (gameSpeed(game) == 'fast') {
+				$noteDiv.find('.wpsn-speed').css('filter', 'opacity(1)')
+			} else if (gameSpeed(game) == 'slow') {
+				$noteDiv.find('.wpsn-speed').css('filter', 'opacity(.1)')
+			} else {
+				$noteDiv.find('.wpsn-speed').css('filter', 'opacity(.25)')
+			}
+
+			var comments = game.get_comment()
+			if (comments) {
+				$noteDiv.find('.wpsn-comments').html(comments)
+			} else {
+				$noteDiv.find('.wpsn-comments').html('')
+			}
+			
+
+			function stepMove(game) {
+				var history = game.history()
+				if (history.length > 0) {
+					var move = history[history.length-1]
+					var step = Math.ceil(history.length / 2)
+					var turn = Math.floor(history.length / 2) != step ? 'w' : 'b'
+					var piece = 'P'
+					if (move.indexOf('R') >= 0) { piece = 'R' }
+					else if (move.indexOf('N') >= 0) { piece = 'N' }
+					else if (move.indexOf('B') >= 0) { piece = 'B' }
+					else if (move.indexOf('Q') >= 0) { piece = 'Q' }
+					else if (move.indexOf('K') >= 0) { piece = 'K' }
+					else if (move.indexOf('O') >= 0) { piece = 'K' }
+					
+					var img = `<img width="24px" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/chess/${turn}${piece}.svg"/>`
+					return `${img}${step}.${move} (#${history.length})`
+				}
+				return null
+			}
+
+			var stepMove = stepMove(game)
+			if (stepMove) {
+				var fen = game.fen()
+				var pgn = game.pgn()
+				var eco = null
+				var tempChess1 = new Chess()
+				tempChess1.load_pgn(pgn)
+				var tempChess2 = new Chess()
+				for (var i=0; i<(wpsn.eco||[]).length; i++) {
+					var tempEco = wpsn.eco[i]
+					if (tempEco.fen.split(' ')[0] == fen.split(' ')[0]) {
+						tempChess2.load_pgn(tempEco.moves)
+						if(JSON.stringify(tempChess1.history()) == JSON.stringify(tempChess2.history())) {
+							eco = tempEco
+							break
+						}
+					}
+				}
+				/*
+					 {
+					"name": "Zukertort Opening: Wade Defense",
+					"eco": "A04",
+					"fen": "rn1qkbnr/ppp1pppp/3p4/8/4P1b1/5N2/PPPP1PPP/RNBQKB1R w KQkq",
+					"moves": "1. Nf3 d6 2. e4 Bg4"
+					}
+					https://www.365chess.com/eco/B02_Alekhine's_defence_Krejcik_variation
+					                             B02_Alekhine_Defense:_Krejcik_Variation
+				*/
+				$noteDiv.find('.wpsn-move').show().html(stepMove + (eco?' - '+eco.eco+'-'+eco.name:''))
+			} else {
+				$noteDiv.find('.wpsn-move').html('').hide()
+			}
+			wpsn.autoResizeHeight(note)
+		}
+
+		function noteFen(note) {
+			var fen = (note.text || '').split('\n')[0]
+			return fen.indexOf('/')>0 ? fen : null
+		}
+
+		function notePgn(note) {
+			var fen = noteFen(note)
+			var pgn = (fen && fen.length > 0 && fen.indexOf('/')>0) ? (note.text || '').substring(fen.length) : (note.text||'')
+			return pgn
+		}
+
+		function loadGameFromNote(note) {
+			var fen = noteFen(note)
+			var pgn = notePgn(note)
+			var game = new Chess(fen||'')
+			game.load_pgn(pgn)
+			return game
+		}
+		function saveGameToNote(game, note) {
+			if (game.game_over()) {
+				if (!(game.in_stalemate()||game.in_draw())) {
+					if (game.turn() == 'w') {
+						gameHeader(game, 'Result', '0-1')
+					} else {
+						gameHeader(game, 'Result', '1-0')
+					}
+				} else {
+					gameHeader(game, 'Result', '1/2-1/2')
+				}
+			}
+			gameHeader(game, 'Plycount', ''+game.history().length)
+			note.text = game.fen() + '\n' + game.pgn()
+			wpsn.save(note)
+			updateNavigationState(game, note)
+		}
+
+		await new Promise(r => setTimeout(r, 200));
+		$($noteDiv).resize(board.resize)
+		updateNavigationState(game, note)
+		
+		syncBoardWithGame(board, game)
+		updateNavigationState(game, note)
+
+	}
 
 	wpsn.features = {
 		'3.0.45': [

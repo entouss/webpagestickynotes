@@ -8294,3 +8294,57 @@ z-index: 1000 !important;
   -webkit-box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1);
 }
+
+
+
+
+
+
+
+
+/*! chessboard.js v1.0.0 | (c) 2019 Chris Oakman | MIT License chessboardjs.com/license */
+.wpsn-frame .clearfix-7da63 {
+  clear: both;
+}
+.wpsn-frame .board-b72b1 {
+  border: 2px solid #404040;
+  box-sizing: content-box;
+}
+.wpsn-frame .square-55d63 {
+  float: left;
+  position: relative;
+  display: inline;
+  /* disable any native browser highlighting */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.wpsn-frame .white-1e1d7 {
+  background-color: #eee;
+  color: #333;
+}
+.wpsn-frame .black-3c85d {
+  background-color: #333;
+  color: #eee;
+}
+.wpsn-frame .highlight1-32417, .wpsn-frame .highlight2-9c5d2 {
+  box-shadow: inset 0 0 3px 3px yellow;
+}
+.wpsn-frame .notation-322f9 {
+  cursor: default;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  position: absolute;
+}
+.wpsn-frame .alpha-d2270 {
+  bottom: 1px;
+  right: 3px;
+}
+.wpsn-frame .numeric-fc462 {
+  top: 2px;
+  left: 2px;
+}
+
