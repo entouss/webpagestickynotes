@@ -565,6 +565,11 @@ chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
 				sendResponse(data);
 			});
 		}
+		if (msg.getBase64UrlData) {
+			getBase64UrlData(msg.url, msg.interval).then(function(data){
+				sendResponse(data);
+			});
+		}
 		if (msg.github) {
 			commitToGithub(msg.github);
 		}
@@ -764,6 +769,53 @@ function getUrlData(url, interval) {
 			xmlhttp.send();
 		}
 	});
+}
+
+function getBase64UrlData(url, interval) {
+	return new Promise(function(resolve,reject){
+		if (interval
+			&& parseInt(interval) > 0
+		&& urlData[url]
+		&& urlData[url].data
+		&& urlData[url].lastUpdate
+		&& (urlData[url].lastUpdate.getTime() + parseInt(interval)*1000) > new Date().getTime()) {
+			resolve(urlData[url].data);
+		} else {
+			let xmlhttp = new XMLHttpRequest();
+			xmlhttp.onreadystatechange = async function() {
+				if (xmlhttp.readyState == XMLHttpRequest.DONE) {
+					if (xmlhttp.status == 200) {
+						
+						urlData[url] = {
+							data: await convertToDataUrlPromise(xmlhttp.response),
+							lastUpdate : new Date()
+						};
+						resolve(urlData[url].data);
+					}
+					else if (xmlhttp.status == 400) {
+						reject('There was an error 400');
+					}
+					else {
+						reject('something else other than 200 was returned');
+					}
+				}
+			};
+			xmlhttp.responseType = 'blob';
+			xmlhttp.open('GET', url, true);
+			xmlhttp.send();
+		}
+	});
+}
+
+function convertToDataUrlPromise(blob) {
+	return new Promise((resolve, reject) => {
+		var reader = new FileReader();
+		reader.onloadend = function() {
+			resolve(reader.result);
+		}
+		reader.onerror = reject;
+		  reader.readAsDataURL(blob);
+	})
 }
 
 function upload(options) {

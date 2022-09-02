@@ -7497,21 +7497,29 @@
 									resolve();
 								}
 							} else {
-								let urlPattern = new RegExp('^(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|(www\\.)?){1}([0-9A-Za-z-\\.@:%_??+~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?');
-								let matchingFragments = media.match(urlPattern);
-								if (matchingFragments && matchingFragments[0] && matchingFragments[0] === media) {
-									if (media.indexOf('http') < 0) {
-										media = 'http://' + media;
-									}
-									note.text = '<a href="' + media + '">' + media + '</a>';
-									wpsn.renderMarkdown(note);
-									if (!wpsn.settings.disableAutoresize) {
-										wpsn.autoResize(note);
-									}
-									resolve();
+								let $img = $(this)
+								if (!$img.data('wpsn-error-fix-attempt') && $img.is('img')) {
+									$img.data('wpsn-error-fix-attempt','true')
+									let imgData = await wpsn.getBase64UrlData($img.attr('src'))
+									$img.attr('src', imgData)
+									wpsn.autoResize(note);
 								} else {
-									html = media;
-									wpsn.menu.media.renderMedia(note, html).then(function () { resolve(); });
+									let urlPattern = new RegExp('^(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|(www\\.)?){1}([0-9A-Za-z-\\.@:%_??+~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?');
+									let matchingFragments = media.match(urlPattern);
+									if (matchingFragments && matchingFragments[0] && matchingFragments[0] === media) {
+										if (media.indexOf('http') < 0) {
+											media = 'http://' + media;
+										}
+										note.text = '<a href="' + media + '">' + media + '</a>';
+										wpsn.renderMarkdown(note);
+										if (!wpsn.settings.disableAutoresize) {
+											wpsn.autoResize(note);
+										}
+										resolve();
+									} else {
+										html = media;
+										wpsn.menu.media.renderMedia(note, html).then(function () { resolve(); });
+									}
 								}
 							}
 						})
@@ -9803,6 +9811,7 @@ wpsn.menu.calculator = {
 		info.note.mode = 2767843278;
 		info.note.background = '#fff';
 		info.note.bordercolor = 'transparent';
+		info.note.width = 600;
 		info.note.minWidth = 600;
 		info.note.maxWidth = 600;
 		wpsn.refreshNote(info.note);
@@ -9812,6 +9821,7 @@ wpsn.menu.calculator = {
 		info.note.mode = 2767843278;
 		info.note.background = '#fff';
 		info.note.bordercolor = 'transparent';
+		info.note.width = 600;
 		info.note.minWidth = 600;
 		info.note.maxWidth = 600;
 		info.note.text = `[Event "Paris Opera"]
@@ -10132,7 +10142,18 @@ comments from various sources).} 1-0`;
 		var $noteDiv = wpsn.getNoteDiv(note)
 		var $noteFrame = $noteDiv.find('.wpsn-frame')
 		$noteFrame.append(`
-		<div id="wpsn-chesscontext-${note.id}"/><div id="wpsn-chessboard-${note.id}" style="width:100%" class="wpsn-no-draggable"/><div id="wpsn-chessinfo-${note.id}"/>
+		<table style="width:100%;margin:0;padding:0">
+			<tr>
+				<td style="border:0;margin:0;padding:0">
+					<div id="wpsn-chesscontext-${note.id}" style="max-width:600px"/>
+					<div id="wpsn-chessboard-${note.id}" style="width:100%;max-width:600px" class="wpsn-no-draggable"/>
+					<div id="wpsn-chessinfo-${note.id}" style="max-width:600px"/>
+				</td>
+				<td class="wpsn-more" style="border:0;margin:0;padding:0;text-align:left;display:none">
+					
+				</td>
+			</tr>
+		</table>
 		`)
 		var $board = $noteFrame.find(`#wpsn-chessboard-${note.id}`)
 		var $context = $noteFrame.find(`#wpsn-chesscontext-${note.id}`)
@@ -10159,11 +10180,13 @@ comments from various sources).} 1-0`;
 					<span class="wpsn-player-white-piece" style="cursor:pointer"></span>
 					<span class="wpsn-player-white-name" style="font-weight:bold"></span>
 					<span class="wpsn-player-white-elo" style="font-size:x-small"></span>
+					<div class="wpsn-play-white-captured-pieces"/>
 				</td>
 				<td class="wpsn-player-black" style="border:0;text-align:right">
 					<span class="wpsn-player-black-name" style="font-weight:bold"></span>
 					<span class="wpsn-player-black-elo" style="font-size:x-small"></span>
 					<span class="wpsn-player-black-piece" style="cursor:pointer"></span>
+					<div class="wpsn-play-black-captured-pieces"/>
 				</td>
 			</tr>
 		</table>
@@ -10180,6 +10203,7 @@ comments from various sources).} 1-0`;
 		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/navigate_speed.svg" class="wpsn-speed" style="cursor:pointer" title="Toggle Play Speed"/>
 		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/navigate_next.svg" class="wpsn-nav-next" style="cursor:pointer" title="Go to next step"/>
 		<img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/navigate_last_page.svg" class="wpsn-nav-last" style="cursor:pointer" title="Go to last step"/>
+		<!--img src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/more_vert.svg" class="wpsn-show-more" style="cursor:pointer" title="More"/-->
 		<div class="wpsn-move" style="cursor:pointer;font-weight:bold">&nbsp;</div>
 		<div class="wpsn-comments">&nbsp;</div>
 		`).css('text-align','center')
@@ -10288,6 +10312,11 @@ comments from various sources).} 1-0`;
 			syncBoardWithGame(board, game)
 			updateNavigationState(game, note)
 		})
+		$info.find('.wpsn-show-more').click(function(){
+			showMore(game, ''+!(showMore(game)=='true'))
+			updateNavigationState(game, note)
+			wpsn.autoResize(note)
+		})
 		$info.find('.wpsn-move').click(async function(){
 			let comment = await wpsn.promptWithTextarea(
 				{ minWidth: 1000 },
@@ -10393,11 +10422,34 @@ comments from various sources).} 1-0`;
 			}
 			return game.header()
 		}
+		function getCapturedPieces(game, color) {
+			const captured = {'p': 0, 'n': 0, 'b': 0, 'r': 0, 'q': 0}
+			for (const move of game.history({ verbose: true })) {
+				if (move.hasOwnProperty("captured") && move.color !== color[0]) {
+					captured[move.captured]++
+				}
+			}
+			return captured
+		}
+		function getCapturedPiecesImages(game, color) {
+			let captured = getCapturedPieces(game, color);
+			let images = ''
+			let c = color=='white'?'w':'b'
+			for (const piece in captured) {
+				for (let count=0; count<captured[piece]; count++) {
+					images += `<img width="16" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/chess/${c}${piece.toUpperCase()}.svg"/>`
+				}
+			}
+			return images
+		}
 		function gameAIBlackMoves(game, value) {
 			return gameHeader(game, "BlackAI", value) || 'true'
 		}
 		function gameAIWhiteMoves(game, value) {
 			return gameHeader(game, "WhiteAI", value) || 'false'
+		}
+		function showMore(game, value) {
+			return gameHeader(game, "ShowMore", value) || 'false'
 		}
 		function gameSpeed(game, toggle) {
 			var key = "Speed"
@@ -10489,6 +10541,7 @@ comments from various sources).} 1-0`;
 				`<img width="24px" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/chess/wK.svg"/>`:
 				`<img width="24px" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/chess/wP.svg"/>`
 			)
+			$noteDiv.find('.wpsn-play-white-captured-pieces').html(getCapturedPiecesImages(game,'black'))
 			
 			$noteDiv.find('.wpsn-player-black-name').html(gameHeader(game, 'Black')||'')
 			$noteDiv.find('.wpsn-player-black-elo').html(gameHeader(game, 'BlackElo')||'')
@@ -10496,6 +10549,7 @@ comments from various sources).} 1-0`;
 				`<img width="24px" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/chess/bK.svg"/>`:
 				`<img width="24px" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/chess/bP.svg"/>`
 			)
+			$noteDiv.find('.wpsn-play-black-captured-pieces').html(getCapturedPiecesImages(game,'white'))
 
 			if ($noteDiv.find('.wpsn-player-white-name').html() && $noteDiv.find('.wpsn-player-black-name').html()) {
 				$noteDiv.find('.wpsn-where, .wpsn-when, .wpsn-event').show()
@@ -10557,6 +10611,11 @@ comments from various sources).} 1-0`;
 				$noteDiv.find('.wpsn-comments').html('')
 			}
 			
+			if (showMore(game) == 'true') {
+				$noteDiv.find('.wpsn-more').show()
+			} else {
+				$noteDiv.find('.wpsn-more').hide()
+			}
 
 			function stepMove(game) {
 				var history = game.history()
@@ -11994,6 +12053,18 @@ comments from various sources).} 1-0`;
 		return new Promise(function (resolve) {
 			chrome.extension.sendMessage({
 				'getUrlData': true,
+				'url': url,
+				'interval': interval
+			}, function (data) {
+				resolve(data);
+			});
+		});
+	};
+
+	wpsn.getBase64UrlData = function (url, interval) {
+		return new Promise(function (resolve) {
+			chrome.extension.sendMessage({
+				'getBase64UrlData': true,
 				'url': url,
 				'interval': interval
 			}, function (data) {
