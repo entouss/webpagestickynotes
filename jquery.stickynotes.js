@@ -2346,7 +2346,7 @@
 		let o = {};
 		let a = form.serializeArray();
 		$.each(a, function () {
-			if (o[this.name]) {
+			if (this.name in o) {
 				if (!o[this.name].push) {
 					o[this.name] = [o[this.name]];
 				}
@@ -10244,6 +10244,7 @@ wpsn.menu.calculator = {
 				<table style="width:100%" class="wpsn_events_table">
 					<tbody style="display:table-row-group;overflow:auto;max-height:500px;width:100%"></tbody>
 				</table>
+				<img class="wpsn_event_add" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/plus.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
 			</div>
 		</div>`
 
@@ -10253,27 +10254,23 @@ wpsn.menu.calculator = {
 			{},
 			function (form) {
 				if (form) {
-					wpsn.saveNoteStateForUndo(note);					
-					if (form.title || form.calendar) {
-						let rows = [].concat(form.row||``)
-						let titles = [].concat(form.title||``)
-						let calendars = [].concat(form.calendar||``)
-						let events = []
-						for (let t=0; t<rows.length;t++) {
-							let title=titles[t]
-							let calendar = calendars[t]
-							events.push({
-								title: title,
-								calendar: calendar
-							})
-						}
-						meta[dateId] = {
-							style:`border:1px solid #999`,
-							list: events
-						}
-					} else {
-						delete meta[dateId]
+					wpsn.saveNoteStateForUndo(note);	
+					let titles = [].concat(form.title||``)
+					let calendars = [].concat(form.calendar||``)
+					let events = []
+					for (let t=0; t<titles.length;t++) {
+						let title=titles[t]
+						let calendar = calendars[t]
+						events.push({
+							title: title,
+							calendar: calendar
+						})
 					}
+					meta[dateId] = {
+						style:`border:1px solid #999`,
+						list: events
+					}
+					
 					note.text = JSON.stringify(meta,null,2)
 					//wpsn.save(note)
 
@@ -10285,61 +10282,51 @@ wpsn.menu.calculator = {
 	}
 
 	wpsn.calendarPromptEvents = async function(events=[], calendars=[]) {
-		let formText = '';
 		if (events.length==0){
 			events.push({})
 		}
-		
+	
 		for (let e = 0; e< events.length; e++) {
 			let event = events[e]
-			let caloptions = ``
-			for (cal of [{id:``,title:``}].concat(calendars)) {
-				let selected = ``
-				if (event.calendar == cal.id) {
-					selected = `selected`
-				}
-				caloptions += `<option value="${cal.id}" ${selected}>${cal.title}</option>`
-			}
-			formText += `
-			<tr>
-				<td style="padding:5px;margin:0;border:0;width:35%;">
-					<input type="hidden" name="row" value="${e}"/>
-					<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="title" value="${(event.title||"").replace(/"/g, '&quot;')}" placeholder="Title"/>
-				</td>
-				<td style="padding:5px;margin:0;border:0;width:60%;">
-					Calendar: 
-					<select style="width:75%;box-sizing: border-box;white-space:nowrap;" name="calendar" value="${(event.calendar||"").replace(/"/g, '&quot;')}" placeholder="Calendar">${caloptions}</select>
-				</td>
-				<td style="padding:5px;margin:0;border:0;">
-					&nbsp;<img class="wpsn_event_remove" data-index="${e}" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/multiply.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
-				</td>
-			</tr>`
+			wpsn.calendarPromptEventsAddRow(event, calendars)
 		}
-		formText += `
-			<tr><td colspan="4" style="padding:5px 0;margin:0;border:0;">
-				<img class="wpsn_event_add" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/plus.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
-			</td></tr>
-		`
-		$('table.wpsn_events_table tbody').html(formText);
 
 		$('.wpsn_event_add').click(async function() {
-			events.push({});
-			let popupNote = wpsn.getNoteFromDiv($(this).parents(`.wpsn-sticky`))
-			wpsn.calendarPromptEvents(events, calendars)
-			wpsn.autoResize(popupNote);
+			wpsn.calendarPromptEventsAddRow({}, calendars)
 		});
-		$('.wpsn_event_remove').each(function () {
-			let $this = $(this);
-			$this.click(function () {
-				events.splice($this.data('index'),1)
-				let popupNote = wpsn.getNoteFromDiv($(this).parents(`.wpsn-sticky`))
-				wpsn.calendarPromptEvents(events, calendars)
-				if ($('.wpsn_event_remove').size()==0) {
-					$('.wpsn_event_add').click()
-				}
-				wpsn.autoResize(popupNote);
-			});			
+	}
+
+	wpsn.calendarPromptEventsAddRow = async function(event={}, calendars=[]) {
+		let caloptions = ``
+		for (cal of [{id:``,title:``}].concat(calendars)) {
+			let selected = ``
+			if (event.calendar == cal.id) {
+				selected = `selected`
+			}
+			caloptions += `<option value="${cal.id}" ${selected}>${cal.title}</option>`
+		}
+
+		let $tr = $(`
+		<tr>
+			<td style="padding:5px;margin:0;border:0;width:35%;">
+				<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="title" value="${(event.title||"").replace(/"/g, '&quot;')}" placeholder="Title"/>
+			</td>
+			<td style="padding:5px;margin:0;border:0;width:60%;">
+				Calendar: 
+				<select style="width:75%;box-sizing: border-box;white-space:nowrap;" name="calendar" value="${(event.calendar||"").replace(/"/g, '&quot;')}" placeholder="Calendar">${caloptions}</select>
+			</td>
+			<td style="padding:5px;margin:0;border:0;">
+				&nbsp;<img class="wpsn_event_remove" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/multiply.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
+			</td>
+		</tr>`)
+		let $tbody = $('table.wpsn_events_table tbody')
+		$tbody.append($tr)
+		$tr.find('.wpsn_event_remove').click(function () {
+			$(this).parents('tr').remove();
 		});
+		
+		let popupNote = wpsn.getNoteFromDiv($tbody.parents(`.wpsn-sticky`))
+		wpsn.autoResizeHeight(popupNote)
 	}
 
 	wpsn.calendarCalendarsPrompt = function(note, date) {
@@ -10354,34 +10341,34 @@ wpsn.menu.calculator = {
 				<table style="width:100%" class="wpsn_calendars_table">
 					<tbody style="display:table-row-group;overflow:auto;max-height:500px;width:100%"></tbody>
 				</table>
+				<img class="wpsn_calendar_add" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/plus.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
 			</div>
 		</div>`
 
 		wpsn.prompt(
-			{load: function () { wpsn.calendarCalendarsPromptCalendars(calendars);}}, 
+			{width:1000,load: function () { wpsn.calendarCalendarsPromptCalendars(calendars);}}, 
 			html,
 			{},
 			function (form) {
 				if (form) {
-					wpsn.saveNoteStateForUndo(note);					
-					if (form.title) {
-						let ids = [].concat(form.id||wpsn.randomId())
-						let titles = [].concat(form.title||``)
-						let colors = [].concat(form.color||``)
-						let calendars = []
-						for (let t=0; t<titles.length;t++) {
-							let id=ids[t]
-							let title=titles[t]
-							let color = colors[t]
-							calendars.push({
-								id: id,
-								title: title,
-								color: color,
-								style: `background-color:${color||`#ccc`}`
-							})
-						}
-						meta.calendars = calendars
+					wpsn.saveNoteStateForUndo(note);	
+					let ids = [].concat(form.id||wpsn.randomId())
+					let titles = [].concat(form.title||``)
+					let colors = [].concat(form.color||``)
+					let calendars = []
+					for (let t=0; t<ids.length;t++) {
+						let id=ids[t]
+						let title=titles[t]
+						let color = colors[t]
+						calendars.push({
+							id: id,
+							title: title,
+							color: color,
+							style: `background-color:${color||`#ccc`}`
+						})
 					}
+					meta.calendars = calendars
+					
 					note.text = JSON.stringify(meta,null,2)
 					//wpsn.save(note)
 
@@ -10398,15 +10385,29 @@ wpsn.menu.calculator = {
 		);
 	}
 	wpsn.calendarCalendarsPromptCalendars = async function(calendars=[]) {
-		let formText = '';
 		if (calendars.length==0){
 			calendars.push({})
 		}
 		
 		for (let c = 0; c< calendars.length; c++) {
 			let calendar = calendars[c]
-			formText += `
-			<tr>
+			wpsn.calendarCalendarsPromptCalendarAddRow(calendar)
+		}
+
+		$('.wpsn_calendar_add').click(async function() {
+			wpsn.calendarCalendarsPromptCalendarAddRow()
+		});
+		
+		
+		// $('table.wpsn_calendars_table input[name="title"]').focus(async function(){
+		// 	let input = await wpsn.calendarInput()
+		// 	$(this).val(input.toLocaleString())
+		// })
+	}
+
+	wpsn.calendarCalendarsPromptCalendarAddRow = async function(calendar={}) {
+		let $tr = $(`
+			<tr class="row">
 				<td style="padding:5px;margin:0;border:0;width:30%;">
 					<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="id" value="${(calendar.id||wpsn.randomId()).replace(/"/g, '&quot;')}" placeholder="Title"/>
 				</td>
@@ -10417,44 +10418,20 @@ wpsn.menu.calculator = {
 					<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="color" value="${(calendar.color||"#ccc").replace(/"/g, '&quot;')}" placeholder="Color"/>
 				</td>
 				<td style="padding:5px;margin:0;border:0;">
-					&nbsp;<img class="wpsn_calendar_remove" data-index="${c}" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/multiply.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
+					&nbsp;<img class="wpsn_calendar_remove" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/multiply.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
 				</td>
-			</tr>`
-		}
-		formText += `
-			<tr><td colspan="4" style="padding:5px 0;margin:0;border:0;">
-				<img class="wpsn_calendar_add" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/plus.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
-			</td></tr>
-		`
-		$('table.wpsn_calendars_table tbody').html(formText);
-
-		$('.wpsn_calendar_add').click(async function() {
-			calendars.push({});
-			let popupNote = wpsn.getNoteFromDiv($(this).parents(`.wpsn-sticky`))
-			wpsn.calendarCalendarsPromptCalendars(calendars)
-			wpsn.autoResize(popupNote);
+			</tr>`)
+		let $tbody = $('table.wpsn_calendars_table tbody')
+		$tbody.append($tr)
+		$tr.find('.wpsn_calendar_remove').click(function () {
+			$(this).parents('tr').remove();
 		});
-		$('.wpsn_calendar_remove').each(function () {
-			let $this = $(this);
-			$this.click(function () {
-				let popupNote = wpsn.getNoteFromDiv($(this).parents(`.wpsn-sticky`))
-				calendars.splice($this.data('index'),1)
-				wpsn.calendarCalendarsPromptCalendars(calendars)
-				if ($('.wpsn_calendar_remove').size()==0) {
-					$('.wpsn_calendar_add').click()
-				}
-				wpsn.autoResize(popupNote);
-			});
-		});
-		let $color = $('table.wpsn_calendars_table input[name="color"]')
-		$color.data('predefinedColors', '#eee|#fff|#ffc|#fc9|#fcc|#ccf|#9cf|#cfc');
+		let $color = $tr.find('input[name="color"]')
+		$color.data('predefinedColors', '#000|#666|#ccc|#fff|#fc3|#f93|#c33|#93c|#33c|#3c3');
 		wpsn.colorInput($color);
 		
-		
-		// $('table.wpsn_calendars_table input[name="title"]').focus(async function(){
-		// 	let input = await wpsn.calendarInput()
-		// 	$(this).val(input.toLocaleString())
-		// })
+		let popupNote = wpsn.getNoteFromDiv($tbody.parents(`.wpsn-sticky`))
+		wpsn.autoResizeHeight(popupNote)
 	}
 
 
@@ -10597,7 +10574,7 @@ wpsn.menu.calculator = {
 
 
 	wpsn.command_index['chess-cmd'] = async function (commandName, info) { 
-		info.note.mode = wpsn.menu.chess.modes.calendar.id;
+		info.note.mode = wpsn.menu.chess.modes.chess.id;
 		info.note.background = '#fff';
 		info.note.bordercolor = 'transparent';
 		info.note.width = 600;
@@ -10607,7 +10584,7 @@ wpsn.menu.calculator = {
 		await wpsn.chess(info.note);
 	}
 	wpsn.command_index['chess-replay-demo-cmd'] = async function (commandName, info) { 
-		info.note.mode = wpsn.menu.chess.modes.calendar.id;
+		info.note.mode = wpsn.menu.chess.modes.chess.id;
 		info.note.background = '#fff';
 		info.note.bordercolor = 'transparent';
 		info.note.width = 600;
