@@ -1,7 +1,7 @@
 {
   "name": "Web Page Sticky Notes",
   "short_name": "WPSN",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "manifest_version": 2,
   "description": "Sticky Notes For Web Pages",
   "icons": { "16":"icon16.png","48":"icon48.png","128":"icon128.png" },
@@ -79,6 +79,7 @@
 	"images/camera.svg",
 	"images/checkbox.svg",
 	"images/checkbox_off.svg",
+	"images/checkbox_progress.svg",
 	"images/chess.svg",
 	"images/chess/wK.svg",
 	"images/chess/bK.svg",

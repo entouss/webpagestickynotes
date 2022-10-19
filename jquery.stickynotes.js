@@ -1358,7 +1358,7 @@
 			});
 			try { note.previewText = previewedElement.val() || ((note.previewMode == 'raw' && previewedElement.get(0)) ? previewedElement.get(0).innerText : previewedElement.get(0).innerHTML); } catch (err) { wpsn.error(err); }
 		}
-		let _note_frame = $('<div id="wpsn-frame-' + note.id + '" class="wpsn-frame" style="zoom:' + (note.zoom || 100) + '%;text-align:'+(note.textAlign?note.textAlign:'left')+';"/>');
+		let _note_frame = $('<div id="wpsn-frame-' + note.id + '" class="wpsn-frame" style="zoom:' + (note.zoom || 100) + '%;text-align:'+(note.textAlign?note.textAlign:'left')+';vertical-align:text-top"/>');
 		note.font = note.font ? note.font : { family: 'Verdana' };
 		wpsn.loadFont(note);
 		wpsn.updateFont(note, _note_frame);
@@ -5225,8 +5225,9 @@
 		let text = note.text;
 		
 		text = text
-			.replace(/(^|\n)(\s*|\t*)-\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-unchecked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"></span> ')
-			.replace(/(^|\n)(\s*|\t*)x\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-checked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'"></span> ')
+			.replace(/(^|\n)(\s*|\t*)-\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-unchecked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" title="unchecked"></span> ')
+			.replace(/(^|\n)(\s*|\t*)x\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-checked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" title="checked"></span> ')
+			.replace(/(^|\n)(\s*|\t*)\+\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-progress" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" title="in progress"></span> ')
 			.replace(/  /g,'&nbsp;&nbsp;');
 
 		note.previewText = text;
@@ -5239,17 +5240,19 @@
 		$('.wpsn-md-checkbox', noteFrame).click(function(){
 			let $cb = $(this);
 			if ($cb.is('.wpsn-md-checked')) {
-				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').addClass('wpsn-md-unchecked');
+				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').removeClass('wpsn-md-progress').addClass('wpsn-md-unchecked').attr('title','unchecked');
+			} else if ($cb.is('.wpsn-md-unchecked')) {
+				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').removeClass('wpsn-md-progress').addClass('wpsn-md-progress').attr('title','in progress');
 			} else {
-				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').addClass('wpsn-md-checked')
+				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').removeClass('wpsn-md-progress').addClass('wpsn-md-checked').attr('title','checked');
 			}
 
 			let ttext = note.text;
 			let tttext = '';
 			let token = '|~^~|';
 			$('.wpsn-md-checkbox', noteFrame).each(function(index){
-				let replaceWith = $(this).is('.wpsn-md-checked')?'x':'-';
-				ttext = ttext.replace(/(^|\n)(\s*|\t*)[-|x]/, '$1$2'+replaceWith+token);
+				let replaceWith = $(this).is('.wpsn-md-checked')?'x':($(this).is('.wpsn-md-progress')?'+':'-');
+				ttext = ttext.replace(/(^|\n)(\s*|\t*)[-|x|+]/, '$1$2'+replaceWith+token);
 				tttext += ttext.split(token)[0];
 				ttext = ttext.split(token)[1];
 
@@ -6291,7 +6294,7 @@
 			html: { name: 'HTML', id: 7634563478, render: function (note) { wpsn.renderHTML(note); }, description: 'Standard markup language for web pages.' },
 			sortedUnique: { name: 'Sorted & Unique', id: 3465946378, render: function (note) { wpsn.renderSortedUnique(note); }, description: 'Lines are sorted and duplicate lines removed and resulting text is rendered as is.' },
 			texteditor: { name: 'Text Editor', id: 6856399856, render: function (note) { wpsn.renderHTML(note); }, description: 'A text editor is provided to allow for text formatting. (Powered by <a href="http://www.tinymce.com">TinyMCE</a>)' },
-			checklist: { name: 'Checklist', id: 9486429094, render: async function (note) { await wpsn.renderChecklist(note); }, description: 'Renders note in checklist mode. Lines beginning with - or x are transformed into checklists. Renders into Markdown otherwise' }
+			checklist: { name: 'Checklist', id: 9486429094, render: async function (note) { await wpsn.renderChecklist(note); }, description: 'Renders note in checklist mode. Lines beginning with -, + or x are transformed into checklists. Renders into Markdown otherwise' }
 		},
 		load: function (note, menuButton) {
 			if (!note.htmlMode) { note.htmlMode = false; }
@@ -9073,11 +9076,11 @@ endlegend
 		},
 		leftClick: {
 			command: 'render-checklist',
-			description: 'Render note as checklist. Lines beginning with - or x are transformed into checklists. Renders into Markdown otherwise'
+			description: 'Render note as checklist. Lines beginning with -, + or x are transformed into checklists. Renders into Markdown otherwise'
 		},
 		rightClick: {
 			command: 'create-checklist',
-			description: 'Create new note in checklist mode. Lines beginning with - or x are transformed into checklists. Renders into Markdown otherwise'
+			description: 'Create new note in checklist mode. Lines beginning with -, + or x are transformed into checklists. Renders into Markdown otherwise'
 		}
 	};
 
