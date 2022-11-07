@@ -77,6 +77,9 @@
 .wpsn-md-checkbox.wpsn-md-progress {
   background-image: url('chrome-extension://__MSG_@@extension_id__/images/checkbox_progress.svg');
 }
+.wpsn-md-checkbox.wpsn-md-info {
+  background-image: url('chrome-extension://__MSG_@@extension_id__/images/checkbox_info.svg');
+}
 
 
 .wpsn-md-node-list ul {

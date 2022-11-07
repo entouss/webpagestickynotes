@@ -2504,7 +2504,7 @@
 					if (!funcVariablesJSON) {
 						promise = func(formJSON);
 					} else if (!formJSON || $.isEmptyObject(formJSON)) {
-						promise = func(funcVariablesJSON);
+						promise = func({},funcVariablesJSON);
 					} else {
 						promise = func(formJSON, funcVariablesJSON);
 					}
@@ -5228,6 +5228,7 @@
 			.replace(/(^|\n)(\s*|\t*)-\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-unchecked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" title="unchecked"></span> ')
 			.replace(/(^|\n)(\s*|\t*)x\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-checked" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" title="checked"></span> ')
 			.replace(/(^|\n)(\s*|\t*)\+\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-progress" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" title="in progress"></span> ')
+			.replace(/(^|\n)(\s*|\t*)=\s/g, '$1$2<span class="wpsn-md-checkbox wpsn-md-info" style="width:'+(wpsn.settings.defaultIconSize||14)+'px;height:'+(wpsn.settings.defaultIconSize||14)+'" title="info"></span> ')
 			.replace(/  /g,'&nbsp;&nbsp;');
 
 		note.previewText = text;
@@ -5240,19 +5241,21 @@
 		$('.wpsn-md-checkbox', noteFrame).click(function(){
 			let $cb = $(this);
 			if ($cb.is('.wpsn-md-checked')) {
-				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').removeClass('wpsn-md-progress').addClass('wpsn-md-unchecked').attr('title','unchecked');
+				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').removeClass('wpsn-md-progress').removeClass('wpsn-md-info').addClass('wpsn-md-info').attr('title','info');
 			} else if ($cb.is('.wpsn-md-unchecked')) {
-				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').removeClass('wpsn-md-progress').addClass('wpsn-md-progress').attr('title','in progress');
+				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').removeClass('wpsn-md-progress').removeClass('wpsn-md-info').addClass('wpsn-md-progress').attr('title','in progress');
+			} else if ($cb.is('.wpsn-md-progress')) {
+				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').removeClass('wpsn-md-progress').removeClass('wpsn-md-info').addClass('wpsn-md-checked').attr('title','checked');
 			} else {
-				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').removeClass('wpsn-md-progress').addClass('wpsn-md-checked').attr('title','checked');
+				$cb.removeClass('wpsn-md-checked').removeClass('wpsn-md-unchecked').removeClass('wpsn-md-progress').removeClass('wpsn-md-info').addClass('wpsn-md-unchecked').attr('title','unchecked');
 			}
 
 			let ttext = note.text;
 			let tttext = '';
 			let token = '|~^~|';
 			$('.wpsn-md-checkbox', noteFrame).each(function(index){
-				let replaceWith = $(this).is('.wpsn-md-checked')?'x':($(this).is('.wpsn-md-progress')?'+':'-');
-				ttext = ttext.replace(/(^|\n)(\s*|\t*)[-|x|+]/, '$1$2'+replaceWith+token);
+				let replaceWith = $(this).is('.wpsn-md-checked')?'x':($(this).is('.wpsn-md-progress')?'+':($(this).is('.wpsn-md-info')?'=':'-'));
+				ttext = ttext.replace(/(^|\n)(\s*|\t*)[-|x|+|=]/, '$1$2'+replaceWith+token);
 				tttext += ttext.split(token)[0];
 				ttext = ttext.split(token)[1];
 
@@ -5260,6 +5263,9 @@
 			tttext += ttext;
 			note.text = tttext;
 			wpsn.save(note);
+		}).dblclick(function(e){
+			e.stopPropagation()
+			e.preventDefault()
 		});
 		$('.wpsn-md-checkbox', noteFrame).parent('li').parent('ul,ol').addClass('wpsn-md-checkbox-list');
 	}
@@ -9957,8 +9963,6 @@ wpsn.menu.calculator = {
 	wpsn.command_index['calendar-cmd'] = async function (commandName, info) {
 		info.note.mode = wpsn.menu.calendar.modes.calendar.id;
 
-		let meta = wpsn.calendarDefaultMetadata()
-
 		let noteMeta = {}
 		try { noteMeta = JSON.parse(info.note.text) } catch(err){}
 
@@ -9971,8 +9975,9 @@ wpsn.menu.calculator = {
 
 		wpsn.calendarSetMode(info.note, mode)
 
-		await wpsn.calendar(info.note);
+		await wpsn.calendar(info.note)
 		wpsn.autoResizeHeight(info.note)
+		wpsn.refreshNote(info.note)
 	}
 
 	wpsn.calendarSetMode = function(note, mode) {
@@ -9995,7 +10000,7 @@ wpsn.menu.calculator = {
 		let noteMeta = {}
 		try { noteMeta = JSON.parse(note.text) } catch(err){}
 
-		noteMeta.date = wpsn.calendarDayId(date)
+		noteMeta.dateTime = wpsn.calendarDayId(date)
 
 		note.text = JSON.stringify(noteMeta,null,2);
 	}
@@ -10004,32 +10009,49 @@ wpsn.menu.calculator = {
 		let noteMeta = {}
 		try { noteMeta = JSON.parse(note.text) } catch(err){}
 
-		return noteMeta.date ? new Date(noteMeta.date) : new Date()
+		return noteMeta.dateTime ? new Date(noteMeta.dateTime) : new Date()
+	}
+
+	wpsn.calendarWeekdaysMetadata = function(meta) {
+		let sampleDatesToUseForDaysOfTheWeek = [
+			new Date('2020/1/6'),
+			new Date('2020/1/7'),
+			new Date('2020/1/8'),
+			new Date('2020/1/9'),
+			new Date('2020/1/10'),
+			new Date('2020/1/11'),
+			new Date('2020/1/12')
+		]
+		return {
+			weekdays: [
+				{text:`${wpsn.dateTimeFormatDayOfTheWeek(sampleDatesToUseForDaysOfTheWeek[0],meta)}`,class:`day`},
+				{text:`${wpsn.dateTimeFormatDayOfTheWeek(sampleDatesToUseForDaysOfTheWeek[1],meta)}`,class:`day`},
+				{text:`${wpsn.dateTimeFormatDayOfTheWeek(sampleDatesToUseForDaysOfTheWeek[2],meta)}`,class:`day`},
+				{text:`${wpsn.dateTimeFormatDayOfTheWeek(sampleDatesToUseForDaysOfTheWeek[3],meta)}`,class:`day`},
+				{text:`${wpsn.dateTimeFormatDayOfTheWeek(sampleDatesToUseForDaysOfTheWeek[4],meta)}`,class:`day`},
+				{text:`${wpsn.dateTimeFormatDayOfTheWeek(sampleDatesToUseForDaysOfTheWeek[5],meta)}`,class:`day,weekend`},
+				{text:`${wpsn.dateTimeFormatDayOfTheWeek(sampleDatesToUseForDaysOfTheWeek[6],meta)}`,class:`day,weekend`}
+			]
+		}
 	}
 
 	wpsn.calendarDefaultMetadata = function() {
-		return {
-			weekdays: [
-				{text:`M`,class:`day`},
-				{text:`T`,class:`day`},
-				{text:`W`,class:`day`},
-				{text:`T`,class:`day`},
-				{text:`F`,class:`day`},
-				{text:`S`,class:`day,weekend`},
-				{text:`S`,class:`day,weekend`}
-			],
+		let dateTimeDefaults = wpsn.dateTimeDefaults
+
+		let calendarDefaults = {
 			year: {style:`font-style:italic;font-size:x-large`},
 			month: {style:`font-style:italic;font-size:large`},
 			day: {style:`font-style:italic`},
 			months: ["January","February","March","April","May","June","July","August","September","October","November","December"],
 			weekend: {style: "background:rgba(230, 230, 230, 0.5)"},
 			notmonth: {style: "color:#999"},
-			table: {style: "width:100%;height:100%;padding-top:0;zoom:85%;"},
+			table: {style: `width:100%;height:100%;padding-top:0;zoom:85%;`},
 			tr: {style: "background:rgba(255, 255, 255, 0)"},
 			td: {style: "vertical-align:top;text-align:center;border:0;width:14.25%;padding:0;margin:0;font-size:small"},
 			ul: {style: "padding:0;margin:0"},
 			li: {style: "background-color:#ccc;border:1px solid #666;display:inline-block;width:12;height:12;margin:2"}
 		}
+		return Object.assign({}, dateTimeDefaults, calendarDefaults, wpsn.calendarWeekdaysMetadata(dateTimeDefaults))
 	}
 
 	wpsn.calendarUpdateMetaFromCalendars = function(meta={}) {
@@ -10053,8 +10075,8 @@ wpsn.menu.calculator = {
 		for (id in meta) {
 			let data = meta[id]
 			for (let event of (data.list||[])) {
-				if (event.calendar == calId && new Date(id).getFullYear() == new Date(meta.date).getFullYear()) {
-					if (meta.mode == 'year' || (meta.mode == 'month' && new Date(id).getMonth() == new Date(meta.date).getMonth())) {
+				if (event.calendar == calId && new Date(id).getFullYear() == new Date(meta.dateTime).getFullYear()) {
+					if (meta.mode == 'year' || (meta.mode == 'month' && new Date(id).getMonth() == new Date(meta.dateTime).getMonth())) {
 						count++
 					}
 				}
@@ -10093,6 +10115,49 @@ wpsn.menu.calculator = {
 		return dt
 	}
 	
+	wpsn.calendarSettingsPrompt = function(note) {
+		let settings = JSON.parse(note.text || "{}")||{}
+		let html = `
+		<div>
+			<div class="panel panel-default"><div class="panel-heading">Settings:</div>
+			<div class="panel-body">
+				<table style="width:100%" class="wpsn_calendars_table">
+					<tbody style="display:table-row-group;overflow:auto;max-height:500px;width:100%">
+						<tr><td>Locale:</td><td><input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="locale" value="${(settings.locale||"").replace(/"/g, '&quot;')}" placeholder="Locale"/></td></tr>
+						${note.mode == wpsn.menu.calendar.modes.clock.id?`<tr><td>Time Zone:</td><td><input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="timeZone" value="${(settings.timeZone||"").replace(/"/g, '&quot;')}" placeholder="Time Zone"/></td></tr>`:``}
+						${note.mode == wpsn.menu.calendar.modes.clock.id?`<tr><td>Header:</td><td><input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="header" value="${(settings.header?.text||"").replace(/"/g, '&quot;')}" placeholder="Header"/></td></tr>`:``}
+						${note.mode == wpsn.menu.calendar.modes.clock.id?`<tr><td>Footer:</td><td><input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="footer" value="${(settings.footer?.text||"").replace(/"/g, '&quot;')}" placeholder="Footer"/></td></tr>`:``}
+					</tbody>
+				</table>
+			</div>
+		</div>`
+
+		wpsn.prompt(
+			{}, 
+			html,
+			{},
+			async function (form) {
+				wpsn.saveNoteStateForUndo(note);
+				settings.locale = form.locale
+
+				if (note.mode == wpsn.menu.calendar.modes.clock.id) {
+					settings.timeZone = form.timeZone
+					settings.header = settings.header || {}
+					settings.header.text = form.header
+					settings.footer = settings.footer || {}
+					settings.footer.text = form.footer
+				}
+				note.text = JSON.stringify(settings,null,2)
+				wpsn.save(note)
+				await wpsn.refreshNote(note)
+				if (note.mode == wpsn.menu.calendar.modes.clock.id) {
+					wpsn.autoResize(note)
+				}
+			},
+			note.id
+		);
+	}
+
 	wpsn.calendar = async function(note, date) {
 		let $noteDiv = wpsn.getNoteDiv(note)
 		let $noteFrame = $noteDiv.find('.wpsn-frame')
@@ -10100,13 +10165,14 @@ wpsn.menu.calculator = {
 		let meta = {}
 		try{meta = JSON.parse(note.text)}catch(err){}
 
-		date = date || new Date(meta.date)
+		date = date || new Date(meta.dateTime)
 		if (!date.getDate()) { date = new Date()}
-		meta.date = wpsn.calendarDayId(date)
+		meta.dateTime = wpsn.calendarDayId(date)
 		note.text = JSON.stringify(meta,null,2)
-		wpsn.save(note)
+		//wpsn.save(note)
 
-		meta = Object.assign(wpsn.calendarDefaultMetadata(),meta)
+		meta = Object.assign({},wpsn.dateTimeDefaults,wpsn.calendarDefaultMetadata(),wpsn.calendarWeekdaysMetadata(meta),meta)
+		
 		wpsn.calendarUpdateMetaFromCalendars(meta)
 
 		let previousMonth = new Date(date.getFullYear(), date.getMonth()-1, 1)
@@ -10114,6 +10180,9 @@ wpsn.menu.calculator = {
 		let previousYear = new Date(date.getFullYear()-1, date.getMonth(), 1)
 		let nextYear = new Date(date.getFullYear()+1, date.getMonth(), 1)
 		let today = new Date()
+
+		let $settings = $(`<div style="text-align:right;position:absolute;bottom:${(wpsn.settings.defaultIconSize||14)};right:0"><img class="wpsn_calendar_settings" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/gear.svg" style="visibility:hidden;cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/></div>`)
+		$settings.click(function(){wpsn.calendarSettingsPrompt(note)})
 
 		if (meta.mode == 'input') {
 			if (today.getMonth() == date.getMonth()) {
@@ -10135,13 +10204,13 @@ wpsn.menu.calculator = {
 			let promise = new Promise((resolve) => {
 				let table = wpsn.htmlTable([
 					[
-						{text:'<',onclick:function(){wpsn.calendar(note,previousYear)}, style:`cursor:pointer`},
-						{text: date.getFullYear(),onclick:function(){wpsn.calendarSetDate(note,date);wpsn.calendarSetMode(note,'year');wpsn.calendar(note)}, style:`cursor:pointer`, class:`year`},
-						{text:'>',onclick:function(){wpsn.calendar(note,nextYear)}, style:`cursor:pointer`},
+						{text:'<',onclick:function(){wpsn.calendar(note,previousYear);wpsn.save(note)}, style:`cursor:pointer`},
+						{text: date.getFullYear(),onclick:function(){wpsn.calendarSetDate(note,date);wpsn.calendarSetMode(note,'year');wpsn.calendar(note);wpsn.save(note)}, style:`cursor:pointer`, class:`year`},
+						{text:'>',onclick:function(){wpsn.calendar(note,nextYear);wpsn.save(note)}, style:`cursor:pointer`},
 						'',
-						{text:'<',onclick:function(){wpsn.calendar(note,previousMonth)}, style:`cursor:pointer`},
-						{text:meta.months[date.getMonth()], class:`month`},
-						{text:'>',onclick:function(){wpsn.calendar(note,nextMonth)}, style:`cursor:pointer`},
+						{text:'<',onclick:function(){wpsn.calendar(note,previousMonth);wpsn.save(note)}, style:`cursor:pointer`},
+						{text: wpsn.dateTimeFormatMonth(date, meta), class:`month`},
+						{text:'>',onclick:function(){wpsn.calendar(note,nextMonth);wpsn.save(note)}, style:`cursor:pointer`},
 					],
 					meta.weekdays,
 					...wpsn.calendarMonth(note, date, async function(dt){
@@ -10172,27 +10241,27 @@ wpsn.menu.calculator = {
 
 			let table = wpsn.htmlTable([
 				[
-					{text:'<',onclick:function(){wpsn.calendar(note,previousYear)}, style:`cursor:pointer`},
-					{text: date.getFullYear(),onclick:function(){wpsn.calendarSetDate(note,date);wpsn.calendarSetMode(note,'year');wpsn.calendar(note)}, style:`cursor:pointer`, class:`year`},
-					{text:'>',onclick:function(){wpsn.calendar(note,nextYear)}, style:`cursor:pointer`},
+					{text:'<',onclick:function(){wpsn.calendar(note,previousYear);wpsn.save(note)}, style:`cursor:pointer`},
+					{text: date.getFullYear(),onclick:function(){wpsn.calendarSetDate(note,date);wpsn.calendarSetMode(note,'year');wpsn.calendar(note);wpsn.save(note)}, style:`cursor:pointer`, class:`year`},
+					{text:'>',onclick:function(){wpsn.calendar(note,nextYear);wpsn.save(note)}, style:`cursor:pointer`},
 					'',
-					{text:'<',onclick:function(){wpsn.calendar(note,previousMonth)}, style:`cursor:pointer`},
-					{text:meta.months[date.getMonth()], class:`month`},
-					{text:'>',onclick:function(){wpsn.calendar(note,nextMonth)}, style:`cursor:pointer`},
+					{text:'<',onclick:function(){wpsn.calendar(note,previousMonth);wpsn.save(note)}, style:`cursor:pointer`},
+					{text: wpsn.dateTimeFormatMonth(date, meta), class:`month`},
+					{text:'>',onclick:function(){wpsn.calendar(note,nextMonth);wpsn.save(note)}, style:`cursor:pointer`},
 				],
 				meta.weekdays,
 				...wpsn.calendarMonth(note, date),
 				[{jq:wpsn.htmlTable([cals],meta),colspan:7,style:`text-align:center;height:5%`}]
 			],meta)
-
-			$noteFrame.html(table)
+			$noteFrame.html(table)			
+			$noteFrame.append($settings)
 		} else if (!meta.mode || meta.mode == 'year') {
 			meta.notmonth = {style:`visibility:hidden;border:0 !important`}
 
 			let calendar = [[
-				{text:'<',style:`height:12;text-align:right`,onclick:function(){wpsn.calendar(note,previousYear)}, style:`cursor:pointer`},
+				{text:'<',style:`height:12;text-align:right`,onclick:function(){wpsn.calendar(note,previousYear);wpsn.save(note)}, style:`cursor:pointer`},
 				{text: date.getFullYear(),style:`height:12;text-align:center`, colspan:2, class:`year`},
-				{text:'>',style:`height:12;text-align:left`,onclick:function(){wpsn.calendar(note,nextYear)}, style:`cursor:pointer`},
+				{text:'>',style:`height:12;text-align:left`,onclick:function(){wpsn.calendar(note,nextYear);wpsn.save(note)}, style:`cursor:pointer`},
 			]]
 			for (let r = 0; r < 3; r++) {
 				let calendarRow = []
@@ -10207,7 +10276,7 @@ wpsn.menu.calculator = {
 					}
 					let table = wpsn.htmlTable([
 						[
-							{text:meta.months[m],colspan:7,onclick:function(){wpsn.calendarSetDate(note,firstOfMonth);wpsn.calendarSetMode(note,'month');wpsn.calendar(note)}, style:`cursor:pointer`, class:`month`},
+							{text: wpsn.dateTimeFormatMonth(firstOfMonth, meta),colspan:7,onclick:function(){wpsn.calendarSetDate(note,firstOfMonth);wpsn.calendarSetMode(note,'month');wpsn.calendar(note);wpsn.save(note)}, style:`cursor:pointer`, class:`month`},
 						],
 						meta.weekdays,
 						...wpsn.calendarMonth(note, firstOfMonth)
@@ -10227,9 +10296,15 @@ wpsn.menu.calculator = {
 			}
 			calendar.push([{jq:wpsn.htmlTable([cals],meta),colspan:4,style:`text-align:center;height:5%`}])
 
-			let metaCopyCopy = Object.assign(meta,{table:{style:`width:100%;height:100%`},td:{style:`border:0;width:25%;vertical-align:top;text-align:center;padding:12`}})
+			let metaCopyCopy = Object.assign(meta,{table:{style:`width:100%;height:100%;`},td:{style:`border:0;width:25%;padding:0;margin:0;vertical-align:top;text-align:center`}})
 			$noteFrame.html(wpsn.htmlTable(calendar,metaCopyCopy))
+			$noteFrame.append($settings)
 		}
+
+		$noteFrame
+		.mouseover(function(){$(this).find(".wpsn_calendar_settings").css('visibility','visible')})
+		.mouseout(function(){$(this).find(".wpsn_calendar_settings").css('visibility','hidden')})
+
 	}
 
 	wpsn.calendarPrompt = function(note, date) {
@@ -10256,8 +10331,9 @@ wpsn.menu.calculator = {
 			html,
 			{},
 			function (form) {
-				if (form) {
-					wpsn.saveNoteStateForUndo(note);	
+				wpsn.saveNoteStateForUndo(note);
+				if (!$.isEmptyObject(form)) {
+						
 					let titles = [].concat(form.title||``)
 					let calendars = [].concat(form.calendar||``)
 					let events = []
@@ -10273,12 +10349,12 @@ wpsn.menu.calculator = {
 						style:`border:1px solid #999`,
 						list: events
 					}
-					
-					note.text = JSON.stringify(meta,null,2)
-					//wpsn.save(note)
-
-					wpsn.refreshNote(note);
+				} else {
+					delete meta[dateId]
 				}
+				note.text = JSON.stringify(meta,null,2)
+				wpsn.save(note)
+				wpsn.refreshNote(note);
 			},
 			note.id
 		);
@@ -10557,22 +10633,113 @@ wpsn.menu.calculator = {
 		return `${year}/${month}/${day}`
 	}
 
+
+	wpsn.command_index['clock-cmd'] = async function (commandName, info) {
+		info.note.mode = wpsn.menu.calendar.modes.clock.id;
+
+		let noteMeta = {}
+		try { noteMeta = JSON.parse(info.note.text) } catch(err){}
+
+		noteMeta = Object.assign({}, wpsn.dateTimeDefaults, noteMeta)
+
+		// Intl.supportedValuesOf('timeZone')
+		info.note.text = JSON.stringify(noteMeta,null,2)
+		await wpsn.clock(info.note);
+		wpsn.autoResize(info.note)
+	}
+
+	wpsn.dateTimeDefaults = {
+		locale: Intl.DateTimeFormat().resolvedOptions().locale,
+		timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+		date: {
+			format: 'DDDD',
+			style: 'text-align:center'
+		},
+		time: {
+			format: 'h:mm a',
+			style: 'text-align:center;font-size:1.50em'
+		},
+		year: {
+			format: 'yyyy',
+			style: 'font-size:2em'
+		},
+		month: {
+			format: 'MMMM',
+			style: 'font-size:1.5em'
+		},
+		dayOfTheWeek: {
+			format: 'EEEEE',
+			style: ''
+		},
+		header: {
+			text: '',
+			style: 'text-align:center'
+		},
+		footer: {
+			text: '',
+			style: 'text-align:center;font-size:0.9em'
+		}
+	}
+
+	wpsn.dateTimeFormatMonth = function(date, meta) {
+		//meta = Object.assign({},wpsn.dateTimeDefaults,meta)
+		return luxon.DateTime.fromJSDate(date).setLocale(meta.locale).toFormat(meta?.month?.format||'MMM')
+	}
+	wpsn.dateTimeFormatDayOfTheWeek = function(date, meta) {
+		//meta = Object.assign({},wpsn.dateTimeDefaults,meta)
+		return luxon.DateTime.fromJSDate(date).setLocale(meta.locale).toFormat(meta?.dayOfTheWeek?.format||'EEEEE')
+	}
+
+	wpsn.clock = async function(note) {
+		let $noteDiv = wpsn.getNoteDiv(note)
+		let $noteFrame = $noteDiv.find('.wpsn-frame')
+
+		let meta = {}
+		try{meta = JSON.parse(note.text)}catch(err){console.log(err)}
+		meta = Object.assign({}, wpsn.dateTimeDefaults, meta)
+
+		let start = new Date()
+
+		let clock = function() {
+			let now = luxon.DateTime.now().setLocale(meta.locale).setZone(meta.timeZone)
+			let html = `
+			${meta.header.text ? `<div style="${meta.header.style}">${meta.header.text}</div>` : ``}
+			<div style="${meta.date.style}">${now.toFormat(meta.date.format)}</div>
+			<div style="${meta.time.style}">${now.toFormat(meta.time.format)}</div>
+			${meta.footer.text ? `<div style="${meta.footer.style}">${meta.footer.text}</div>` : ``}
+			`
+			$noteFrame.html(html)
+			let $settings = $(`<div style="text-align:right;position:absolute;bottom:${(wpsn.settings.defaultIconSize||14)};right:0"><img class="wpsn_calendar_settings" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/gear.svg" style="visibility:hidden;cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/></div>`)
+			$settings.click(function(){wpsn.calendarSettingsPrompt(note)})
+
+			$noteFrame.append($settings)
+			$noteFrame
+				.mouseover(function(){$(this).find(".wpsn_calendar_settings").css('visibility','visible')})
+				.mouseout(function(){$(this).find(".wpsn_calendar_settings").css('visibility','hidden')})
+		}
+		clock()
+		setInterval(clock, 1000);
+	}
+
 	wpsn.menu.calendar = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/calendar.svg',
 		name: 'calendar',
 		description: '',
 		optional: false,
 		modes: {
-			'calendar': { name: 'Calendar', id: 9746243745, render: async function (note) { await wpsn.menu.calendar.render(note); }, description: 'Calendar.' }
+			'calendar': { name: 'Calendar', id: 9746243745, render: async function (note) { await wpsn.calendar(note); }, description: 'Calendar.' },
+			'clock': { name: 'Clock', id: 4657634978, render: async function (note) { await wpsn.clock(note); }, description: 'Clock.' }
 		},
 		leftClick: {
 			mode: 9746243745,
 			command: 'calendar-cmd',
 			description: 'Toggle Calendar Modes'
 		},
-		render: function(note) {
-			wpsn.calendar(note);
-		}		
+		rightClick: {
+			mode: 4657634978,
+			command: 'clock-cmd',
+			description: 'Show clock'
+		}
 	};
 
 
