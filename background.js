@@ -575,7 +575,7 @@ chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
 		}
 		if (msg.gotourl) {
 			chrome.tabs.getSelected(null, function(tab) {
-				chrome.tabs.update(tab.id, {url: msg.gotourl});
+				chrome.tabs.create({url: msg.gotourl});
 			});
 		}
 	};

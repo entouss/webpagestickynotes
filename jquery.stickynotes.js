@@ -3056,7 +3056,7 @@
 		$('#wpsn-noteboard-titles').bind('change', function () {
 			let boardUrl = wpsn.settings.noteboard_url.replace(/{.*}/g,'');
 			let title = $(this).val();
-			window.location = `${boardUrl}${title}`;
+			window.open(`${boardUrl}${title}`, '_blank')
 		});
 	}
 
