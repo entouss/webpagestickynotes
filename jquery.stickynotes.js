@@ -3001,7 +3001,10 @@
 			}
 		}
 
-		for (let x = min; x <= max; x++) {
+		let maxPage = 50; // prevents out of memory error with runaway page titles. 50 is super low, but pagination is not practical over that UX wise.
+	
+		
+		for (let x = min; x <= max && x <= maxPage; x++) {
 			paginatedTitles[''+x] = paginatedTitles[''+x] || (nonPaginatedTitle+x)
 		}
 
