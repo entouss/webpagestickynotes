@@ -10057,7 +10057,9 @@ wpsn.menu.calculator = {
 		return Object.assign({}, dateTimeDefaults, calendarDefaults, wpsn.calendarWeekdaysMetadata(dateTimeDefaults))
 	}
 
-	wpsn.calendarUpdateMetaFromCalendars = function(meta={}) {
+	wpsn.calendarUpdateMetaFromCalendars = async function(meta={}) {
+		await wpsn.calendarUpdateMetaFromCalendarUrls(meta)
+
 		let calMap = {}
 		for (cal of (meta.calendars||[])) {
 			calMap[cal.id] = cal
@@ -10070,6 +10072,39 @@ wpsn.menu.calculator = {
 					event.style = `${event.style};background-color:${cal.color||`#ccc`}`
 				}
 			}	
+		}
+	}
+
+	wpsn.calendarUpdateMetaFromCalendarUrls = async function(meta={}) {
+		for (cal of (meta.calendars||[])) {
+			if (cal.url) {
+				try {
+				let data = await wpsn.getUrlData(wpsn.absoluteUrl(cal.url), 15)
+				let jcalData = ICAL.parse(data)
+				let vcalendar = new ICAL.Component(jcalData)
+				let vevents = vcalendar.getAllSubcomponents('vevent')
+				for (vevent of (vevents||[])) {
+					let start = vevent.getFirstPropertyValue('dtstart').toJSDate()
+					let end = vevent.getFirstPropertyValue('dtend').toJSDate()
+					while (start < end) {
+						let startId = wpsn.calendarDayId(start)
+						let summary = vevent.getFirstPropertyValue('summary')
+
+						meta[startId] = meta[startId] || {}
+						let data = meta[startId]
+						data.list = data.list || []
+						let event = {}
+						event.calendar = cal.id
+						event.style = `background-color:${cal.color||`#ccc`}`
+						event.title = summary
+						data.list.push(event)
+						start.setDate(start.getDate() + 1);
+					}
+				}
+				} catch(err) {
+					console.error(err)
+				}
+			}
 		}
 	}
 
@@ -10176,7 +10211,8 @@ wpsn.menu.calculator = {
 
 		meta = Object.assign({},wpsn.dateTimeDefaults,wpsn.calendarDefaultMetadata(),wpsn.calendarWeekdaysMetadata(meta),meta)
 		
-		wpsn.calendarUpdateMetaFromCalendars(meta)
+		await wpsn.calendarUpdateMetaFromCalendars(meta)
+		
 
 		let previousMonth = new Date(date.getFullYear(), date.getMonth()-1, 1)
 		let nextMonth = new Date(date.getFullYear(), date.getMonth()+1, 1)
@@ -10196,10 +10232,10 @@ wpsn.menu.calculator = {
 			}
 
 			let cals = []
-			for (cal of (meta.calendars||[{title:`Default`}])) {
+			for (cal of (meta.calendars||[{title:`Events`}])) {
 				let count = wpsn.calendarCalendarEventCount(meta,cal.id)
 				if (count>0) {count=`(${count})`} else {count=""}
-				cals.push({text:`${cal.title||`Default`} ${count}`,colspan:4, list:[{ "title": cal.title, style:`background-color:${cal.color||`#ccc`}` }],onclick:function(){
+				cals.push({text:`${cal.title||`Events`} ${count}`,colspan:4, list:[{ "title": cal.title, style:`background-color:${cal.color||`#ccc`}` }],onclick:function(){
 					wpsn.calendarCalendarsPrompt(note)
 				}, style: `cursor:pointer;`})
 			}
@@ -10233,10 +10269,10 @@ wpsn.menu.calculator = {
 			}
 
 			let cals = []
-			for (cal of (meta.calendars||[{title:`Default`}])) {
+			for (cal of (meta.calendars||[{title:`Events`}])) {
 				let count = wpsn.calendarCalendarEventCount(meta,cal.id)
 				if (count>0) {count=`(${count})`} else {count=""}
-				cals.push({text:`${cal.title||`Default`} ${count}`,colspan:4, list:[{ "title": cal.title, style:`background-color:${cal.color||`#ccc`}` }],onclick:function(){
+				cals.push({text:`${cal.title||`Events`} ${count}`,colspan:4, list:[{ "title": cal.title, style:`background-color:${cal.color||`#ccc`}` }],onclick:function(){
 					wpsn.calendarCalendarsPrompt(note)
 				}, style: `cursor:pointer;`})
 			}
@@ -10290,10 +10326,10 @@ wpsn.menu.calculator = {
 			}
 			
 			let cals = []
-			for (cal of (meta.calendars||[{title:`Default`}])) {
+			for (cal of (meta.calendars||[{title:`Events`}])) {
 				let count = wpsn.calendarCalendarEventCount(meta,cal.id)
 				if (count>0) {count=`(${count})`} else {count=""}
-				cals.push({text:`${cal.title||`Default`} ${count}`,colspan:4, list:[{ "title": cal.title, style:`background-color:${cal.color||`#ccc`}` }],onclick:function(){
+				cals.push({text:`${cal.title||`Events`} ${count}`,colspan:4, list:[{ "title": cal.title, style:`background-color:${cal.color||`#ccc`}` }],onclick:function(){
 					wpsn.calendarCalendarsPrompt(note)
 				}, style: `cursor:pointer`})
 			}
@@ -10313,7 +10349,7 @@ wpsn.menu.calculator = {
 	wpsn.calendarPrompt = function(note, date) {
 		let meta = {}
 		try{meta = JSON.parse(note.text)}catch(err){}
-		let calendars = meta.calendars || [{id:`default`,title:`Default`}]
+		let calendars = meta.calendars || [{id:``,title:`Events`}]
 		let dateId = wpsn.calendarDayId(date)
 		let datemd = meta[dateId]||{}
 		let events = datemd.list||[]
@@ -10428,7 +10464,7 @@ wpsn.menu.calculator = {
 		</div>`
 
 		wpsn.prompt(
-			{width:1000,load: function () { wpsn.calendarCalendarsPromptCalendars(calendars);}}, 
+			{width:1200,load: function () { wpsn.calendarCalendarsPromptCalendars(calendars);}}, 
 			html,
 			{},
 			function (form) {
@@ -10437,15 +10473,18 @@ wpsn.menu.calculator = {
 					let ids = [].concat(form.id||wpsn.randomId())
 					let titles = [].concat(form.title||``)
 					let colors = [].concat(form.color||``)
+					let urls = [].concat(form.url||``)
 					let calendars = []
 					for (let t=0; t<ids.length;t++) {
 						let id=ids[t]
 						let title=titles[t]
 						let color = colors[t]
+						let url = urls[t]
 						calendars.push({
 							id: id,
 							title: title,
 							color: color,
+							url: url,
 							style: `background-color:${color||`#ccc`}`
 						})
 					}
@@ -10490,14 +10529,17 @@ wpsn.menu.calculator = {
 	wpsn.calendarCalendarsPromptCalendarAddRow = async function(calendar={}) {
 		let $tr = $(`
 			<tr class="row">
-				<td style="padding:5px;margin:0;border:0;width:30%;">
+				<td style="padding:5px;margin:0;border:0;width:24%;">
 					<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="id" value="${(calendar.id||wpsn.randomId()).replace(/"/g, '&quot;')}" placeholder="Title"/>
 				</td>
-				<td style="padding:5px;margin:0;border:0;width:30%;">
+				<td style="padding:5px;margin:0;border:0;width:24%;">
 					<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="title" value="${(calendar.title||"").replace(/"/g, '&quot;')}" placeholder="Title"/>
 				</td>
-				<td style="padding:5px;margin:0;border:0;width:30%;">
+				<td style="padding:5px;margin:0;border:0;width:24%;">
 					<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="color" value="${(calendar.color||"#ccc").replace(/"/g, '&quot;')}" placeholder="Color"/>
+				</td>
+				<td style="padding:5px;margin:0;border:0;width:24%;">
+					<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="url" value="${(calendar.url||"").replace(/"/g, '&quot;')}" placeholder="Public Calendar URL"/>
 				</td>
 				<td style="padding:5px;margin:0;border:0;">
 					&nbsp;<img class="wpsn_calendar_remove" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/multiply.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>

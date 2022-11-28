@@ -561,9 +561,13 @@ chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
 			});
 		}
 		if (msg.getUrlData) {
-			getUrlData(msg.url, msg.interval).then(function(data){
+			getUrlData(msg.url, msg.interval)
+			.then(function(data){
 				sendResponse(data);
-			});
+			})
+			.catch(function(err){
+				sendResponse(err);
+			})
 		}
 		if (msg.getBase64UrlData) {
 			getBase64UrlData(msg.url, msg.interval).then(function(data){
