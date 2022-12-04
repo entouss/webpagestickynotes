@@ -10069,7 +10069,7 @@ wpsn.menu.calculator = {
 			for (let event of (data.list||[])) {
 				if (event.calendar) {
 					let cal = calMap[event.calendar] || {}
-					event.style = `${event.style};background-color:${cal.color||`#ccc`}`
+					event.style = `${event.style};display:${cal.hidden!="true"?"inline-block":"none"};background-color:${cal.color||`#ccc`}`
 				}
 			}	
 		}
@@ -10329,7 +10329,7 @@ wpsn.menu.calculator = {
 			for (cal of (meta.calendars||[{title:`Events`}])) {
 				let count = wpsn.calendarCalendarEventCount(meta,cal.id)
 				if (count>0) {count=`(${count})`} else {count=""}
-				cals.push({text:`${cal.title||`Events`} ${count}`,colspan:4, list:[{ "title": cal.title, style:`background-color:${cal.color||`#ccc`}` }],onclick:function(){
+				cals.push({text:`${cal.title||`Events`} ${count}`,colspan:4, list:[{ "title": cal.title, style:`opacity:${cal.hidden!="true"?"1":"0.25"};background-color:${cal.color||`#ccc`}` }],onclick:function(){
 					wpsn.calendarCalendarsPrompt(note)
 				}, style: `cursor:pointer`})
 			}
@@ -10474,17 +10474,20 @@ wpsn.menu.calculator = {
 					let titles = [].concat(form.title||``)
 					let colors = [].concat(form.color||``)
 					let urls = [].concat(form.url||``)
+					let hiddens = [].concat(form.hidden||``)
 					let calendars = []
 					for (let t=0; t<ids.length;t++) {
 						let id=ids[t]
 						let title=titles[t]
 						let color = colors[t]
 						let url = urls[t]
+						let hidden = hiddens[t]
 						calendars.push({
 							id: id,
 							title: title,
 							color: color,
 							url: url,
+							hidden: hidden,
 							style: `background-color:${color||`#ccc`}`
 						})
 					}
@@ -10529,24 +10532,34 @@ wpsn.menu.calculator = {
 	wpsn.calendarCalendarsPromptCalendarAddRow = async function(calendar={}) {
 		let $tr = $(`
 			<tr class="row">
-				<td style="padding:5px;margin:0;border:0;width:24%;">
+				<td style="padding:5px;margin:0;border:0;width:20%;">
 					<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="id" value="${(calendar.id||wpsn.randomId()).replace(/"/g, '&quot;')}" placeholder="Title"/>
 				</td>
-				<td style="padding:5px;margin:0;border:0;width:24%;">
+				<td style="padding:5px;margin:0;border:0;width:20%;">
 					<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="title" value="${(calendar.title||"").replace(/"/g, '&quot;')}" placeholder="Title"/>
 				</td>
-				<td style="padding:5px;margin:0;border:0;width:24%;">
+				<td style="padding:5px;margin:0;border:0;width:20%;">
 					<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="color" value="${(calendar.color||"#ccc").replace(/"/g, '&quot;')}" placeholder="Color"/>
 				</td>
-				<td style="padding:5px;margin:0;border:0;width:24%;">
+				<td style="padding:5px;margin:0;border:0;width:20%;">
 					<input style="width:100%;box-sizing: border-box;white-space:nowrap;" type="text" name="url" value="${(calendar.url||"").replace(/"/g, '&quot;')}" placeholder="Public Calendar URL"/>
 				</td>
 				<td style="padding:5px;margin:0;border:0;">
+					<input type="hidden" name="hidden" value="${(calendar.hidden||"").replace(/"/g, '&quot;') != "true" ? "false" : "true"}"/>
+					&nbsp;<img class="wpsn_calendar_hide" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/minus.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
 					&nbsp;<img class="wpsn_calendar_remove" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/multiply.svg" style="cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/>
 				</td>
 			</tr>`)
 		let $tbody = $('table.wpsn_calendars_table tbody')
 		$tbody.append($tr)
+		$tr.find('.wpsn_calendar_hide').click(function () {
+			let $hidden = $(this).siblings('input[name="hidden"]')
+			$hidden.val($hidden.val()!="true"?"true":"false")
+			let $tr = $(this).parents('tr')
+			$tr.css("opacity", $hidden.val()!="true"?"1":"0.25")
+		});
+		$tr.css("opacity", $tr.find('input[name="hidden"]').val()!="true"?"1":"0.25")
+
 		$tr.find('.wpsn_calendar_remove').click(function () {
 			$(this).parents('tr').remove();
 		});
@@ -10578,10 +10591,19 @@ wpsn.menu.calculator = {
 				}
 				itemmd.style = (itemmd.style||``)+`;`+(item.style||``)
 				itemmd.onclick = item.onclick || itemmd.onclick
+
 				let listItems = ``
 				for (m of (item.list||[]).concat(itemmd.list||[])) {
 					let limd = Object.assign({},metadata.li||{})	
-					listItems += `<li style="${limd.style||``};${m.style||``};" title="${m.title||``}">${m.text||``}</li>`
+					let titlemds = metadata.titles || {}
+					let titleStyle = ``
+					for (let titlemdkey in titlemds) {
+						let titlemd = titlemds[titlemdkey]
+						if (m.title.match(titlemdkey)) {
+							titleStyle = titlemd.style || ``
+						}
+					}
+					listItems += `<li style="${limd.style||``};${m.style||``};${titleStyle||``}" title="${m.title||``}">${m.text||``}</li>`
 				}
 				let ulmd = Object.assign({},metadata.ul||{})
 				let list = listItems != `` ? `<ul style="${ulmd.style||``}">${listItems}</ul>` : ``
