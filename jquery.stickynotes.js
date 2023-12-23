@@ -10663,6 +10663,7 @@ wpsn.menu.calculator = {
 		}
 		let week = wpsn.calendarWeek(note, tempDate, func)
 		if (week[0].text > 20) {
+			tempDate.setFullYear(year)
 			tempDate.setMonth(month)
 			tempDate.setDate(week[0].text)
 			week = wpsn.calendarWeek(note, tempDate, func)
