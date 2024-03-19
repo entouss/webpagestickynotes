@@ -225,6 +225,7 @@ textarea.wpsn-prompt {
 .wpsn-frame table {
 	border-spacing: 0;
 	border-collapse: collapse;
+	color: inherit;
 }
 .wpsn-frame table th, .wpsn-frame table td {
 	border: 1px solid #ccc;

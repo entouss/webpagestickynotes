@@ -10047,7 +10047,7 @@ wpsn.menu.calculator = {
 			day: {style:`font-style:italic`},
 			months: ["January","February","March","April","May","June","July","August","September","October","November","December"],
 			weekend: {style: "background:rgba(230, 230, 230, 0.5)"},
-			notmonth: {style: "color:#999"},
+			notmonth: {style: "opacity: 50%"},
 			table: {style: `width:100%;height:100%;padding-top:0;zoom:85%;`},
 			tr: {style: "background:rgba(255, 255, 255, 0)"},
 			td: {style: "vertical-align:top;text-align:center;border:0;width:14.25%;padding:0;margin:0;font-size:small"},
