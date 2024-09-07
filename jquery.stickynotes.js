@@ -598,7 +598,7 @@
 		note = await wpsn.newNote(note);
 
 		if ((!wpsn.notes || wpsn.notes.length == 0) && wpsn.settings.enableBookmarks) {
-			chrome.extension.sendMessage({ bookmark: { url: location.href, title: document.title } });
+			chrome.runtime.sendMessage({ bookmark: { url: location.href, title: document.title } });
 		}
 		wpsn.loadFonts([note.font.family]);
 		if (!wpsn.notes) { wpsn.notes = []; }
@@ -822,7 +822,7 @@
 			if (currentNote && note && currentNote.id == note.id) {
 				//wpsn.notes.splice(index, 1);
 				if ((!wpsn.notes || wpsn.notes.length == 0) && wpsn.settings.enableBookmarks) {
-					chrome.extension.sendMessage({ bookmark: { url: location.href, title: document.title, remove: true } });
+					chrome.runtime.sendMessage({ bookmark: { url: location.href, title: document.title, remove: true } });
 				}
 
 				return;
@@ -2703,7 +2703,7 @@
 	};
 
 	wpsn.updateCount = function () {
-		chrome.extension.sendMessage(wpsn.getNoteCountProps());
+		chrome.runtime.sendMessage(wpsn.getNoteCountProps());
 	};
 
 	wpsn.reset = function () {
@@ -2817,7 +2817,7 @@
 			wpsn.updateCount();
 		}
 		if (wpsn.settings.enableSynchronization && !props.noAutoSynchronize) {
-			chrome.extension.sendMessage({
+			chrome.runtime.sendMessage({
 				'synchronize': true,
 				'fetch' : true,
 				'autosynchronize' : true
@@ -3488,7 +3488,7 @@
 
 	wpsn.synchronizeNotes = async function() {
 		wpsn.alert({hideCancelButton:true, hideOkButton: true, class: 'wpsn-no-remove'}, 'Synchronizing notes with Google Drive...')
-		chrome.extension.sendMessage({
+		chrome.runtime.sendMessage({
 			synchronize:true,
 			fetch: true
 		});
@@ -3496,7 +3496,7 @@
 
 	wpsn.synchronizeLogout = async function() {
 		wpsn.alert({hideCancelButton:true, hideOkButton: true, class: 'wpsn-no-remove'}, 'Disconnecting Google Drive account...')
-		chrome.extension.sendMessage({
+		chrome.runtime.sendMessage({
 			synchronize:true,
 			logout: true
 		});
@@ -3807,7 +3807,7 @@
 	};
 
 	$(window).unload(function () {
-		chrome.extension.sendMessage({ stickyCount: '0', url: location.href });
+		chrome.runtime.sendMessage({ stickyCount: '0', url: location.href });
 	});
 
 	wpsn.command_actions = {
@@ -4026,7 +4026,7 @@
 		wpsn.menu[menuName][clickName].action(note);
 	};
 
-	chrome.extension.onRequest.addListener(function (request, sender, sendResponse) {
+	chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 		if (request.command) {
 			wpsn.command(request.command, request.options);
 		}
@@ -4043,7 +4043,7 @@
 					wpsn.resolveStorageContent(wpsn.notesById(outNotes.newNotes,'wpsn.note.'), true).then(function(){
 						wpsn.save(null, {noAutoSynchronize: true}).then(function(){
 							chrome.storage.local.get(null, function (results) {
-								chrome.extension.sendMessage({synchronize:true, result: results});
+								chrome.runtime.sendMessage({synchronize:true, result: results});
 							});
 						});
 					});
@@ -6895,7 +6895,7 @@
 			wpsn.settings.noteboard_url = template.template;
 			wpsn.saveSettings();
 		
-			chrome.extension.sendMessage({ gotourl:  form.evaluated, title: form.board_name });
+			chrome.runtime.sendMessage({ gotourl:  form.evaluated, title: form.board_name });
 		}
 	};
 
@@ -11133,7 +11133,7 @@ comments from various sources).} 1-0`;
 
 	wpsn.chess = async function(note) {
 		async function loadEco() {
-			wpsn.eco = wpsn.eco || await $.getJSON(chrome.extension.getURL('/vendor/eco.json'), function(eco) {
+			wpsn.eco = wpsn.eco || await $.getJSON(chrome.runtime.getURL('/vendor/eco.json'), function(eco) {
 				wpsn.eco = eco
 			  });
 			return wpsn.eco
@@ -11722,6 +11722,9 @@ comments from various sources).} 1-0`;
 	}
 
 	wpsn.features = {
+		'4.0.0': [
+			'FEATURE: Version 4.0.0. Updated to Google Chrome Extension Manifest version 3. The update is necessary to keep the extension supported in Chrome. This is a big update that will likely introduce bugs as it is not thoroughly tested :('
+		],
 		'3.0.45': [
 			'FEATURE: Text shadow color in <img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/feather.svg"/>'
 		],
@@ -11843,7 +11846,7 @@ comments from various sources).} 1-0`;
 
 	wpsn.about = function (whatsnew) {
 		let title = '<div class="panel panel-warning"><div class="panel-heading"><h4><img height="50" src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/logo/wpsn.png"/> ' + (!wpsn.versionUpdated ? 'was '+(wpsn.installDetails && wpsn.installDetails.reason == 'install' ? 'installed' : 'updated') : '') + '</h4></div><div class="panel-body">';
-		let support = '<div class="panel panel-success"><div class="panel-heading"><h4>Connect with WebPageStickyNotes.com</h4></div><div class="panel-body"><ul><li><a href="https://chrome.google.com/webstore/detail/web-page-sticky-notes-bet/alpjieidnmmkljnceakgpeajlngabnee/reviews?utm_source=chrome-ntp-icon&authuser=1">Rate & Review</a></li><li><a href="https://chrome.google.com/webstore/detail/web-page-sticky-notes-bet/alpjieidnmmkljnceakgpeajlngabnee/support">Questions, Suggestions & Problems</a></li><li><a href="http://faq.webpagestickynotes.com">Frequently Asked Questions</a></li><li>Follow <a href="https://twitter.com/thatyellowbox">@ThatYellowBox</a> on Twitter for more updates</li></ul>'+
+		let support = '<div class="panel panel-success"><div class="panel-heading"><h4>Connect with WebPageStickyNotes.com</h4></div><div class="panel-body"><ul><li><a href="https://chrome.google.com/webstore/detail/web-page-sticky-notes-bet/alpjieidnmmkljnceakgpeajlngabnee/reviews?utm_source=chrome-ntp-icon&authuser=1">Rate & Review</a></li><li><a href="https://chrome.google.com/webstore/detail/web-page-sticky-notes-bet/alpjieidnmmkljnceakgpeajlngabnee/support">Questions, Suggestions & Problems</a></li><li><a href="http://faq.webpagestickynotes.com">Frequently Asked Questions</a></li></ul>'+
 		'<table><tr><td style="border:0"><a href="http://webpagestickynotes.item.merch.m2kcollection.com" target="_blank"><img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/shirt.png" width="75px"/></a></td><td style="border:0;vertical-align:middle"><a href="http://webpagestickynotes.collection.merch.m2kcollection.com" target="_blank">Check out some merch!</a></td></tr></table>'+
 		'</div></div>';
 		let body = '<div class="panel panel-default"><div class="panel-heading"><h4>About</h4></div><div class="panel-body">Offload your memory by appending notes <ol><li>to a specific web site</li><li>to a specific page of that web site</li><li>to a specific element of that page</li><li>to any web page matching a defined scope</li></ol><ul><li>FRICTIONLESS - Click & Type</li><li>CONTEXTUAL - Page specific instead of cluttered note board</li><li>SIMPLE - Most tasks are 2 clicks away</li><li>INTUITIVE - Shallow functionality, Symbolic icons, Tool tips to fill the gaps</li><li>CLEAN - Crisp icons, clean borders, unassuming</li><li>VERSATILE - Text editor, Picture frame, Video embed, RSS feed and much, much more...</li></ul></div></div>';
@@ -12546,7 +12549,7 @@ comments from various sources).} 1-0`;
 			message : ''
 		};
 		*/
-		chrome.extension.sendMessage({ github: github });
+		chrome.runtime.sendMessage({ github: github });
 	};
 
 	wpsn.toggleNotes = function () {
@@ -12556,12 +12559,12 @@ comments from various sources).} 1-0`;
 	wpsn.copyEffectiveNotes = async function (note) {
 		let effectiveNotes = await wpsn.getEffectiveNotes(note);
 		let notes = effectiveNotes.notes;
-		chrome.extension.sendMessage({ copySelectedNotes: JSON.stringify(notes) });
+		chrome.runtime.sendMessage({ copySelectedNotes: JSON.stringify(notes) });
 	};
 	wpsn.cutEffectiveNotes = async function (note) {
 		let effectiveNotes = await wpsn.getEffectiveNotes(note);
 		let notes = effectiveNotes.notes;
-		chrome.extension.sendMessage({ copySelectedNotes: JSON.stringify(notes) });
+		chrome.runtime.sendMessage({ copySelectedNotes: JSON.stringify(notes) });
 		wpsn.deleteEffectiveNotes(notes);
 	};
 	wpsn.pasteCopiedNotes = function (pasteText, keepOriginalCoordinates) {
@@ -12572,7 +12575,7 @@ comments from various sources).} 1-0`;
 				wpsn.cloneNotes(selectedNotes, true, keepOriginalCoordinates);
 			} catch (err) { wpsn.error(err); }
 		} else {
-			chrome.extension.sendMessage({ pasteCopiedNotes: true, keepOriginalCoordinates });
+			chrome.runtime.sendMessage({ pasteCopiedNotes: true, keepOriginalCoordinates });
 		}
 	};
 	wpsn.removeSelectedNotes = function () {
@@ -12850,7 +12853,7 @@ comments from various sources).} 1-0`;
 				$element.append($('<span/>').append('WebPageStickyNotes.com').addClass('wpsn-watermark'));
 			}
 			window.setTimeout(function () {
-				chrome.extension.sendMessage({ screenshot: true }, function (response) {
+				chrome.runtime.sendMessage({ screenshot: true }, function (response) {
 					//$element = $($element.selector);//Weird bug where offset is lost
 					let data = response.screenshotUrl;
 					let img = new Image();
@@ -12928,7 +12931,7 @@ comments from various sources).} 1-0`;
 			link.href = colorBase64?colorBase64:colorOrHref;
 			document.getElementsByTagName('head')[0].appendChild(link);
 			let faviconHref = colorBase64?colorBase64:colorOrHref;
-			//chrome.extension.sendMessage({ favicon: faviconHref });
+			//chrome.runtime.sendMessage({ favicon: faviconHref });
 		}
 		if (text) {
 			document.title = text;
@@ -13036,7 +13039,7 @@ comments from various sources).} 1-0`;
 
 	wpsn.getImageData = function (url, width, height) {
 		return new Promise(function (resolve) {
-			chrome.extension.sendMessage({
+			chrome.runtime.sendMessage({
 				'getImageData': true,
 				'url': url,
 				'width': width,
@@ -13055,7 +13058,7 @@ comments from various sources).} 1-0`;
 
 	wpsn.getUrlData = function (url, interval) {
 		return new Promise(function (resolve) {
-			chrome.extension.sendMessage({
+			chrome.runtime.sendMessage({
 				'getUrlData': true,
 				'url': url,
 				'interval': interval
@@ -13067,7 +13070,7 @@ comments from various sources).} 1-0`;
 
 	wpsn.getBase64UrlData = function (url, interval) {
 		return new Promise(function (resolve) {
-			chrome.extension.sendMessage({
+			chrome.runtime.sendMessage({
 				'getBase64UrlData': true,
 				'url': url,
 				'interval': interval
@@ -13335,7 +13338,7 @@ comments from various sources).} 1-0`;
 									let $this = $(this);
 									$this.addClass('disabled');
 									$this.find('.wpsn-loading').show();
-									chrome.extension.sendMessage({ upload: $this.data() });
+									chrome.runtime.sendMessage({ upload: $this.data() });
 									return false;
 								});
 							}
@@ -13353,7 +13356,7 @@ comments from various sources).} 1-0`;
 							
 							let $media = $('.wpsn-media-preview');
 							wpsn.imageToBase64($media).then(function (url) {
-								chrome.extension.sendMessage({
+								chrome.runtime.sendMessage({
 									download: {
 										url: url,
 										filename: form.filename
@@ -13393,7 +13396,7 @@ comments from various sources).} 1-0`;
 					if (form.filename.indexOf('.html') < 0) {
 						form.filename += '.html';
 					}
-					chrome.extension.sendMessage({
+					chrome.runtime.sendMessage({
 						download: {
 							url: form.html,
 							filename: form.filename

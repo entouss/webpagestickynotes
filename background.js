@@ -380,12 +380,12 @@ function wpsn_saveBookmark(url, title) {
 	}
 }
 
-chrome.browserAction.onClicked.addListener(function() {
-	chrome.tabs.executeScript(null,{file:'popup.js'});
+chrome.action.onClicked.addListener(function(tab) {
+	chrome.scripting.executeScript({target: {tabId: tab.id, allFrames: true},files: ['popup.js']});
 });
 
 
-chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
+chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 	let func = async function(msg,sender,sendResponse) {
 		if (msg.synchronize) {
 			if (GAPI.enabled && !GAPI.loaded && !msg.logout) { 
@@ -394,8 +394,10 @@ chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
 			}
 			if (msg.logout) {
 				await GAPI.api.removeToken();
-				chrome.tabs.getSelected(null, function(tab) {
-					chrome.tabs.sendRequest(tab.id, {synchronize:true, loggedout:true}, function() {});
+				chrome.tabs.query({active:true}, function(tabs) {
+					tabs.forEach(function(tab) {
+						chrome.tabs.sendMessage(tab.id, {synchronize:true, loggedout:true}, function() {});
+					})
 				});
 			}
 			let synchronize = true;
@@ -411,14 +413,18 @@ chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
 				if (msg.fetch) {
 					GAPI.lastSynchronization = new Date();
 					GAPI.api.readJSON(true).then(function(result){
-						chrome.tabs.getSelected(null, function(tab) {
-							chrome.tabs.sendRequest(tab.id, {synchronize:true, result:result}, function() {});
+						chrome.tabs.query({active:true}, function(tabs) {
+							tabs.forEach(function(tab) {
+								chrome.tabs.sendMessage(tab.id, {synchronize:true, result:result}, function() {});
+							})
 						});
 					});
 				} else if (msg.result) {
 					GAPI.api.writeJSON(msg.result, true).then(function(){
-						chrome.tabs.getSelected(null, function(tab) {
-							chrome.tabs.sendRequest(tab.id, {synchronize:true, synchronized:true}, function() {});
+						chrome.tabs.query({active:true}, function(tabs) {
+							tabs.forEach(function(tab) {
+								chrome.tabs.sendMessage(tab.id, {synchronize:true, synchronized:true}, function() {});
+							})
 						});
 					});
 				}
@@ -432,28 +438,30 @@ chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
 		}
 		if (msg.stickyCount) {
 			if (msg.url) {
-				chrome.tabs.getSelected(null, function(tab) {
-					if (tab.url === msg.url) {
-						if (msg.stickyCount === '0') {
-							chrome.browserAction.setBadgeText({text: ''});
-							//chrome.browserAction.setBadgeBackgroundColor({color: '#ffffaa'});
-						} else {
-							chrome.browserAction.setBadgeText({text: ''+msg.stickyCount});
-							if (msg.stickyInvisible){
-								chrome.browserAction.setBadgeBackgroundColor({color: '#eee'});
+				chrome.tabs.query({active:true}, function(tabs) {
+					tabs.forEach(function(tab) {
+						if (tab.url === msg.url) {
+							if (msg.stickyCount === '0') {
+								chrome.action.setBadgeText({tabId: tab.id, text: ''});
+								//chrome.action.setBadgeBackgroundColor({tabId: tab.id, color: '#ffffaa'});
 							} else {
-								chrome.browserAction.setBadgeBackgroundColor({color: '#ff0000'});
+								chrome.action.setBadgeText({tabId: tab.id, text: ''+msg.stickyCount});
+								if (msg.stickyInvisible){
+									chrome.action.setBadgeBackgroundColor({tabId: tab.id, color: '#eee'});
+								} else {
+									chrome.action.setBadgeBackgroundColor({tabId: tab.id, color: '#ff0000'});
+								}
 							}
 						}
-					}
+					})
 				});
 			} else {
 				if (msg.stickyCount === '0') {
-					chrome.browserAction.setBadgeText({text: ''});
-					//chrome.browserAction.setBadgeBackgroundColor({color: '#ffffaa'});
+					chrome.action.setBadgeText({text: ''});
+					//chrome.action.setBadgeBackgroundColor({color: '#ffffaa'});
 				} else {
-					chrome.browserAction.setBadgeText({text: ''+msg.stickyCount});
-					chrome.browserAction.setBadgeBackgroundColor({color: '#ff0000'});
+					chrome.action.setBadgeText({text: ''+msg.stickyCount});
+					chrome.action.setBadgeBackgroundColor({color: '#ff0000'});
 				}
 			}
 		}
@@ -498,8 +506,10 @@ chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
 				if (msg.loadNotes.indexOf('#') > -1) {
 					let hash = unescape(msg.loadNotes.substring(msg.loadNotes.indexOf('#')+1));
 					if (hash.indexOf('[') > -1 && hash.indexOf('{') > -1 && hash.indexOf('"') > -1 && hash.indexOf('id') > -1) {
-						chrome.tabs.getSelected(null, function(tab) {
-							chrome.tabs.sendRequest(tab.id, {loadNotesResponse: hash}, function() {});
+						chrome.tabs.query({active:true}, function(tabs) {
+							tabs.forEach(function(tab) {
+								chrome.tabs.sendMessage(tab.id, {loadNotesResponse: hash}, function() {});
+							})
 						});
 						return;
 					}
@@ -531,7 +541,7 @@ chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
 
 						if (tab.url === bkmrk_url) {
 							chrome.tabs.get(tab.id, function(tab) {
-								chrome.tabs.sendRequest(tab.id, {loadNotesResponse: bkmrk_title}, function() {});
+								chrome.tabs.sendMessage(tab.id, {loadNotesResponse: bkmrk_title}, function() {});
 							});
 						}
 					}
@@ -551,8 +561,10 @@ chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
 			copied_notes = msg.copySelectedNotes;
 		}
 		if (msg.pasteCopiedNotes) {
-			chrome.tabs.getSelected(null, function(tab) {
-				chrome.tabs.sendRequest(tab.id, {pasteCopiedNotes: copied_notes, keepOriginalCoordinates: msg.keepOriginalCoordinates}, function() {});
+			chrome.tabs.query({active:true}, function(tabs) {
+				tabs.forEach(function(tab) {
+					chrome.tabs.sendMessage(tab.id, {pasteCopiedNotes: copied_notes, keepOriginalCoordinates: msg.keepOriginalCoordinates}, function() {});
+				})
 			});
 		}
 		if (msg.getImageData) {
@@ -578,8 +590,10 @@ chrome.extension.onMessage.addListener(function(msg,sender,sendResponse) {
 			commitToGithub(msg.github);
 		}
 		if (msg.gotourl) {
-			chrome.tabs.getSelected(null, function(tab) {
-				chrome.tabs.create({url: msg.gotourl});
+			chrome.tabs.query({active:true}, function(tabs) {
+				tabs.forEach(function(tab) {
+					chrome.tabs.create({url: msg.gotourl});
+				})
 			});
 		}
 	};
@@ -719,8 +733,10 @@ function writeFileToCommit(commit) {
 }
 
 function commitResponse(response) {
-	chrome.tabs.getSelected(null, function(tab) {
-		chrome.tabs.sendRequest(tab.id, {committed: response}, function() {});
+	chrome.tabs.query({active:true}, function(tabs) {
+		tabs.forEach(function(tab) {
+			chrome.tabs.sendMessage(tab.id, {committed: response}, function() {});
+		})
 	});
 }
 
@@ -741,7 +757,7 @@ function getImageData(url, width, height) {
 }
 
 function getUrlData(url, interval) {
-	return new Promise(function(resolve,reject){
+	return new Promise(async function(resolve,reject){
 		if (interval
 			&& parseInt(interval) > 0
 		&& urlData[url]
@@ -750,33 +766,46 @@ function getUrlData(url, interval) {
 		&& (urlData[url].lastUpdate.getTime() + parseInt(interval)*1000) > new Date().getTime()) {
 			resolve(urlData[url].data);
 		} else {
-			let xmlhttp = new XMLHttpRequest();
-			xmlhttp.onreadystatechange = function() {
-				if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-					if (xmlhttp.status == 200) {
-						urlData[url] = {
-							data: xmlhttp.responseText,
-							lastUpdate : new Date()
-						};
-						resolve(urlData[url].data);
-					}
-					else if (xmlhttp.status == 400) {
-						reject('There was an error 400');
-					}
-					else {
-						reject('something else other than 200 was returned');
-					}
-				}
-			};
-
-			xmlhttp.open('GET', url, true);
-			xmlhttp.send();
+		    try {
+                let response = await fetch(url)
+                if (response.ok) {
+                    urlData[url] = {
+                        data: await response.text(),
+                        lastUpdate : new Date()
+                    };
+                    resolve(urlData[url].data);
+                }
+            } catch(error) {
+                reject(error)
+            }
+//
+//			let xmlhttp = new XMLHttpRequest();
+//			xmlhttp.onreadystatechange = function() {
+//				if (xmlhttp.readyState == XMLHttpRequest.DONE) {
+//					if (xmlhttp.status == 200) {
+//						urlData[url] = {
+//							data: xmlhttp.responseText,
+//							lastUpdate : new Date()
+//						};
+//						resolve(urlData[url].data);
+//					}
+//					else if (xmlhttp.status == 400) {
+//						reject('There was an error 400');
+//					}
+//					else {
+//						reject('something else other than 200 was returned');
+//					}
+//				}
+//			};
+//
+//			xmlhttp.open('GET', url, true);
+//			xmlhttp.send();
 		}
 	});
 }
 
 function getBase64UrlData(url, interval) {
-	return new Promise(function(resolve,reject){
+	return new Promise(async function(resolve,reject){
 		if (interval
 			&& parseInt(interval) > 0
 		&& urlData[url]
@@ -785,28 +814,41 @@ function getBase64UrlData(url, interval) {
 		&& (urlData[url].lastUpdate.getTime() + parseInt(interval)*1000) > new Date().getTime()) {
 			resolve(urlData[url].data);
 		} else {
-			let xmlhttp = new XMLHttpRequest();
-			xmlhttp.onreadystatechange = async function() {
-				if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-					if (xmlhttp.status == 200) {
-						
-						urlData[url] = {
-							data: await convertToDataUrlPromise(xmlhttp.response),
-							lastUpdate : new Date()
-						};
-						resolve(urlData[url].data);
-					}
-					else if (xmlhttp.status == 400) {
-						reject('There was an error 400');
-					}
-					else {
-						reject('something else other than 200 was returned');
-					}
-				}
-			};
-			xmlhttp.responseType = 'blob';
-			xmlhttp.open('GET', url, true);
-			xmlhttp.send();
+		    try {
+                let response = await fetch(url)
+                if (response.ok) {
+                    urlData[url] = {
+                        data: convertToDataUrlPromise(await response.blob()),
+                        lastUpdate : new Date()
+                    };
+                    resolve(urlData[url].data);
+                }
+            } catch(error) {
+                reject(error)
+            }
+//
+//			let xmlhttp = new XMLHttpRequest();
+//			xmlhttp.onreadystatechange = async function() {
+//				if (xmlhttp.readyState == XMLHttpRequest.DONE) {
+//					if (xmlhttp.status == 200) {
+//
+//						urlData[url] = {
+//							data: await convertToDataUrlPromise(xmlhttp.response),
+//							lastUpdate : new Date()
+//						};
+//						resolve(urlData[url].data);
+//					}
+//					else if (xmlhttp.status == 400) {
+//						reject('There was an error 400');
+//					}
+//					else {
+//						reject('something else other than 200 was returned');
+//					}
+//				}
+//			};
+//			xmlhttp.responseType = 'blob';
+//			xmlhttp.open('GET', url, true);
+//			xmlhttp.send();
 		}
 	});
 }
@@ -843,8 +885,10 @@ function upload_imgur(options) {
 				let response = JSON.parse(xhr.responseText);
 				response.service = 'imgur';
 				log(response);
-				chrome.tabs.getSelected(null, function(tab) {
-					chrome.tabs.sendRequest(tab.id, {uploaded: response}, function() {});
+				chrome.tabs.query({active:true}, function(tabs) {
+					tabs.forEach(function(tab) {
+						chrome.tabs.sendMessage(tab.id, {uploaded: response}, function() {});
+					})
 				});
 			}
 		}
@@ -855,11 +899,26 @@ function upload_imgur(options) {
 }
 
 chrome.runtime.onMessageExternal.addListener(function() {
-	chrome.tabs.getSelected(null, function(tab) {
-		chrome.tabs.sendRequest(tab.id, {wpsn_recorder:true}, function() {});
+	chrome.tabs.query({active:true}, function(tabs) {
+		tabs.forEach(function(tab) {
+			chrome.tabs.sendMessage(tab.id, {wpsn_recorder:true}, function() {});
+		})
 	});
 });
 
+// Reload content scripts (https://stackoverflow.com/a/11598753)
+// chrome.runtime.onInstalled.addListener(async () => {
+// 	for (const cs of chrome.runtime.getManifest().content_scripts) {
+// 	  for (const tab of await chrome.tabs.query({url: cs.matches})) {
+// 		chrome.scripting.executeScript({
+// 		  target: {tabId: tab.id},
+// 		  files: cs.js,
+// 		});
+// 	  }
+// 	}
+//   });
+
+let chromeCommands = [];
 chrome.runtime.onInstalled.addListener(function(details) {
 	if(details.reason == 'install'){
 		log('This is a first install!');
@@ -871,7 +930,31 @@ chrome.runtime.onInstalled.addListener(function(details) {
 	}
 	chrome.storage.local.set({'wpsn-version':chrome.runtime.getManifest().version,'wpsn-version-previous':details.previousVersion,'wpsn-install-details': details});
 	chrome.storage.local.remove('wpsn-version-updated');
+	chrome.commands.getAll(function(commands){
+    	chromeCommands = commands;
+    	updateCommands(commands);
+		chrome.contextMenus.onClicked.addListener(function(info){
+			sendCommand(info.menuItemId, info);
+		})
+    });
 });
+
+
+// Reload content scripts (https://stackoverflow.com/a/11598753)
+chrome.runtime.onInstalled.addListener(async () => {
+	for (const cs of chrome.runtime.getManifest().content_scripts) {
+	  for (const tab of await chrome.tabs.query({url: cs.matches})) {
+		chrome.scripting.executeScript({
+		  target: {tabId: tab.id},
+		  files: cs.js,
+		});
+		chrome.scripting.insertCSS({
+			target: {tabId: tab.id},
+			files: cs.js,
+		  });
+	  }
+	}
+  });
 
 function executeScripts(tabId)
 {
@@ -913,38 +996,42 @@ function executeScripts(tabId)
 
 let requests = {};
 function tabChange(o1, o2, o3, o4, o5, tryAgain) {
-	chrome.commands.getAll(function(commands){
-		chrome.tabs.getSelected(null, function(tab){
-			chrome.tabs.sendRequest(tab.id, {commands: commands}, function() {});
-			updateCommands(commands);
+	//chrome.commands.getAll(function(commands){
+		chrome.tabs.query({active:true}, function(tabs){
+			tabs.forEach(function(tab) {
+				chrome.tabs.sendMessage(tab.id, {commands: chromeCommands});
+			})
 		});
-	});
-	chrome.tabs.getSelected(null, function(tab) {
-		requests[tab.id] = requests[tab.id] || {};
-		if (!requests[tab.id].stickyCountRequest) {
-			requests[tab.id].stickyCountRequest = true;
-			chrome.tabs.sendRequest(tab.id, {stickyCountRequest:'true'}, function(response) {
-				delete requests[tab.id].stickyCountRequest;
-				if (response) {
-					if (response.stickyCount === '0') {
-						chrome.browserAction.setBadgeText({text: ''});
-						//chrome.browserAction.setBadgeBackgroundColor({color: '#ffffaa'});
-					} else {
-						chrome.browserAction.setBadgeText({text: ''+response.stickyCount});
-						chrome.browserAction.setBadgeBackgroundColor({color: '#ff0000'});
+	//});
+	chrome.tabs.query({active:true}, function(tabs) {
+		tabs.forEach(function(tab) {
+			requests[tab.id] = requests[tab.id] || {};
+			if (!requests[tab.id].stickyCountRequest) {
+				requests[tab.id].stickyCountRequest = true;
+				chrome.tabs.sendMessage(tab.id, {stickyCountRequest:'true'}, function(response) {
+					delete requests[tab.id].stickyCountRequest;
+					if (response) {
+						if (response.stickyCount === '0') {
+							chrome.action.setBadgeText({tabId: tab.id, text: ''});
+							//chrome.action.setBadgeBackgroundColor({tabId: tab.id, color: '#ffffaa'});
+						} else {
+							chrome.action.setBadgeText({tabId: tab.id, text: ''+response.stickyCount});
+							chrome.action.setBadgeBackgroundColor({tabId: tab.id, color: '#ff0000'});
+						}
+					} 
+					else if (tab.url && (tab.url.indexOf('http') == 0 || tab.url.indexOf('about') == 0) && !tryAgain) {
+						executeScripts(tab.id);
+						tabChange(o1, o2, o3, o4, o5, true);
 					}
-				} else if ((tab.url.indexOf('http') == 0 || tab.url.indexOf('about') == 0) && !tryAgain) {
-					executeScripts(tab.id);
-					tabChange(o1, o2, o3, o4, o5, true);
-				}
-			});
-		}
+				});
+			}
+		})
 	});
 }
 
 /*chrome.contextMenus.create({
     "title": "Note Board",
-    "contexts": ["browser_action"],
+    "contexts": ["action"],
     "onclick" : function(info, tab){
 		chrome.tabs.create({'url': chrome.extension.getURL('blank.html')}, function(tab) {});
 	}
@@ -952,16 +1039,16 @@ function tabChange(o1, o2, o3, o4, o5, tryAgain) {
 
 
 let shortcutConfig = {
-	'a-c-manage-notes'								: { context : ['browser_action'] },
-	'a-c-a-note-board'								: { context : ['browser_action', 'page'] },
+	'a-c-manage-notes'								: { context : ['action'] },
+	'a-c-a-note-board'								: { context : ['action', 'page'] },
 	'a-c-b-sync-notes'								: { context : ['page'] },
 	'a-c-c-sync-logout'								: { context : ['page'] },
-	'a-d-settings'									: { context : ['browser_action'] },
-	'a-e-about'										: { context : ['browser_action'] },
+	'a-d-settings'									: { context : ['action'] },
+	'a-e-about'										: { context : ['action'] },
 	'a-f-demo'										: { context : ['page'] },
-	'a-a-undo'										: { context : ['browser_action', 'page'] },
-	'a-b-redo'										: { context : ['browser_action', 'page'] },
-	'a-g-backup'									: { context : ['browser_action', 'page'] },
+	'a-a-undo'										: { context : ['action', 'page'] },
+	'a-b-redo'										: { context : ['action', 'page'] },
+	'a-g-backup'									: { context : ['action', 'page'] },
 	'a-a-add-note'									: { context : ['page'] },
 	'a-g-goto-url'									: { context : ['page'] },
 	'a-markdown-cheatsheet'							: { context : ['page'] },
@@ -1046,10 +1133,7 @@ function updateCommands(commandList) {
 					chrome.contextMenus.create({
 						'id' : command.name,
 						'title' : (command.description || command.name) + ' ' + shortcut(command.name,true),
-						'contexts': shortcutConfig[command.name].context,
-						'onclick' : function(info){
-							sendCommand(info.menuItemId, info);
-						}
+						'contexts': shortcutConfig[command.name].context
 					});
 					shortcutConfig[command.name].init = true;
 				} 
@@ -1072,8 +1156,10 @@ function sendCommand(commandName, options) {
 	if (commandName == 'b-paste-copied-notes' || commandName == 'b-paste-copied-notes-original-coordinates') {
 		options = { text : copied_notes };
 	}
-	chrome.tabs.getSelected(null, function(tab){
-		chrome.tabs.sendRequest(tab.id, {command: commandName, options}, function() {});
+	chrome.tabs.query({active:true}, function(tabs){
+		tabs.forEach(function(tab) {
+			chrome.tabs.sendMessage(tab.id, {command: commandName, options});
+		})
 	});
 }
 

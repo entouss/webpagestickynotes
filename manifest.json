@@ -1,17 +1,20 @@
 {
   "name": "Web Page Sticky Notes",
   "short_name": "WPSN",
-  "version": "3.2.8",
-  "manifest_version": 2,
+  "version": "4.0.0",
+  "manifest_version": 3,
   "description": "Sticky Notes For Web Pages",
   "icons": { "16":"icon16.png","48":"icon48.png","128":"icon128.png" },
-  "browser_action": {
+  "action": {
     "default_icon": "icon48.png"
   },
   "permissions": [
-	"storage", "bookmarks", "contextMenus", "tabs", "<all_urls>", "downloads", "clipboardRead", "clipboardWrite", "identity"
+	"storage", "bookmarks", "contextMenus", "scripting", "downloads", "clipboardRead", "clipboardWrite", "identity"
   ],
-  "content_security_policy": "script-src 'self' https://apis.google.com; object-src 'self'",
+  "host_permissions": ["<all_urls>"],
+  "content_security_policy": {
+	"extention_pages": "script-src 'self' https://apis.google.com; object-src 'self'"
+  },
   "oauth2": {
 	"client_id": "121151248190-81aiah6es6se22bi7nc4k684oojnlf7m.apps.googleusercontent.com",
 	"scopes": [
@@ -19,13 +22,14 @@
 	]   
   },
   "background": {
-    "scripts": ["background.js", "vendor/aes.js"]
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*","https://*/*","file://*/*"],
+	  "matches": ["<all_urls>"],
       "js": [
-        "vendor/jquery.js",
+        "vendor/aes.js",
+		"vendor/jquery.js",
         "vendor/marked.js",
         "vendor/jquery-ui.js",
         "vendor/jquery.ui.rotatable.js",
@@ -53,7 +57,6 @@
         "vendor/jquery.fittext.js",
         "vendor/imagetracerjs.js",
 		"vendor/pnglib.js",
-		"vendor/aes.js",
 		"vendor/js2flowchart.js",
 		"vendor/Chart.min.js",
 		"vendor/rawdeflate.js",
@@ -73,7 +76,9 @@
 	  "run_at": "document_start"
     }
   ],
-  "web_accessible_resources": [
+  "web_accessible_resources": [{
+	"matches": ["<all_urls>"],
+	"resources":[
 	"blank.html",
 	"images/base.svg",
 	"images/calculator.svg",
@@ -199,14 +204,15 @@
 	"sync.txt",
 	"WebPageStickyNotesSync.crx",
 	"vendor/eco.json"
-  ],
+  ]}],
+
 
 	"commands": {
-		"a-a-add-note"									: { "description": "Add note" },
+		"a-a-add-note"									: { "description": "Add note", "suggested_key": "Alt+N" },
 		"a-a-undo"										: { "description": "Undo" },
 		"a-b-redo"										: { "description": "Redo" },
 		"a-c-manage-notes"								: { "description": "Manage notes" },
-		"a-c-a-note-board"								: { "description": "Note Board" },
+		"a-c-a-note-board"								: { "description": "Note Board", "suggested_key": "Alt+B" },
 		"a-c-b-sync-notes"								: { "description": "Synchronize Notes to Google Drive" },
 		"a-c-c-sync-logout"								: { "description": "Disconnect from Google Drive account" },
 		"a-d-settings"									: { "description": "Settings" },
@@ -281,6 +287,6 @@
 		"resize-note-paper-ratio"						: { "description": "        Resize note to paper ratio" },
 		"refresh-note"									: { "description": "        Refresh note" },
 		"chess"											: { "description": "        Chess" },
-		 "_execute_browser_action"						: { "description": "        Add note" }
+		 "_execute_action"						: { "description": "        Add note" }
 	}
 }
