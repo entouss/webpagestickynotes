@@ -3133,7 +3133,11 @@
 					try {
 						data = JSON.parse(text);
 					} catch(err) {
-						text = CryptoJS.AES.decrypt(text,chrome.runtime.id).toString(CryptoJS.enc.Utf8);
+						try {
+							text = CryptoJS.AES.decrypt(text, chrome.runtime.id).toString(CryptoJS.enc.Utf8);
+						} catch (err) {
+							text = CryptoJS.AES.decrypt(text, 'alpjieidnmmkljnceakgpeajlngabnee').toString(CryptoJS.enc.Utf8);
+						}
 						data = JSON.parse(text);
 					}
 				} catch (err) {
