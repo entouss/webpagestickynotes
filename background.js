@@ -47,15 +47,15 @@ const GAPI = {
 	intervalBetweenAutoSynchronization: 24 * 60 * 60 * 1000, //prevent Quota abuse
 	api: {
 		loadGapi: function() {
-			return new Promise(function(resolve){
-				var head = document.getElementsByTagName('head')[0];
-				var script = document.createElement('script');
-				script.type = 'text/javascript';
-				script.src = `${GAPI.js}`;//?onload=GAPI_Loaded`;
-				script.onload = function() {
+			return new Promise(function(resolve, reject){
+				try {
+					// MV3 service workers use importScripts instead of DOM script injection
+					importScripts(GAPI.js);
 					resolve();
+				} catch(e) {
+					console.error('Failed to load GAPI:', e);
+					reject(e);
 				}
-				head.appendChild(script);
 			});
 		},
 		loadGapiModules: async function() {
@@ -388,13 +388,18 @@ chrome.action.onClicked.addListener(function(tab) {
 chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 	let func = async function(msg,sender,sendResponse) {
 		if (msg.synchronize) {
-			if (GAPI.enabled && !GAPI.loaded && !msg.logout) { 
-				await GAPI.api.loadGapi();
-				await GAPI.api.loadGapiModules();
+			if (GAPI.enabled && !GAPI.loaded && !msg.logout) {
+				try {
+					await GAPI.api.loadGapi();
+					await GAPI.api.loadGapiModules();
+				} catch(e) {
+					console.error('GAPI load failed - sync disabled:', e);
+					GAPI.enabled = false;
+				}
 			}
 			if (msg.logout) {
 				await GAPI.api.removeToken();
-				chrome.tabs.query({active:true}, function(tabs) {
+				chrome.tabs.query({active:true, currentWindow: true}, function(tabs) {
 					tabs.forEach(function(tab) {
 						chrome.tabs.sendMessage(tab.id, {synchronize:true, loggedout:true}, function() {});
 					})
@@ -413,7 +418,7 @@ chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 				if (msg.fetch) {
 					GAPI.lastSynchronization = new Date();
 					GAPI.api.readJSON(true).then(function(result){
-						chrome.tabs.query({active:true}, function(tabs) {
+						chrome.tabs.query({active:true, currentWindow: true}, function(tabs) {
 							tabs.forEach(function(tab) {
 								chrome.tabs.sendMessage(tab.id, {synchronize:true, result:result}, function() {});
 							})
@@ -421,7 +426,7 @@ chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 					});
 				} else if (msg.result) {
 					GAPI.api.writeJSON(msg.result, true).then(function(){
-						chrome.tabs.query({active:true}, function(tabs) {
+						chrome.tabs.query({active:true, currentWindow: true}, function(tabs) {
 							tabs.forEach(function(tab) {
 								chrome.tabs.sendMessage(tab.id, {synchronize:true, synchronized:true}, function() {});
 							})
@@ -438,7 +443,7 @@ chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 		}
 		if (msg.stickyCount) {
 			if (msg.url) {
-				chrome.tabs.query({active:true}, function(tabs) {
+				chrome.tabs.query({active:true, currentWindow: true}, function(tabs) {
 					tabs.forEach(function(tab) {
 						if (tab.url === msg.url) {
 							if (msg.stickyCount === '0') {
@@ -506,7 +511,7 @@ chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 				if (msg.loadNotes.indexOf('#') > -1) {
 					let hash = unescape(msg.loadNotes.substring(msg.loadNotes.indexOf('#')+1));
 					if (hash.indexOf('[') > -1 && hash.indexOf('{') > -1 && hash.indexOf('"') > -1 && hash.indexOf('id') > -1) {
-						chrome.tabs.query({active:true}, function(tabs) {
+						chrome.tabs.query({active:true, currentWindow: true}, function(tabs) {
 							tabs.forEach(function(tab) {
 								chrome.tabs.sendMessage(tab.id, {loadNotesResponse: hash}, function() {});
 							})
@@ -561,7 +566,7 @@ chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 			copied_notes = msg.copySelectedNotes;
 		}
 		if (msg.pasteCopiedNotes) {
-			chrome.tabs.query({active:true}, function(tabs) {
+			chrome.tabs.query({active:true, currentWindow: true}, function(tabs) {
 				tabs.forEach(function(tab) {
 					chrome.tabs.sendMessage(tab.id, {pasteCopiedNotes: copied_notes, keepOriginalCoordinates: msg.keepOriginalCoordinates}, function() {});
 				})
@@ -570,6 +575,8 @@ chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 		if (msg.getImageData) {
 			getImageData(msg.url, msg.width, msg.height).then(function(imageData){
 				sendResponse(imageData);
+			}).catch(function(err){
+				sendResponse({error: err.message || err});
 			});
 		}
 		if (msg.getUrlData) {
@@ -584,17 +591,15 @@ chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 		if (msg.getBase64UrlData) {
 			getBase64UrlData(msg.url, msg.interval).then(function(data){
 				sendResponse(data);
+			}).catch(function(err){
+				sendResponse({error: err.message || err});
 			});
 		}
 		if (msg.github) {
 			commitToGithub(msg.github);
 		}
 		if (msg.gotourl) {
-			chrome.tabs.query({active:true}, function(tabs) {
-				tabs.forEach(function(tab) {
-					chrome.tabs.create({url: msg.gotourl});
-				})
-			});
+			chrome.tabs.create({url: msg.gotourl});
 		}
 	};
 
@@ -733,7 +738,7 @@ function writeFileToCommit(commit) {
 }
 
 function commitResponse(response) {
-	chrome.tabs.query({active:true}, function(tabs) {
+	chrome.tabs.query({active:true, currentWindow: true}, function(tabs) {
 		tabs.forEach(function(tab) {
 			chrome.tabs.sendMessage(tab.id, {committed: response}, function() {});
 		})
@@ -741,18 +746,33 @@ function commitResponse(response) {
 }
 
 function getImageData(url, width, height) {
-	return new Promise(function(resolve){
-		let img = document.createElement('img');
-		let canvas = document.createElement('canvas');
-		canvas.width = width;
-		canvas.height = height;
-		let ctx = canvas.getContext('2d');
-		img.onload = function(){
-			ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-			let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-			resolve(imgData);
-		};
-		img.src = url;
+	return new Promise(function(resolve, reject){
+		// Note: DOM APIs (document.createElement) don't work in MV3 service workers
+		// This function would need to use an OffscreenCanvas or move to a content script
+		try {
+			if (typeof OffscreenCanvas !== 'undefined') {
+				// Use OffscreenCanvas for service worker compatibility
+				let canvas = new OffscreenCanvas(width, height);
+				let ctx = canvas.getContext('2d');
+				fetch(url)
+					.then(response => response.blob())
+					.then(blob => createImageBitmap(blob))
+					.then(imageBitmap => {
+						ctx.drawImage(imageBitmap, 0, 0, width, height);
+						let imgData = ctx.getImageData(0, 0, width, height);
+						resolve(imgData);
+					})
+					.catch(err => {
+						error('getImageData failed: ' + err);
+						reject(err);
+					});
+			} else {
+				reject(new Error('OffscreenCanvas not available'));
+			}
+		} catch(e) {
+			error('getImageData error: ' + e);
+			reject(e);
+		}
 	});
 }
 
@@ -885,7 +905,7 @@ function upload_imgur(options) {
 				let response = JSON.parse(xhr.responseText);
 				response.service = 'imgur';
 				log(response);
-				chrome.tabs.query({active:true}, function(tabs) {
+				chrome.tabs.query({active:true, currentWindow: true}, function(tabs) {
 					tabs.forEach(function(tab) {
 						chrome.tabs.sendMessage(tab.id, {uploaded: response}, function() {});
 					})
@@ -899,7 +919,7 @@ function upload_imgur(options) {
 }
 
 chrome.runtime.onMessageExternal.addListener(function() {
-	chrome.tabs.query({active:true}, function(tabs) {
+	chrome.tabs.query({active:true, currentWindow: true}, function(tabs) {
 		tabs.forEach(function(tab) {
 			chrome.tabs.sendMessage(tab.id, {wpsn_recorder:true}, function() {});
 		})
@@ -919,42 +939,38 @@ chrome.runtime.onMessageExternal.addListener(function() {
 //   });
 
 let chromeCommands = [];
-chrome.runtime.onInstalled.addListener(function(details) {
+chrome.runtime.onInstalled.addListener(async function(details) {
 	if(details.reason == 'install'){
 		log('This is a first install!');
-		
+
 	}else if(details.reason == 'update'){
 		let thisVersion = chrome.runtime.getManifest().version;
 		log('Updated from ' + details.previousVersion + ' to ' + thisVersion + '!');
-		
+
 	}
 	chrome.storage.local.set({'wpsn-version':chrome.runtime.getManifest().version,'wpsn-version-previous':details.previousVersion,'wpsn-install-details': details});
 	chrome.storage.local.remove('wpsn-version-updated');
 	chrome.commands.getAll(function(commands){
     	chromeCommands = commands;
     	updateCommands(commands);
-		chrome.contextMenus.onClicked.addListener(function(info){
-			sendCommand(info.menuItemId, info);
-		})
     });
-});
 
-
-// Reload content scripts (https://stackoverflow.com/a/11598753)
-chrome.runtime.onInstalled.addListener(async () => {
+	// Reload content scripts (https://stackoverflow.com/a/11598753)
 	for (const cs of chrome.runtime.getManifest().content_scripts) {
 	  for (const tab of await chrome.tabs.query({url: cs.matches})) {
 		chrome.scripting.executeScript({
 		  target: {tabId: tab.id},
 		  files: cs.js,
-		});
-		chrome.scripting.insertCSS({
-			target: {tabId: tab.id},
-			files: cs.js,
-		  });
+		}).catch(function(err) { error(err); });
+		if (cs.css) {
+			chrome.scripting.insertCSS({
+				target: {tabId: tab.id},
+				files: cs.css,
+			}).catch(function(err) { error(err); });
+		}
 	  }
 	}
-  });
+});
 
 function executeScripts(tabId)
 {
@@ -968,12 +984,18 @@ function executeScripts(tabId)
 
 	function createJSCallback(tabId, injectDetails, innerCallback) {
 		return function () {
-			chrome.tabs.executeScript(tabId, injectDetails, innerCallback);
+			chrome.scripting.executeScript({
+				target: {tabId: tabId},
+				files: [injectDetails.file]
+			}).then(innerCallback).catch(function(err) { error(err); });
 		};
 	}
 	function createCSSCallback(tabId, injectDetails, innerCallback) {
 		return function () {
-			chrome.tabs.insertCSS(tabId, injectDetails, innerCallback);
+			chrome.scripting.insertCSS({
+				target: {tabId: tabId},
+				files: [injectDetails.file]
+			}).then(innerCallback).catch(function(err) { error(err); });
 		};
 	}
 
@@ -997,13 +1019,13 @@ function executeScripts(tabId)
 let requests = {};
 function tabChange(o1, o2, o3, o4, o5, tryAgain) {
 	//chrome.commands.getAll(function(commands){
-		chrome.tabs.query({active:true}, function(tabs){
+		chrome.tabs.query({active:true, currentWindow: true}, function(tabs){
 			tabs.forEach(function(tab) {
 				chrome.tabs.sendMessage(tab.id, {commands: chromeCommands});
 			})
 		});
 	//});
-	chrome.tabs.query({active:true}, function(tabs) {
+	chrome.tabs.query({active:true, currentWindow: true}, function(tabs) {
 		tabs.forEach(function(tab) {
 			requests[tab.id] = requests[tab.id] || {};
 			if (!requests[tab.id].stickyCountRequest) {
@@ -1121,6 +1143,10 @@ chrome.commands.onCommand.addListener(function(command) {
 	sendCommand(command);
 });
 
+chrome.contextMenus.onClicked.addListener(function(info) {
+	sendCommand(info.menuItemId, info);
+});
+
 
 function updateCommands(commandList) {
 	commands = {};
@@ -1156,7 +1182,7 @@ function sendCommand(commandName, options) {
 	if (commandName == 'b-paste-copied-notes' || commandName == 'b-paste-copied-notes-original-coordinates') {
 		options = { text : copied_notes };
 	}
-	chrome.tabs.query({active:true}, function(tabs){
+	chrome.tabs.query({active: true, currentWindow: true}, function(tabs){
 		tabs.forEach(function(tab) {
 			chrome.tabs.sendMessage(tab.id, {command: commandName, options});
 		})
@@ -1173,7 +1199,7 @@ function log(msg, suppressed) {
 function error(msg, suppressed) {
 	if (msg && !suppressed) {
 		//eslint-disable-next-line no-console
-		console.err(msg);
+		console.error(msg);
 	}
 }
 chrome.tabs.onCreated.addListener(tabChange);

@@ -1024,12 +1024,12 @@
 				});
 			}
 			$('.wpsn-menu-delete').mousedown(async function (e) {
-				e.preventDefault;
+				e.preventDefault();
 				textarea.data('initiallyEmpty', false);
 			});
 			let preview = $('<img src="chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/right_arrow.svg" class="wpsn-side-menu wpsn-preview" title="Click to preview input in another note" width="'+(wpsn.settings.defaultIconSize||14)+'" style="top:'+(wpsn.settings.defaultIconSize||14)+'"/>');
 			preview.mousedown(async function (e) {
-				e.preventDefault;
+				e.preventDefault();
 				textarea.data('wpsn_dont_stop_editing', true);
 				let previewNote = $.extend(true, {}, note);
 				previewNote.discard = true;
@@ -2518,9 +2518,9 @@
 					resolve();
 				}
 			});
-			let $cancel = $('.wpsn-cancel', form).off('click').on('click', function () {
+			let $cancel = $('.wpsn-cancel', form).off('click').on('click', async function () {
 				let note = wpsn.getNoteFromDiv($(this).closest('.wpsn-sticky'));
-				wpsn.deleteNote(note);
+				await wpsn.deleteNote(note);
 				reject();
 			});
 			let $ok = $('.wpsn-ok', form)
@@ -10763,34 +10763,47 @@ wpsn.menu.calculator = {
 	}
 
 	wpsn.clock = async function(note) {
-		let $noteDiv = wpsn.getNoteDiv(note)
-		let $noteFrame = $noteDiv.find('.wpsn-frame')
+		try {
+			let $noteDiv = wpsn.getNoteDiv(note)
+			let $noteFrame = $noteDiv.find('.wpsn-frame')
 
-		let meta = {}
-		try{meta = JSON.parse(note.text)}catch(err){console.log(err)}
-		meta = Object.assign({}, wpsn.dateTimeDefaults, meta)
+			let meta = {}
+			try{meta = JSON.parse(note.text)}catch(err){console.log(err)}
+			meta = Object.assign({}, wpsn.dateTimeDefaults, meta)
 
-		let start = new Date()
+			let start = new Date()
+			// Cache extension ID to avoid calling chrome API in interval
+			let extensionId = chrome.i18n.getMessage('@@extension_id')
+			let intervalId = null
 
-		let clock = function() {
-			let now = luxon.DateTime.now().setLocale(meta.locale).setZone(meta.timeZone)
-			let html = `
-			${meta.header.text ? `<div style="${meta.header.style}">${meta.header.text}</div>` : ``}
-			<div style="${meta.date.style}">${now.toFormat(meta.date.format)}</div>
-			<div style="${meta.time.style}">${now.toFormat(meta.time.format)}</div>
-			${meta.footer.text ? `<div style="${meta.footer.style}">${meta.footer.text}</div>` : ``}
-			`
-			$noteFrame.html(html)
-			let $settings = $(`<div style="text-align:right;position:absolute;bottom:${(wpsn.settings.defaultIconSize||14)};right:0"><img class="wpsn_calendar_settings" src="chrome-extension://${chrome.i18n.getMessage('@@extension_id')}/images/gear.svg" style="visibility:hidden;cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/></div>`)
-			$settings.click(function(){wpsn.calendarSettingsPrompt(note)})
+			let clock = function() {
+				try {
+					let now = luxon.DateTime.now().setLocale(meta.locale).setZone(meta.timeZone)
+					let html = `
+					${meta.header.text ? `<div style="${meta.header.style}">${meta.header.text}</div>` : ``}
+					<div style="${meta.date.style}">${now.toFormat(meta.date.format)}</div>
+					<div style="${meta.time.style}">${now.toFormat(meta.time.format)}</div>
+					${meta.footer.text ? `<div style="${meta.footer.style}">${meta.footer.text}</div>` : ``}
+					`
+					$noteFrame.html(html)
+					let $settings = $(`<div style="text-align:right;position:absolute;bottom:${(wpsn.settings.defaultIconSize||14)};right:0"><img class="wpsn_calendar_settings" src="chrome-extension://${extensionId}/images/gear.svg" style="visibility:hidden;cursor:pointer;width:${(wpsn.settings.defaultIconSize||14)}px;height:${(wpsn.settings.defaultIconSize||14)}"/></div>`)
+					$settings.click(function(){wpsn.calendarSettingsPrompt(note)})
 
-			$noteFrame.append($settings)
-			$noteFrame
-				.mouseover(function(){$(this).find(".wpsn_calendar_settings").css('visibility','visible')})
-				.mouseout(function(){$(this).find(".wpsn_calendar_settings").css('visibility','hidden')})
+					$noteFrame.append($settings)
+					$noteFrame
+						.mouseover(function(){$(this).find(".wpsn_calendar_settings").css('visibility','visible')})
+						.mouseout(function(){$(this).find(".wpsn_calendar_settings").css('visibility','hidden')})
+				} catch(e) {
+					// Extension context invalidated, clear interval
+					if (intervalId) clearInterval(intervalId);
+				}
+			}
+			clock()
+			intervalId = setInterval(clock, 1000);
+		} catch(e) {
+			// Extension context invalidated
+			console.log('Clock: Extension context invalidated');
 		}
-		clock()
-		setInterval(clock, 1000);
 	}
 
 	wpsn.menu.calendar = {
