@@ -39,7 +39,7 @@ Chrome Extension using **Manifest V3** with:
 - **Local Storage**: Chrome Bookmarks API
   - Notes stored as bookmark titles (JSON serialized)
   - URL as bookmark URL for page association
-  - Global notes stored at special URL: `http://www.google.com/blank.html?global`
+  - Global notes stored at special URL: `chrome-extension://{extension_id}/board.html?global`
   - Domain-scoped notes use `wpsn.DOMAIN.{hostname}` key
 
 - **Cloud Sync**: Google Drive API

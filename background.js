@@ -1,5 +1,6 @@
 let wpsn_title = 'Web Page Sticky Notes';
-let wpsn_globalURL = 'http://www.google.com/blank.html?global';
+let wpsn_globalURL = `chrome-extension://${chrome.runtime.id}/board.html?global`;
+let wpsn_globalURL_legacy = 'http://www.google.com/blank.html?global';
 let wpsn_bookmarks;
 let copied_notes = '';
 let urlData = {
@@ -380,8 +381,22 @@ function wpsn_saveBookmark(url, title) {
 	}
 }
 
-chrome.action.onClicked.addListener(function(tab) {
-	chrome.scripting.executeScript({target: {tabId: tab.id, allFrames: true},files: ['popup.js']});
+chrome.action.onClicked.addListener(async function(tab) {
+	// Get full tab info to ensure we have the URL
+	const fullTab = await chrome.tabs.get(tab.id);
+	const url = fullTab.url || '';
+
+	// Extension pages and chrome:// pages already have scripts loaded or can't be injected
+	// Send a message instead of injecting scripts
+	if (url.startsWith('chrome-extension://') || url.startsWith('chrome://')) {
+		chrome.tabs.sendMessage(tab.id, {command: 'a-a-add-note'}).catch(function(err) {
+			error('Failed to send message to extension page: ' + err);
+		});
+	} else {
+		chrome.scripting.executeScript({target: {tabId: tab.id, allFrames: true},files: ['popup.js']}).catch(function(err) {
+			error('Failed to execute script: ' + err);
+		});
+	}
 });
 
 
@@ -437,9 +452,17 @@ chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 		}
 		
 		if (msg.screenshot) {
-			chrome.tabs.captureVisibleTab(null, {format:'png', quality:100}, function(dataUrl) {
-				sendResponse({ screenshotUrl: dataUrl });
-			});
+			try {
+				chrome.tabs.captureVisibleTab(null, {format:'png', quality:100}, function(dataUrl) {
+					if (chrome.runtime.lastError) {
+						sendResponse({ error: chrome.runtime.lastError.message });
+					} else {
+						sendResponse({ screenshotUrl: dataUrl });
+					}
+				});
+			} catch (err) {
+				sendResponse({ error: err.message });
+			}
 		}
 		if (msg.stickyCount) {
 			if (msg.url) {
@@ -525,7 +548,7 @@ chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 			let bkmrk_title = '[]';
 
 			let bkmrk = wpsn_getBookmark(msg.loadNotes);
-			let globalBkmrk = wpsn_getBookmark(wpsn_globalURL);
+			let globalBkmrk = wpsn_getBookmark(wpsn_globalURL) || wpsn_getBookmark(wpsn_globalURL_legacy);
 			if (bkmrk != null) {
 				bkmrk_url = bkmrk.url;
 				bkmrk_title = bkmrk.title;
@@ -601,11 +624,36 @@ chrome.runtime.onMessage.addListener(function(msg,sender,sendResponse) {
 		if (msg.gotourl) {
 			chrome.tabs.create({url: msg.gotourl});
 		}
+		if (msg.aiAvailable !== undefined) {
+			// Update AI context menu visibility based on content script detection
+			updateAIContextMenus(msg.aiAvailable);
+		}
 	};
 
 	func(msg,sender,sendResponse);
 	return true;
 });
+
+// Track AI availability for context menus
+let aiContextMenusVisible = false;
+
+function updateAIContextMenus(available) {
+	if (available && !aiContextMenusVisible) {
+		// Show AI context menus
+		try {
+			chrome.contextMenus.update('c-summarize-to-note', { visible: true });
+			chrome.contextMenus.update('c-check-ai-status', { visible: true });
+			aiContextMenusVisible = true;
+		} catch (err) { /* Menu might not exist yet */ }
+	} else if (!available && aiContextMenusVisible) {
+		// Hide AI context menus
+		try {
+			chrome.contextMenus.update('c-summarize-to-note', { visible: false });
+			chrome.contextMenus.update('c-check-ai-status', { visible: false });
+			aiContextMenusVisible = false;
+		} catch (err) { /* Menu might not exist yet */ }
+	}
+}
 
 function commitToGithub(commit) {
 	/*
@@ -958,6 +1006,10 @@ chrome.runtime.onInstalled.addListener(async function(details) {
 	// Reload content scripts (https://stackoverflow.com/a/11598753)
 	for (const cs of chrome.runtime.getManifest().content_scripts) {
 	  for (const tab of await chrome.tabs.query({url: cs.matches})) {
+		// Skip extension pages - they load scripts directly via HTML
+		if (tab.url && tab.url.startsWith('chrome-extension://')) {
+			continue;
+		}
 		chrome.scripting.executeScript({
 		  target: {tabId: tab.id},
 		  files: cs.js,
@@ -1136,7 +1188,9 @@ let shortcutConfig = {
 	'b-copy-html-to-note'							: { context : ['selection'] },
 	'b-copy-to-note-prettify'						: { context : ['selection'] },
 	'b-prettify-and-download-as-html'				: { context : ['selection'] },
-	'b-copy-link-and-text'							: { context : ['link'] }
+	'b-copy-link-and-text'							: { context : ['link'] },
+	'c-summarize-to-note'							: { context : ['selection', 'page'], aiMenu: true },
+	'c-check-ai-status'								: { context : ['page'], aiMenu: true }
 };
 
 chrome.commands.onCommand.addListener(function(command) {
@@ -1156,13 +1210,18 @@ function updateCommands(commandList) {
 		if (shortcutConfig[command.name]) {
 			if (!shortcutConfig[command.name].init) {
 				if (shortcutConfig[command.name] && shortcutConfig[command.name].context) {
-					chrome.contextMenus.create({
+					let menuOptions = {
 						'id' : command.name,
 						'title' : (command.description || command.name) + ' ' + shortcut(command.name,true),
 						'contexts': shortcutConfig[command.name].context
-					});
+					};
+					// Hide AI menus initially until content script confirms availability
+					if (shortcutConfig[command.name].aiMenu) {
+						menuOptions.visible = false;
+					}
+					chrome.contextMenus.create(menuOptions);
 					shortcutConfig[command.name].init = true;
-				} 
+				}
 			} else if (shortcutConfig[command.name].init) {
 				chrome.contextMenus.update(command.name, { title : (command.description || command.name) + ' ' + shortcut(command.name,true) });
 			}

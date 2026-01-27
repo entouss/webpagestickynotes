@@ -22,9 +22,9 @@
 			'domain': 'wpsn.DOMAIN.' + location.hostname,
 			'global': 'wpsn.GLOBAL'
 		};
-		wpsn.mainmenu_left = ['maximize', 'minimize', 'fullscreen', 'lookandfeel', 'refresh', 'lock', 'mode', 'zoom', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'snapshot', 'checklist','code', 'diagram', 'chess'];
+		wpsn.mainmenu_left = ['maximize', 'minimize', 'fullscreen', 'lookandfeel', 'refresh', 'lock', 'ai', 'mode', 'zoom', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'snapshot', 'checklist','code', 'diagram', 'chess'];
 		wpsn.mainmenu_right = ['synchronize', 'export', 'copynotetext', 'clone', 'add', 'more', 'remove', 'removePopup', 'tips', 'about', 'manager', 'settings', 'whatsnew'];
-		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'copynotetext', 'lookandfeel', 'snapshot', 'zoom', 'lock', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'export', 'synchronize', 'removePopup', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'checklist', 'code', 'diagram', 'mode', 'chess'];
+		wpsn.mainmenu_weight = ['maximize', 'more', 'remove', 'minimize', 'add', 'clone', 'copynotetext', 'lookandfeel', 'snapshot', 'zoom', 'lock', 'ai', 'settings', 'manager', 'tips', 'about', 'whatsnew', 'fullscreen', 'export', 'synchronize', 'removePopup', 'refresh', 'scope', 'target', 'order', 'position', 'rss', 'record', 'media', 'checklist', 'code', 'diagram', 'mode', 'chess'];
 		wpsn.filters = {
 			'blur': { max: 4, unit: 'px', value: 0, step: 0.25, division: 4 },
 			'grayscale': { max: 100, unit: '%', value: 0, step: 1, division: 4 },
@@ -397,11 +397,20 @@
 
 	wpsn.renderText = async function (note, callback) {
 		try {
+			// For AI mode, use aitext for rendering (swap previewText temporarily)
+			let originalPreviewText = note.previewText;
+			if (note.aimode && note.aitext) {
+				note.previewText = note.aitext;
+			}
+
 			if (wpsn.getMode(note).render) {
 				await wpsn.getMode(note).render(note, callback);
 			} else {
 				wpsn.renderAsIs(note, callback);
 			}
+
+			// Restore original previewText
+			note.previewText = originalPreviewText;
 		} catch (err) {
 			wpsn.renderAsIs(note, callback);
 		}
@@ -649,6 +658,11 @@
 	};
 
 	wpsn.stopEditing = async function (note, initiallyEmpty) {
+		// Handle diff mode separately
+		if (note.mode == wpsn.menu.mode.modes.diff.id) {
+			return wpsn.stopEditingDiffNote(note, initiallyEmpty);
+		}
+
 		wpsn.saveNoteStateForUndo(note);
 		let noteDiv = wpsn.getNoteDiv(note);
 		noteDiv.removeClass('wpsn-editing')
@@ -672,6 +686,10 @@
 					noteDiv.find('.wpsn-menu-maximize').attr('title', title);
 				}
 			}
+		}
+		// AI mode: generate AI text after editing completes
+		if (note.aimode && $.trim(note.text).length > 0) {
+			await wpsn.generateAIText(note);
 		}
 		let _note_frame = $(document.createElement('div')).attr('id', 'wpsn-frame-' + note.id).addClass('wpsn-frame');
 		wpsn.updateFont(note, _note_frame);
@@ -714,6 +732,116 @@
 
 		wpsn.reorderNote(note);
 		wpsn.settings.enableAutoresizeHeight?wpsn.autoResizeHeight(note):false;
+	};
+
+	wpsn.editDiffNote = async function (note) {
+		let noteDiv = wpsn.getNoteDiv(note);
+		noteDiv.addClass('wpsn-editing');
+		let noteFrame = noteDiv.find('#wpsn-frame-' + note.id);
+		let diffModeId = wpsn.menu.mode.modes.diff.id;
+
+		// Initialize diff mode data if not present
+		if (!note[diffModeId]) {
+			note[diffModeId] = {
+				textA: note.text || '',
+				textB: ''
+			};
+		}
+
+		if (note && !note.isPopup && !note.deleted) {
+			let container = $(document.createElement('div'))
+				.addClass('wpsn-diff-edit-container');
+
+			let paneA = $(document.createElement('div')).addClass('wpsn-diff-pane');
+			let labelA = $(document.createElement('div')).addClass('wpsn-diff-label').text('Text A (Original)');
+			let textareaA = $(document.createElement('textarea'))
+				.attr('id', 'wpsn-diff-textarea-a-' + note.id)
+				.addClass('wpsn-diff-textarea wpsn-scrollbar')
+				.css('color', noteFrame.css('color'))
+				.css('background', noteFrame.css('background-color'))
+				.val(note[diffModeId].textA || '');
+			paneA.append(labelA).append(textareaA);
+
+			let paneB = $(document.createElement('div')).addClass('wpsn-diff-pane');
+			let labelB = $(document.createElement('div')).addClass('wpsn-diff-label').text('Text B (Modified)');
+			let textareaB = $(document.createElement('textarea'))
+				.attr('id', 'wpsn-diff-textarea-b-' + note.id)
+				.addClass('wpsn-diff-textarea wpsn-scrollbar')
+				.css('color', noteFrame.css('color'))
+				.css('background', noteFrame.css('background-color'))
+				.val(note[diffModeId].textB || '');
+			paneB.append(labelB).append(textareaB);
+
+			container.append(paneA).append(paneB);
+
+			noteFrame.replaceWith(container);
+
+			wpsn.setCurrentlyEditedNote(note);
+
+			let initiallyEmpty = $.trim(textareaA.val() + textareaB.val()).length === 0;
+
+			// Handle blur on both textareas
+			let blurHandler = function (e) {
+				// Check if we're clicking the other textarea
+				let relatedTarget = e.relatedTarget;
+				if (relatedTarget && ($(relatedTarget).is('.wpsn-diff-textarea'))) {
+					return; // Don't stop editing if clicking between textareas
+				}
+				if (!$(this).data('wpsn_dont_stop_editing')) {
+					wpsn.stopEditingDiffNote(note, initiallyEmpty);
+				}
+			};
+
+			textareaA.data('initiallyEmpty', initiallyEmpty).unbind('blur').blur(blurHandler);
+			textareaB.data('initiallyEmpty', initiallyEmpty).unbind('blur').blur(blurHandler);
+		}
+	};
+
+	wpsn.stopEditingDiffNote = async function (note, initiallyEmpty) {
+		wpsn.saveNoteStateForUndo(note);
+		let noteDiv = wpsn.getNoteDiv(note);
+		noteDiv.removeClass('wpsn-editing');
+		let diffModeId = wpsn.menu.mode.modes.diff.id;
+
+		// Get values from textareas
+		let textareaA = noteDiv.find('#wpsn-diff-textarea-a-' + note.id);
+		let textareaB = noteDiv.find('#wpsn-diff-textarea-b-' + note.id);
+
+		if (textareaA.length && textareaB.length) {
+			note[diffModeId] = {
+				textA: textareaA.val(),
+				textB: textareaB.val()
+			};
+			// Keep note.text in sync with textA for compatibility
+			note.text = textareaA.val();
+		}
+
+		// Create new frame
+		let _note_frame = $(document.createElement('div'))
+			.attr('id', 'wpsn-frame-' + note.id)
+			.addClass('wpsn-frame');
+		wpsn.updateFont(note, _note_frame);
+
+		// Replace container with frame
+		let container = noteDiv.find('.wpsn-diff-edit-container');
+		if (container.length) {
+			container.replaceWith(_note_frame);
+		}
+
+		_note_frame.dblclick(function () {
+			if (!note.lock || note.lockmode == wpsn.lockModes.editable) {
+				wpsn.getNoteDiv(note).mouseout();
+				wpsn.editNote(note);
+			}
+		});
+
+		wpsn.removeCurrentlyEditedNote(note);
+		if (wpsn.options.editCallback) {
+			wpsn.options.editCallback(note);
+		}
+
+		await wpsn.refreshNote(note, { undock: true });
+		wpsn.reorderNote(note);
 	};
 
 	wpsn.cloneProvidedNotes = function (noteOrNotes, selectNotes) {
@@ -947,6 +1075,11 @@
 	};
 
 	wpsn.editNote = async function (note) {
+		// Handle diff mode separately
+		if (note.mode == wpsn.menu.mode.modes.diff.id) {
+			return wpsn.editDiffNote(note);
+		}
+
 		let noteDiv = wpsn.getNoteDiv(note);
 		noteDiv.addClass('wpsn-editing')
 		let noteFrame = noteDiv.find('#wpsn-frame-' + note.id);
@@ -3991,6 +4124,9 @@
 		'update-lookandfeel-note': async function (commandName, info) { await wpsn.updateLookAndFeelForEffectiveNotes(info.note); },
 		'toggle-lock-note': async function (commandName, info) { await wpsn.toggleLockEffectiveNotes(info.note); },
 		'update-mode-note': async function (commandName, info) { await wpsn.updateEffectiveNotesMode(info.note); },
+		'toggle-ai-mode': async function (commandName, info) { await wpsn.toggleAIModeEffectiveNotes(info.note); },
+		'c-summarize-to-note': async function (commandName, info) { await wpsn.summarizeToNote(info); },
+		'c-check-ai-status': async function (commandName, info) { await wpsn.showAIStatus(); },
 	};
 
 	wpsn.commandDiscrepencies = function () {
@@ -5277,6 +5413,241 @@
 		$('.wpsn-md-checkbox', noteFrame).parent('li').parent('ul,ol').addClass('wpsn-md-checkbox-list');
 	}
 
+	wpsn.renderDiff = function (note) {
+		let noteDiv = wpsn.getNoteDiv(note);
+		let noteFrame = $('#wpsn-frame-' + note.id);
+		let diffModeId = wpsn.menu.mode.modes.diff.id;
+		let props = note[diffModeId] || { textA: note.text || '', textB: '', viewMode: 'unified', hideWhitespace: false };
+		let viewMode = props.viewMode || 'unified';
+		let hideWhitespace = props.hideWhitespace || false;
+
+		// Use jsdiff library
+		if (typeof Diff === 'undefined') {
+			noteFrame.html('<div class="wpsn-diff-output">Diff library not loaded. Please use board.html.</div>');
+			return;
+		}
+
+		// Use trimmed diff if hiding whitespace
+		let diff = hideWhitespace
+			? Diff.diffTrimmedLines(props.textA || '', props.textB || '')
+			: Diff.diffLines(props.textA || '', props.textB || '');
+
+		// Build view toggle buttons
+		let toggleHtml = '<div class="wpsn-diff-toggle">';
+		toggleHtml += '<button class="wpsn-diff-toggle-btn' + (viewMode === 'unified' ? ' active' : '') + '" data-view="unified">Unified</button>';
+		toggleHtml += '<button class="wpsn-diff-toggle-btn' + (viewMode === 'split' ? ' active' : '') + '" data-view="split">Split</button>';
+		toggleHtml += '<button class="wpsn-diff-toggle-btn wpsn-diff-toggle-ws' + (hideWhitespace ? ' active' : '') + '" data-action="whitespace">Hide whitespace</button>';
+		toggleHtml += '</div>';
+
+		// Build unified diff view with line numbers
+		let unifiedHtml = '<div class="wpsn-diff-section wpsn-diff-unified"><pre class="wpsn-diff-output">';
+		let leftLineNum = 0;
+		let rightLineNum = 0;
+		diff.forEach(function (part) {
+			let prefix = part.added ? '+' : part.removed ? '-' : ' ';
+			let cls = part.added ? 'wpsn-diff-add' : part.removed ? 'wpsn-diff-del' : 'wpsn-diff-same';
+			let lines = part.value.split('\n');
+			lines.forEach(function (line, i) {
+				if (i < lines.length - 1 || line) {
+					let leftNum = '', rightNum = '';
+					if (part.removed) {
+						leftLineNum++;
+						leftNum = leftLineNum;
+					} else if (part.added) {
+						rightLineNum++;
+						rightNum = rightLineNum;
+					} else {
+						leftLineNum++;
+						rightLineNum++;
+						leftNum = leftLineNum;
+						rightNum = rightLineNum;
+					}
+					let lineNumStr = '<span class="wpsn-diff-linenum">' + (leftNum + '').padStart(4, ' ') + ' ' + (rightNum + '').padStart(4, ' ') + '</span> ';
+					unifiedHtml += '<div class="' + cls + '">' + lineNumStr + prefix + ' ' + wpsn.htmlEncode(line) + '</div>';
+				}
+			});
+		});
+		unifiedHtml += '</pre></div>';
+
+		// Build split view with line numbers
+		let leftLines = [];
+		let rightLines = [];
+		let leftNum = 0;
+		let rightNum = 0;
+
+		diff.forEach(function (part) {
+			let lines = part.value.split('\n');
+			if (lines.length > 0 && lines[lines.length - 1] === '') {
+				lines.pop();
+			}
+
+			lines.forEach(function (line) {
+				if (part.removed) {
+					leftNum++;
+					leftLines.push({ text: line, cls: 'wpsn-diff-del', lineNum: leftNum });
+					rightLines.push({ text: '', cls: 'wpsn-diff-empty', lineNum: '' });
+				} else if (part.added) {
+					rightNum++;
+					leftLines.push({ text: '', cls: 'wpsn-diff-empty', lineNum: '' });
+					rightLines.push({ text: line, cls: 'wpsn-diff-add', lineNum: rightNum });
+				} else {
+					leftNum++;
+					rightNum++;
+					leftLines.push({ text: line, cls: 'wpsn-diff-same', lineNum: leftNum });
+					rightLines.push({ text: line, cls: 'wpsn-diff-same', lineNum: rightNum });
+				}
+			});
+		});
+
+		let splitHtml = '<div class="wpsn-diff-section wpsn-diff-split"><div class="wpsn-diff-render-container" style="display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;gap:8px;width:100%;">';
+		splitHtml += '<div class="wpsn-diff-render-pane wpsn-diff-render-left" style="flex:1 1 0!important;min-width:0!important;overflow:auto;box-sizing:border-box;border-right:1px solid #ddd;padding-right:8px;"><pre class="wpsn-diff-output">';
+		leftLines.forEach(function (line) {
+			let numStr = '<span class="wpsn-diff-linenum">' + (line.lineNum + '').padStart(4, ' ') + '</span> ';
+			splitHtml += '<div class="' + line.cls + '">' + numStr + (line.text ? wpsn.htmlEncode(line.text) : '&nbsp;') + '</div>';
+		});
+		splitHtml += '</pre></div>';
+		splitHtml += '<div class="wpsn-diff-render-pane wpsn-diff-render-right" style="flex:1 1 0!important;min-width:0!important;overflow:auto;box-sizing:border-box;"><pre class="wpsn-diff-output">';
+		rightLines.forEach(function (line) {
+			let numStr = '<span class="wpsn-diff-linenum">' + (line.lineNum + '').padStart(4, ' ') + '</span> ';
+			splitHtml += '<div class="' + line.cls + '">' + numStr + (line.text ? wpsn.htmlEncode(line.text) : '&nbsp;') + '</div>';
+		});
+		splitHtml += '</pre></div>';
+		splitHtml += '</div></div>';
+
+		// Show based on view mode
+		let contentHtml = (viewMode === 'split') ? splitHtml : unifiedHtml;
+
+		noteFrame.html('<div class="wpsn-diff-wrapper">' + toggleHtml + contentHtml + '</div>');
+
+		// Bind view toggle button clicks
+		noteFrame.find('.wpsn-diff-toggle-btn[data-view]').click(function (e) {
+			e.stopPropagation();
+			let newViewMode = $(this).data('view');
+			if (!note[diffModeId]) {
+				note[diffModeId] = { textA: '', textB: '' };
+			}
+			note[diffModeId].viewMode = newViewMode;
+			wpsn.save(note);
+			wpsn.renderDiff(note);
+		});
+
+		// Bind whitespace toggle
+		noteFrame.find('.wpsn-diff-toggle-ws').click(function (e) {
+			e.stopPropagation();
+			if (!note[diffModeId]) {
+				note[diffModeId] = { textA: '', textB: '' };
+			}
+			note[diffModeId].hideWhitespace = !note[diffModeId].hideWhitespace;
+			wpsn.save(note);
+			wpsn.renderDiff(note);
+		});
+
+		// Synchronized scrolling for split view
+		let leftPane = noteFrame.find('.wpsn-diff-render-left');
+		let rightPane = noteFrame.find('.wpsn-diff-render-right');
+		let isSyncingScroll = false;
+
+		leftPane.on('scroll', function () {
+			if (isSyncingScroll) return;
+			isSyncingScroll = true;
+			rightPane.scrollTop(leftPane.scrollTop());
+			isSyncingScroll = false;
+		});
+
+		rightPane.on('scroll', function () {
+			if (isSyncingScroll) return;
+			isSyncingScroll = true;
+			leftPane.scrollTop(rightPane.scrollTop());
+			isSyncingScroll = false;
+		});
+
+		// Build scrollbar markers for change locations
+		wpsn.buildDiffScrollbarMarkers(noteFrame, viewMode, diff);
+	};
+
+	wpsn.buildDiffScrollbarMarkers = function (noteFrame, viewMode, diff) {
+		// Calculate change positions
+		let lineIndex = 0;
+		let totalLines = 0;
+		let changeMarkers = [];
+
+		// First pass: count total lines and record change positions
+		diff.forEach(function (part) {
+			let lines = part.value.split('\n');
+			if (lines.length > 0 && lines[lines.length - 1] === '') {
+				lines.pop();
+			}
+			let lineCount = lines.length;
+
+			if (part.added || part.removed) {
+				changeMarkers.push({
+					startLine: lineIndex,
+					lineCount: lineCount,
+					type: part.added ? 'add' : 'del'
+				});
+			}
+			lineIndex += lineCount;
+			totalLines = lineIndex;
+		});
+
+		if (totalLines === 0) return;
+
+		// Create marker overlay function
+		function createMarkerOverlay(container) {
+			let overlay = $('<div class="wpsn-diff-scrollbar-overlay"></div>');
+
+			changeMarkers.forEach(function (marker) {
+				let topPercent = (marker.startLine / totalLines) * 100;
+				let heightPercent = Math.max((marker.lineCount / totalLines) * 100, 0.5); // min 0.5% height
+				let colorClass = marker.type === 'add' ? 'wpsn-diff-marker-add' : 'wpsn-diff-marker-del';
+
+				let markerEl = $('<div class="wpsn-diff-scrollbar-marker ' + colorClass + '"></div>');
+				markerEl.css({
+					top: topPercent + '%',
+					height: heightPercent + '%'
+				});
+				markerEl.data('scrollTarget', marker.startLine / totalLines);
+				overlay.append(markerEl);
+			});
+
+			// Click handler for markers
+			overlay.on('click', '.wpsn-diff-scrollbar-marker', function (e) {
+				e.stopPropagation();
+				let scrollTarget = $(this).data('scrollTarget');
+				let scrollEl = container[0];
+				let scrollMax = scrollEl.scrollHeight - scrollEl.clientHeight;
+				container.scrollTop(scrollTarget * scrollMax);
+			});
+
+			// Click on overlay background to scroll proportionally
+			overlay.on('click', function (e) {
+				if (e.target === overlay[0]) {
+					let clickY = e.offsetY;
+					let overlayHeight = overlay.height();
+					let scrollTarget = clickY / overlayHeight;
+					let scrollEl = container[0];
+					let scrollMax = scrollEl.scrollHeight - scrollEl.clientHeight;
+					container.scrollTop(scrollTarget * scrollMax);
+				}
+			});
+
+			container.css('position', 'relative');
+			container.append(overlay);
+		}
+
+		if (viewMode === 'split') {
+			// Add markers to both panes
+			let leftPane = noteFrame.find('.wpsn-diff-render-left');
+			let rightPane = noteFrame.find('.wpsn-diff-render-right');
+			createMarkerOverlay(leftPane);
+			createMarkerOverlay(rightPane);
+		} else {
+			// Unified view - add markers to the section
+			let unifiedSection = noteFrame.find('.wpsn-diff-unified');
+			createMarkerOverlay(unifiedSection);
+		}
+	};
+
 	wpsn.renderMarkdown = function (note) {
 		let noteDiv = wpsn.getNoteDiv(note);
 		let noteFrame = $('.wpsn-frame', noteDiv);
@@ -5357,6 +5728,220 @@
 		let noteFrame = $('.wpsn-frame', noteDiv);
 		noteFrame.html((note.previewText || note.text).replace(/\r\n|\r|\n/g, '<br/>').replace(/ {2}/g, ' &nbsp;'));
 	};
+
+	//######################### AI / Gemini Nano ###############################
+
+	wpsn.aiSession = null;
+	wpsn.aiAvailabilityChecked = false;
+	wpsn.aiIsAvailable = false;
+
+	// Synchronous check for AI API existence (for menu visibility)
+	wpsn.isAIAvailable = function() {
+		if (!wpsn.aiAvailabilityChecked) {
+			wpsn.aiIsAvailable = !!(
+				(window.ai && (window.ai.languageModel || window.ai.assistant)) ||
+				(typeof self !== 'undefined' && self.ai && self.ai.languageModel)
+			);
+			wpsn.aiAvailabilityChecked = true;
+		}
+		return wpsn.aiIsAvailable;
+	};
+
+	// Re-check AI availability (call this if user enables the API)
+	wpsn.recheckAIAvailability = function() {
+		wpsn.aiAvailabilityChecked = false;
+		wpsn.aiSession = null;
+		return wpsn.isAIAvailable();
+	};
+
+	wpsn.getAISession = async function() {
+		if (!wpsn.aiSession) {
+			// Try different API variations (Chrome has changed the API structure)
+			let aiAPI = null;
+
+			// Check for window.ai.languageModel (newer API)
+			if (window.ai && window.ai.languageModel) {
+				aiAPI = window.ai.languageModel;
+			}
+			// Check for window.ai.assistant (older API)
+			else if (window.ai && window.ai.assistant) {
+				aiAPI = window.ai.assistant;
+			}
+			// Check for self.ai (service worker context)
+			else if (typeof self !== 'undefined' && self.ai && self.ai.languageModel) {
+				aiAPI = self.ai.languageModel;
+			}
+
+			if (!aiAPI) {
+				let debugInfo = 'window.ai=' + (typeof window.ai) + ', ';
+				if (window.ai) {
+					debugInfo += 'keys=' + Object.keys(window.ai).join(',');
+				}
+				throw new Error('Gemini Nano API not available. ' + debugInfo +
+					'\n\nTo enable:\n1. Go to chrome://flags/#optimization-guide-on-device-model\n   Set to "Enabled BypassPerfRequirement"\n2. Go to chrome://flags/#prompt-api-for-gemini-nano\n   Set to "Enabled"\n3. Restart Chrome\n4. Go to chrome://components\n   Find "Optimization Guide On Device Model"\n   Click "Check for update" and wait for download');
+			}
+
+			// Check capabilities before creating session
+			if (aiAPI.capabilities) {
+				let capabilities = await aiAPI.capabilities();
+				if (capabilities.available === 'no') {
+					throw new Error('Gemini Nano is not available on this device');
+				}
+				if (capabilities.available === 'after-download') {
+					throw new Error('Gemini Nano model is downloading. Please wait and try again.\n\nCheck progress at chrome://components under "Optimization Guide On Device Model"');
+				}
+			}
+
+			wpsn.aiSession = await aiAPI.create();
+		}
+		return wpsn.aiSession;
+	};
+
+	wpsn.checkAIAvailability = async function() {
+		let result = { available: false, api: null, status: 'unknown', message: '' };
+
+		if (window.ai && window.ai.languageModel) {
+			result.api = 'window.ai.languageModel';
+			if (window.ai.languageModel.capabilities) {
+				let caps = await window.ai.languageModel.capabilities();
+				result.status = caps.available;
+				result.available = caps.available === 'readily';
+				if (caps.available === 'after-download') {
+					result.message = 'Model is downloading...';
+				} else if (caps.available === 'no') {
+					result.message = 'Not available on this device';
+				}
+			} else {
+				result.available = true;
+				result.status = 'api-exists';
+			}
+		} else if (window.ai && window.ai.assistant) {
+			result.api = 'window.ai.assistant';
+			result.available = true;
+			result.status = 'api-exists';
+		} else {
+			result.message = 'No AI API found. Enable chrome://flags/#prompt-api-for-gemini-nano';
+		}
+
+		return result;
+	};
+
+	wpsn.generateAIText = async function(note) {
+		if (!note.aimode || !note.text) return;
+
+		let noteDiv = wpsn.getNoteDiv(note);
+		note.ailoading = true;
+		noteDiv.addClass('wpsn-ai-loading');
+
+		let noteFrame = noteDiv.find('.wpsn-frame');
+		noteFrame.html('<div class="wpsn-ai-loader"><img src="chrome-extension://' +
+			chrome.i18n.getMessage('@@extension_id') + '/images/loader.svg" width="40"/>' +
+			'<br/>Generating AI response...</div>');
+
+		try {
+			let session = await wpsn.getAISession();
+			note.aitext = await session.prompt(note.text);
+			delete note.aierror;
+		} catch (err) {
+			console.error('AI Generation Error:', err);
+			let errorMsg = err.message || String(err);
+			note.aitext = '**AI Error:**\n```\n' + errorMsg + '\n```\n\n---\n**Original prompt:**\n' + note.text;
+			note.aierror = true;
+		} finally {
+			delete note.ailoading;
+			noteDiv.removeClass('wpsn-ai-loading');
+		}
+	};
+
+	wpsn.toggleAIModeEffectiveNotes = async function(noteOrNotes) {
+		// Check if AI is available before enabling
+		if (!wpsn.isAIAvailable()) {
+			await wpsn.showAIStatus();
+			return;
+		}
+
+		let effectiveNotes = await wpsn.getEffectiveNotes(noteOrNotes);
+		for (let note of effectiveNotes.notes) {
+			note.aimode = !note.aimode;
+			if (!note.aimode) {
+				delete note.aimode;
+				delete note.aitext;
+				delete note.aierror;
+			} else if (note.aimode && $.trim(note.text).length > 0 && !note.aitext) {
+				// Generate AI text immediately if there's text and no cached response
+				await wpsn.generateAIText(note);
+			}
+			await wpsn.refreshNote(note);
+		}
+		wpsn.save();
+	};
+
+	wpsn.summarizeToNote = async function(info) {
+		// Check if AI is available before summarizing
+		if (!wpsn.isAIAvailable()) {
+			await wpsn.showAIStatus();
+			return;
+		}
+
+		let textToSummarize = '';
+
+		// Try selection first
+		let selection = window.getSelection();
+		if (selection && selection.toString().trim().length > 0) {
+			textToSummarize = selection.toString();
+		} else {
+			// Fall back to page body (limit to 10000 chars for token limits)
+			textToSummarize = document.body.innerText.substring(0, 10000);
+		}
+
+		if (!textToSummarize.trim()) {
+			wpsn.error('No text to summarize');
+			return;
+		}
+
+		let prompt = 'Please summarize the following text concisely:\n\n' + textToSummarize;
+		let note = await wpsn.createNote({ text: prompt, aimode: true });
+		await wpsn.generateAIText(note);
+		await wpsn.stopEditing(note);
+		wpsn.autoResize(note);
+	};
+
+	wpsn.showAIStatus = async function() {
+		let status = await wpsn.checkAIAvailability();
+		let statusText = '# AI Status Check\n\n';
+		statusText += '**Available:** ' + (status.available ? 'Yes ✓' : 'No ✗') + '\n';
+		statusText += '**API:** ' + (status.api || 'Not found') + '\n';
+		statusText += '**Status:** ' + status.status + '\n';
+		if (status.message) {
+			statusText += '**Message:** ' + status.message + '\n';
+		}
+		statusText += '\n---\n\n';
+		statusText += '## Setup Instructions\n\n';
+		statusText += '1. Go to `chrome://flags/#optimization-guide-on-device-model`\n';
+		statusText += '   Set to **"Enabled BypassPerfRequirement"**\n\n';
+		statusText += '2. Go to `chrome://flags/#prompt-api-for-gemini-nano`\n';
+		statusText += '   Set to **"Enabled"**\n\n';
+		statusText += '3. **Restart Chrome**\n\n';
+		statusText += '4. Go to `chrome://components`\n';
+		statusText += '   Find **"Optimization Guide On Device Model"**\n';
+		statusText += '   Click **"Check for update"** and wait for download\n\n';
+		statusText += '## Debug Info\n\n';
+		statusText += '```\n';
+		statusText += 'window.ai = ' + (typeof window.ai) + '\n';
+		if (window.ai) {
+			statusText += 'window.ai keys = ' + Object.keys(window.ai).join(', ') + '\n';
+			if (window.ai.languageModel) {
+				statusText += 'window.ai.languageModel keys = ' + Object.keys(window.ai.languageModel).join(', ') + '\n';
+			}
+		}
+		statusText += '```\n';
+
+		let note = await wpsn.createNote({ text: statusText });
+		await wpsn.stopEditing(note);
+		wpsn.autoResize(note);
+	};
+
+	//######################### END AI / Gemini Nano ###########################
 
 	wpsn.commands.updateScope = async function (noteOrNotes) {
 		let effectiveNotes = await wpsn.getEffectiveNotes(noteOrNotes);
@@ -6296,6 +6881,39 @@
 		}
 	};
 
+	wpsn.menu.ai = {
+		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/ai_off.svg',
+		name: 'ai',
+		optional: false,
+		description: function (note) {
+			let desc = 'Toggle AI mode. Note text is used as prompt for Gemini Nano AI.';
+			if (note && note.aimode) {
+				desc += '\n\nAI mode is ENABLED.';
+				if (note.aierror) {
+					desc += ' (Last generation had an error)';
+				}
+			}
+			return desc;
+		},
+		load: function (note, menuButton) {
+			// Hide AI menu if Gemini Nano API is not available
+			if (!wpsn.isAIAvailable()) {
+				menuButton.hide();
+				return;
+			}
+			menuButton.show();
+			let icon = note.aimode ? 'ai.svg' : 'ai_off.svg';
+			if (note.ailoading) icon = 'loader.svg';
+			menuButton.css('background', 'url("chrome-extension://' +
+				chrome.i18n.getMessage('@@extension_id') + '/images/' + icon + '")')
+				.css('background-size', 'cover');
+		},
+		leftClick: {
+			command: 'toggle-ai-mode',
+			applyToAll: true
+		}
+	};
+
 	wpsn.menu.mode = {
 		icon: 'chrome-extension://' + chrome.i18n.getMessage('@@extension_id') + '/images/gear.svg',
 		name: 'mode',
@@ -6307,7 +6925,8 @@
 			html: { name: 'HTML', id: 7634563478, render: function (note) { wpsn.renderHTML(note); }, description: 'Standard markup language for web pages.' },
 			sortedUnique: { name: 'Sorted & Unique', id: 3465946378, render: function (note) { wpsn.renderSortedUnique(note); }, description: 'Lines are sorted and duplicate lines removed and resulting text is rendered as is.' },
 			texteditor: { name: 'Text Editor', id: 6856399856, render: function (note) { wpsn.renderHTML(note); }, description: 'A text editor is provided to allow for text formatting. (Powered by <a href="http://www.tinymce.com">TinyMCE</a>)' },
-			checklist: { name: 'Checklist', id: 9486429094, render: async function (note) { await wpsn.renderChecklist(note); }, description: 'Renders note in checklist mode. Lines beginning with -, + or x are transformed into checklists. Renders into Markdown otherwise' }
+			checklist: { name: 'Checklist', id: 9486429094, render: async function (note) { await wpsn.renderChecklist(note); }, description: 'Renders note in checklist mode. Lines beginning with -, + or x are transformed into checklists. Renders into Markdown otherwise' },
+			diff: { name: 'Diff', id: 7823456789, render: async function (note) { await wpsn.renderDiff(note); }, description: 'Compare two texts side-by-side and view a unified diff of the changes.' }
 		},
 		load: function (note, menuButton) {
 			if (!note.htmlMode) { note.htmlMode = false; }
@@ -6869,8 +7488,12 @@
 	wpsn.noteboard = {
 		openBoard: async function() {
 			await wpsn.getSettings();
-			let example = 'https://www.google.com/blank.html#{name}';
+			let example = `chrome-extension://${chrome.runtime.id}/board.html#{name}`;
 			wpsn.settings.noteboard_url = wpsn.settings.noteboard_url || example;
+			// Migrate legacy google.com URL to extension URL
+			if (wpsn.settings.noteboard_url.indexOf('google.com/blank.html') > -1) {
+				wpsn.settings.noteboard_url = example;
+			}
 			if (wpsn.settings.noteboard_url.indexOf('{')==-1){
 				wpsn.settings.noteboard_url+= '#{name}';
 			}
@@ -10247,13 +10870,13 @@ wpsn.menu.calculator = {
 			let promise = new Promise((resolve) => {
 				let table = wpsn.htmlTable([
 					[
-						{text:'<',onclick:function(){wpsn.calendar(note,previousYear);wpsn.save(note)}, style:`cursor:pointer`},
+						{text:'<',onclick:function(){wpsn.calendar(note,previousYear);wpsn.save(note)}, style:`cursor:pointer;font-size:1.5em`},
 						{text: date.getFullYear(),onclick:function(){wpsn.calendarSetDate(note,date);wpsn.calendarSetMode(note,'year');wpsn.calendar(note);wpsn.save(note)}, style:`cursor:pointer`, class:`year`},
-						{text:'>',onclick:function(){wpsn.calendar(note,nextYear);wpsn.save(note)}, style:`cursor:pointer`},
+						{text:'>',onclick:function(){wpsn.calendar(note,nextYear);wpsn.save(note)}, style:`cursor:pointer;font-size:1.5em`},
 						'',
-						{text:'<',onclick:function(){wpsn.calendar(note,previousMonth);wpsn.save(note)}, style:`cursor:pointer`},
+						{text:'<',onclick:function(){wpsn.calendar(note,previousMonth);wpsn.save(note)}, style:`cursor:pointer;font-size:1.5em`},
 						{text: wpsn.dateTimeFormatMonth(date, meta), class:`month`},
-						{text:'>',onclick:function(){wpsn.calendar(note,nextMonth);wpsn.save(note)}, style:`cursor:pointer`},
+						{text:'>',onclick:function(){wpsn.calendar(note,nextMonth);wpsn.save(note)}, style:`cursor:pointer;font-size:1.5em`},
 					],
 					meta.weekdays,
 					...wpsn.calendarMonth(note, date, async function(dt){
@@ -10284,13 +10907,13 @@ wpsn.menu.calculator = {
 
 			let table = wpsn.htmlTable([
 				[
-					{text:'<',onclick:function(){wpsn.calendar(note,previousYear);wpsn.save(note)}, style:`cursor:pointer`},
+					{text:'<',onclick:function(){wpsn.calendar(note,previousYear);wpsn.save(note)}, style:`cursor:pointer;font-size:1.5em`},
 					{text: date.getFullYear(),onclick:function(){wpsn.calendarSetDate(note,date);wpsn.calendarSetMode(note,'year');wpsn.calendar(note);wpsn.save(note)}, style:`cursor:pointer`, class:`year`},
-					{text:'>',onclick:function(){wpsn.calendar(note,nextYear);wpsn.save(note)}, style:`cursor:pointer`},
+					{text:'>',onclick:function(){wpsn.calendar(note,nextYear);wpsn.save(note)}, style:`cursor:pointer;font-size:1.5em`},
 					'',
-					{text:'<',onclick:function(){wpsn.calendar(note,previousMonth);wpsn.save(note)}, style:`cursor:pointer`},
+					{text:'<',onclick:function(){wpsn.calendar(note,previousMonth);wpsn.save(note)}, style:`cursor:pointer;font-size:1.5em`},
 					{text: wpsn.dateTimeFormatMonth(date, meta), class:`month`},
-					{text:'>',onclick:function(){wpsn.calendar(note,nextMonth);wpsn.save(note)}, style:`cursor:pointer`},
+					{text:'>',onclick:function(){wpsn.calendar(note,nextMonth);wpsn.save(note)}, style:`cursor:pointer;font-size:1.5em`},
 				],
 				meta.weekdays,
 				...wpsn.calendarMonth(note, date),
@@ -10302,9 +10925,9 @@ wpsn.menu.calculator = {
 			meta.notmonth = {style:`visibility:hidden;border:0 !important`}
 
 			let calendar = [[
-				{text:'<',style:`height:12;text-align:right`,onclick:function(){wpsn.calendar(note,previousYear);wpsn.save(note)}, style:`cursor:pointer`},
+				{text:'<',style:`height:12;text-align:right`,onclick:function(){wpsn.calendar(note,previousYear);wpsn.save(note)}, style:`cursor:pointer;font-size:1.5em`},
 				{text: date.getFullYear(),style:`height:12;text-align:center`, colspan:2, class:`year`},
-				{text:'>',style:`height:12;text-align:left`,onclick:function(){wpsn.calendar(note,nextYear);wpsn.save(note)}, style:`cursor:pointer`},
+				{text:'>',style:`height:12;text-align:left`,onclick:function(){wpsn.calendar(note,nextYear);wpsn.save(note)}, style:`cursor:pointer;font-size:1.5em`},
 			]]
 			for (let r = 0; r < 3; r++) {
 				let calendarRow = []
@@ -12337,6 +12960,11 @@ comments from various sources).} 1-0`;
 		};
 
 		$body.wpsn(wpsnOptions);
+
+		// Notify background script of AI availability for context menu visibility
+		try {
+			chrome.runtime.sendMessage({ aiAvailable: wpsn.isAIAvailable() });
+		} catch (err) { /* Extension context might not be available */ }
 	};
 
 	wpsn.initSelectable = function () {

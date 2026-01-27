@@ -9,7 +9,7 @@
     "default_icon": "icon48.png"
   },
   "permissions": [
-	"storage", "bookmarks", "contextMenus", "scripting", "downloads", "clipboardRead", "clipboardWrite", "identity"
+	"storage", "bookmarks", "contextMenus", "scripting", "downloads", "clipboardRead", "clipboardWrite", "identity", "tabs"
   ],
   "host_permissions": ["<all_urls>"],
   "content_security_policy": {
@@ -63,7 +63,8 @@
 		"vendor/json-schema-viewer.js",
 		"vendor/tv4.min.js",
 		"vendor/tv4.async-load-jquery.js",
-		"vendor/ical.js"
+		"vendor/ical.js",
+		"vendor/diff.min.js"
       ],
 	  "css" : [
 		  "jquery.stickynotes.rebase.css",
@@ -80,6 +81,7 @@
 	"matches": ["<all_urls>"],
 	"resources":[
 	"blank.html",
+	"board.html",
 	"images/base.svg",
 	"images/calculator.svg",
 	"images/calendar.svg",
@@ -192,6 +194,8 @@
 	"images/when.svg",
 	"images/where.svg",
 	"images/zoom.svg",
+	"images/ai.svg",
+	"images/ai_off.svg",
 	"logo/wpsn.svg",
 	"logo/wpsn-logo.svg",
 	"logo/wpsn-slogan.svg",
@@ -287,6 +291,9 @@
 		"resize-note-paper-ratio"						: { "description": "        Resize note to paper ratio" },
 		"refresh-note"									: { "description": "        Refresh note" },
 		"chess"											: { "description": "        Chess" },
+		"toggle-ai-mode"								: { "description": "        Toggle AI mode" },
+		"c-summarize-to-note"							: { "description": "        Summarize to AI note" },
+		"c-check-ai-status"								: { "description": "        Check AI availability status" },
 		 "_execute_action"						: { "description": "        Add note" }
 	}
 }

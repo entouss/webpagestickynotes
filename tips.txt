@@ -59,4 +59,4 @@ Click <img src="chrome-extension://{@@extension_id}/images/right_arrow.svg"/> wh
 
 ---
 ## Note board
-Use <a href=\"http://www.google.com/blank.html\">http://www.google.com/blank.html</a> as a note board. <br/> Use <a href=\"http://www.google.com/blank.html\">http://www.google.com/blank.html?BoardNameHere</a> for different boards.
+Use <b>Alt+B</b> to open the Note Board. The board is hosted internally by the extension at <code>chrome-extension://{extension_id}/board.html</code>. You can create different boards by adding a name after the # (e.g., <code>#MyBoard</code>).
