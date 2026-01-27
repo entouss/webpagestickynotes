@@ -5517,7 +5517,20 @@
 		// Show based on view mode
 		let contentHtml = (viewMode === 'split') ? splitHtml : unifiedHtml;
 
-		noteFrame.html('<div class="wpsn-diff-wrapper">' + toggleHtml + contentHtml + '</div>');
+		noteFrame.html(toggleHtml + contentHtml);
+
+		// Restore frame overflow (may have been set to hidden by split view)
+		noteFrame.css('overflow', '');
+
+		// For split view, size panes to fill the frame
+		if (viewMode === 'split') {
+			let toggleHeight = noteFrame.find('.wpsn-diff-toggle').outerHeight(true) || 0;
+			let availableHeight = noteFrame.height() - toggleHeight;
+			noteFrame.find('.wpsn-diff-render-container').css('height', availableHeight + 'px');
+			noteFrame.find('.wpsn-diff-render-pane').css({ 'height': '100%', 'overflow': 'auto' });
+			// Prevent frame from scrolling in split mode - panes handle it
+			noteFrame.css('overflow', 'hidden');
+		}
 
 		// Bind view toggle button clicks
 		noteFrame.find('.wpsn-diff-toggle-btn[data-view]').click(function (e) {
@@ -5631,7 +5644,9 @@
 				}
 			});
 
-			container.css('position', 'relative');
+			if (!container.css('position') || container.css('position') === 'static') {
+				container.css('position', 'relative');
+			}
 			container.append(overlay);
 		}
 
@@ -5642,9 +5657,12 @@
 			createMarkerOverlay(leftPane);
 			createMarkerOverlay(rightPane);
 		} else {
-			// Unified view - add markers to the section
+			// Unified view - wrap content in positioned div for overlay
 			let unifiedSection = noteFrame.find('.wpsn-diff-unified');
-			createMarkerOverlay(unifiedSection);
+			if (unifiedSection.length) {
+				unifiedSection.css('position', 'relative');
+				createMarkerOverlay(unifiedSection);
+			}
 		}
 	};
 
