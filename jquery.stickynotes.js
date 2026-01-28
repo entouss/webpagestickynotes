@@ -5666,6 +5666,470 @@
 		}
 	};
 
+	wpsn.renderJWT = function (note) {
+		let noteDiv = wpsn.getNoteDiv(note);
+		let noteFrame = $('#wpsn-frame-' + note.id);
+		let raw = (note.text || '').trim();
+
+		if (!raw) {
+			noteFrame.html('<div class="wpsn-jwt-container"><div class="wpsn-jwt-error">Paste a JWT token to decode it.</div></div>');
+			return;
+		}
+
+		// Strip optional "Bearer " prefix
+		if (raw.toLowerCase().startsWith('bearer ')) {
+			raw = raw.substring(7).trim();
+		}
+
+		let parts = raw.split('.');
+		if (parts.length !== 3) {
+			noteFrame.html('<div class="wpsn-jwt-container"><div class="wpsn-jwt-error">Invalid JWT: expected 3 dot-separated parts, found ' + parts.length + '.</div></div>');
+			return;
+		}
+
+		function base64UrlDecode(str) {
+			let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+			let pad = base64.length % 4;
+			if (pad) { base64 += '='.repeat(4 - pad); }
+			return atob(base64);
+		}
+
+		let header = null, payload = null, headerError = null, payloadError = null;
+
+		try {
+			header = JSON.parse(base64UrlDecode(parts[0]));
+		} catch (e) {
+			headerError = 'Failed to decode header: ' + e.message;
+		}
+
+		try {
+			payload = JSON.parse(base64UrlDecode(parts[1]));
+		} catch (e) {
+			payloadError = 'Failed to decode payload: ' + e.message;
+		}
+
+		let html = '<div class="wpsn-jwt-container">';
+
+		// Encoded token with color coding
+		html += '<div class="wpsn-jwt-section">';
+		html += '<div class="wpsn-jwt-section-title">Encoded Token</div>';
+		html += '<div class="wpsn-jwt-encoded">';
+		html += '<span class="wpsn-jwt-part-header">' + wpsn.htmlEncode(parts[0]) + '</span>';
+		html += '<span>.</span>';
+		html += '<span class="wpsn-jwt-part-payload">' + wpsn.htmlEncode(parts[1]) + '</span>';
+		html += '<span>.</span>';
+		html += '<span class="wpsn-jwt-part-signature">' + wpsn.htmlEncode(parts[2]) + '</span>';
+		html += '</div></div>';
+
+		// Header section
+		html += '<div class="wpsn-jwt-section">';
+		html += '<div class="wpsn-jwt-section-title wpsn-jwt-part-header">Header</div>';
+		if (headerError) {
+			html += '<div class="wpsn-jwt-error">' + wpsn.htmlEncode(headerError) + '</div>';
+		} else {
+			html += '<pre class="wpsn-jwt-decoded wpsn-jwt-border-header">' + wpsn.htmlEncode(JSON.stringify(header, null, 2)) + '</pre>';
+			if (header.alg) {
+				html += '<div class="wpsn-jwt-claims">Algorithm: <strong>' + wpsn.htmlEncode(header.alg) + '</strong>';
+				if (header.typ) { html += ' &middot; Type: <strong>' + wpsn.htmlEncode(header.typ) + '</strong>'; }
+				html += '</div>';
+			}
+		}
+		html += '</div>';
+
+		// Payload section
+		html += '<div class="wpsn-jwt-section">';
+		html += '<div class="wpsn-jwt-section-title wpsn-jwt-part-payload">Payload</div>';
+		if (payloadError) {
+			html += '<div class="wpsn-jwt-error">' + wpsn.htmlEncode(payloadError) + '</div>';
+		} else {
+			html += '<pre class="wpsn-jwt-decoded wpsn-jwt-border-payload">' + wpsn.htmlEncode(JSON.stringify(payload, null, 2)) + '</pre>';
+
+			// Standard claims
+			let claimsHtml = '';
+			if (payload.iss !== undefined) { claimsHtml += '<div>Issuer: <strong>' + wpsn.htmlEncode(String(payload.iss)) + '</strong></div>'; }
+			if (payload.sub !== undefined) { claimsHtml += '<div>Subject: <strong>' + wpsn.htmlEncode(String(payload.sub)) + '</strong></div>'; }
+			if (payload.aud !== undefined) {
+				let aud = Array.isArray(payload.aud) ? payload.aud.join(', ') : String(payload.aud);
+				claimsHtml += '<div>Audience: <strong>' + wpsn.htmlEncode(aud) + '</strong></div>';
+			}
+			if (payload.exp !== undefined) {
+				let expDate = new Date(payload.exp * 1000);
+				let isExpired = Date.now() > expDate.getTime();
+				claimsHtml += '<div>Expires: <strong>' + wpsn.htmlEncode(expDate.toISOString()) + '</strong> ';
+				claimsHtml += '<span class="' + (isExpired ? 'wpsn-jwt-expired' : 'wpsn-jwt-valid') + '">' + (isExpired ? 'EXPIRED' : 'VALID') + '</span></div>';
+			}
+			if (payload.iat !== undefined) {
+				claimsHtml += '<div>Issued At: <strong>' + wpsn.htmlEncode(new Date(payload.iat * 1000).toISOString()) + '</strong></div>';
+			}
+			if (payload.nbf !== undefined) {
+				claimsHtml += '<div>Not Before: <strong>' + wpsn.htmlEncode(new Date(payload.nbf * 1000).toISOString()) + '</strong></div>';
+			}
+			if (claimsHtml) {
+				html += '<div class="wpsn-jwt-claims">' + claimsHtml + '</div>';
+			}
+		}
+		html += '</div>';
+
+		// Signature section
+		html += '<div class="wpsn-jwt-section">';
+		html += '<div class="wpsn-jwt-section-title wpsn-jwt-part-signature">Signature</div>';
+		html += '<pre class="wpsn-jwt-decoded wpsn-jwt-border-signature">' + wpsn.htmlEncode(parts[2]) + '</pre>';
+		html += '<div class="wpsn-jwt-claims" style="font-style:italic;">Signature verification requires the secret or public key.</div>';
+		html += '</div>';
+
+		html += '</div>';
+		noteFrame.html(html);
+	};
+
+	wpsn.cronParse = function (field, min, max) {
+		field = field.trim();
+		if (!field) return { values: null, error: 'Empty field' };
+
+		// Month names JAN-DEC → 1-12
+		var monthNames = { JAN:1, FEB:2, MAR:3, APR:4, MAY:5, JUN:6, JUL:7, AUG:8, SEP:9, OCT:10, NOV:11, DEC:12 };
+		// Day names SUN-SAT → 0-6
+		var dayNames = { SUN:0, MON:1, TUE:2, WED:3, THU:4, FRI:5, SAT:6 };
+
+		function resolveName(s) {
+			var up = s.toUpperCase();
+			if (monthNames[up] !== undefined) return monthNames[up];
+			if (dayNames[up] !== undefined) return dayNames[up];
+			return null;
+		}
+
+		function parseAtom(s) {
+			var n = resolveName(s);
+			if (n !== null) return n;
+			if (/^\d+$/.test(s)) return parseInt(s, 10);
+			return NaN;
+		}
+
+		var values = [];
+
+		// Split by comma for lists
+		var parts = field.split(',');
+		for (var p = 0; p < parts.length; p++) {
+			var part = parts[p].trim();
+			if (!part) return { values: null, error: 'Empty element in list' };
+
+			var step = null;
+			// Handle steps: */N or range/N
+			if (part.indexOf('/') !== -1) {
+				var slashParts = part.split('/');
+				if (slashParts.length !== 2) return { values: null, error: 'Invalid step: ' + part };
+				part = slashParts[0];
+				step = parseInt(slashParts[1], 10);
+				if (isNaN(step) || step <= 0) return { values: null, error: 'Invalid step value: ' + slashParts[1] };
+			}
+
+			if (part === '*') {
+				var s = step || 1;
+				for (var i = min; i <= max; i += s) {
+					values.push(i);
+				}
+			} else if (part.indexOf('-') !== -1) {
+				var rangeParts = part.split('-');
+				if (rangeParts.length !== 2) return { values: null, error: 'Invalid range: ' + part };
+				var rStart = parseAtom(rangeParts[0]);
+				var rEnd = parseAtom(rangeParts[1]);
+				if (isNaN(rStart) || isNaN(rEnd)) return { values: null, error: 'Invalid range: ' + part };
+				if (rStart < min || rStart > max) return { values: null, error: 'Value ' + rStart + ' out of range (' + min + '-' + max + ')' };
+				if (rEnd < min || rEnd > max) return { values: null, error: 'Value ' + rEnd + ' out of range (' + min + '-' + max + ')' };
+				var rs = step || 1;
+				for (var i = rStart; i <= rEnd; i += rs) {
+					values.push(i);
+				}
+			} else {
+				// Single value
+				if (step) {
+					// e.g. 5/15 means starting at 5, every 15
+					var start = parseAtom(part);
+					if (isNaN(start)) return { values: null, error: 'Invalid value: ' + part };
+					if (start < min || start > max) return { values: null, error: 'Value ' + start + ' out of range (' + min + '-' + max + ')' };
+					for (var i = start; i <= max; i += step) {
+						values.push(i);
+					}
+				} else {
+					var v = parseAtom(part);
+					if (isNaN(v)) return { values: null, error: 'Invalid value: ' + part };
+					if (v < min || v > max) return { values: null, error: 'Value ' + v + ' out of range (' + min + '-' + max + ')' };
+					values.push(v);
+				}
+			}
+		}
+
+		// Deduplicate and sort
+		values = values.filter(function (v, i, a) { return a.indexOf(v) === i; });
+		values.sort(function (a, b) { return a - b; });
+		return { values: values, error: null };
+	};
+
+	wpsn.cronDescribe = function (fields, raw) {
+		var minute = fields[0], hour = fields[1], dom = fields[2], month = fields[3], dow = fields[4];
+		var rawMin = raw[0], rawHour = raw[1], rawDom = raw[2], rawMonth = raw[3], rawDow = raw[4];
+
+		var monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+		var dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+		var isAll = function (vals, min, max) {
+			if (vals.length !== (max - min + 1)) return false;
+			for (var i = min; i <= max; i++) { if (vals.indexOf(i) === -1) return false; }
+			return true;
+		};
+
+		var minAll = isAll(minute.values, 0, 59);
+		var hourAll = isAll(hour.values, 0, 23);
+		var domAll = isAll(dom.values, 1, 31);
+		var monthAll = isAll(month.values, 1, 12);
+		var dowAll = isAll(dow.values, 0, 6);
+
+		function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+		function describeList(vals, names) {
+			return vals.map(function (v) { return names ? names[v] : v; }).join(', ');
+		}
+
+		function describeRange(vals, names) {
+			if (vals.length === 0) return '';
+			// Check if consecutive
+			var isConsecutive = true;
+			for (var i = 1; i < vals.length; i++) {
+				if (vals[i] !== vals[i - 1] + 1) { isConsecutive = false; break; }
+			}
+			if (isConsecutive && vals.length > 2 && names) {
+				return names[vals[0]] + ' through ' + names[vals[vals.length - 1]];
+			}
+			return describeList(vals, names);
+		}
+
+		// Check for step pattern in raw
+		function getStep(rawField) {
+			if (rawField.indexOf('/') !== -1) {
+				var parts = rawField.split('/');
+				if (parts[0] === '*') return parseInt(parts[1], 10);
+			}
+			return null;
+		}
+
+		var parts = [];
+
+		// Every minute
+		if (minAll && hourAll && domAll && monthAll && dowAll) return 'Every minute';
+
+		var minStep = getStep(rawMin);
+		var hourStep = getStep(rawHour);
+
+		// Time part
+		if (minStep && hourAll) {
+			parts.push('Every ' + minStep + ' minutes');
+		} else if (hourStep && minAll) {
+			parts.push('Every ' + hourStep + ' hours');
+		} else if (minStep && !hourAll) {
+			parts.push('Every ' + minStep + ' minutes past hour ' + describeList(hour.values));
+		} else if (!minAll || !hourAll) {
+			if (!minAll && !hourAll) {
+				if (minute.values.length === 1 && hour.values.length === 1) {
+					parts.push('At ' + pad(hour.values[0]) + ':' + pad(minute.values[0]));
+				} else {
+					parts.push('At minute ' + describeList(minute.values) + ' past hour ' + describeList(hour.values));
+				}
+			} else if (!minAll) {
+				parts.push('At minute ' + describeList(minute.values));
+			} else {
+				parts.push('Past every hour ' + describeList(hour.values));
+			}
+		}
+
+		// Day-of-month
+		if (!domAll) {
+			parts.push('on day-of-month ' + describeList(dom.values));
+		}
+
+		// Month
+		if (!monthAll) {
+			parts.push('in ' + describeList(month.values, monthNames));
+		}
+
+		// Day-of-week
+		if (!dowAll) {
+			parts.push(describeRange(dow.values, dayNames));
+		}
+
+		return parts.join(', ') || 'Every minute';
+	};
+
+	wpsn.cronNextRuns = function (fields, count) {
+		count = count || 5;
+		var results = [];
+		var now = new Date();
+		var d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes() + 1, 0, 0);
+
+		var minute = fields[0].values, hour = fields[1].values, dom = fields[2].values, month = fields[3].values, dow = fields[4].values;
+
+		// Determine if dom and dow are both restricted
+		var domRestricted = dom.length < 31;
+		var dowRestricted = dow.length < 7;
+
+		// Safety cap: 4 years from now
+		var maxDate = new Date(now.getFullYear() + 4, now.getMonth(), now.getDate());
+
+		while (results.length < count && d < maxDate) {
+			// Check month
+			if (month.indexOf(d.getMonth() + 1) === -1) {
+				// Skip to next month
+				d.setMonth(d.getMonth() + 1);
+				d.setDate(1);
+				d.setHours(0);
+				d.setMinutes(0);
+				continue;
+			}
+
+			// Check day: OR-logic if both restricted, AND if only one is
+			var dayMatch;
+			if (domRestricted && dowRestricted) {
+				dayMatch = dom.indexOf(d.getDate()) !== -1 || dow.indexOf(d.getDay()) !== -1;
+			} else {
+				dayMatch = dom.indexOf(d.getDate()) !== -1 && dow.indexOf(d.getDay()) !== -1;
+			}
+
+			if (!dayMatch) {
+				// Skip to next day
+				d.setDate(d.getDate() + 1);
+				d.setHours(0);
+				d.setMinutes(0);
+				continue;
+			}
+
+			// Check hour
+			if (hour.indexOf(d.getHours()) === -1) {
+				// Skip to next hour
+				d.setHours(d.getHours() + 1);
+				d.setMinutes(0);
+				continue;
+			}
+
+			// Check minute
+			if (minute.indexOf(d.getMinutes()) === -1) {
+				d.setMinutes(d.getMinutes() + 1);
+				continue;
+			}
+
+			results.push(new Date(d));
+			d.setMinutes(d.getMinutes() + 1);
+		}
+
+		return results;
+	};
+
+	wpsn.renderCron = function (note) {
+		var noteDiv = wpsn.getNoteDiv(note);
+		var noteFrame = $('#wpsn-frame-' + note.id);
+		var raw = (note.text || '').trim();
+
+		if (!raw) {
+			noteFrame.html('<div class="wpsn-cron-container"><div class="wpsn-cron-error">Enter a cron expression (5 fields) to parse it.<br><br>Example: <code>*/15 9-17 * * 1-5</code></div></div>');
+			return;
+		}
+
+		var parts = raw.split(/\s+/);
+		if (parts.length !== 5) {
+			noteFrame.html('<div class="wpsn-cron-container"><div class="wpsn-cron-error">Invalid cron expression: expected 5 fields (minute, hour, day-of-month, month, day-of-week), found ' + parts.length + '.</div></div>');
+			return;
+		}
+
+		var fieldDefs = [
+			{ name: 'Minute', label: 'minute', min: 0, max: 59, cls: 'wpsn-cron-minute' },
+			{ name: 'Hour', label: 'hour', min: 0, max: 23, cls: 'wpsn-cron-hour' },
+			{ name: 'Day (Month)', label: 'day(month)', min: 1, max: 31, cls: 'wpsn-cron-dom' },
+			{ name: 'Month', label: 'month', min: 1, max: 12, cls: 'wpsn-cron-month' },
+			{ name: 'Day (Week)', label: 'day(week)', min: 0, max: 7, cls: 'wpsn-cron-dow' }
+		];
+
+		var parsed = [];
+		var hasError = false;
+
+		for (var i = 0; i < 5; i++) {
+			var result = wpsn.cronParse(parts[i], fieldDefs[i].min, fieldDefs[i].max);
+			parsed.push(result);
+			if (result.error) hasError = true;
+		}
+
+		// Normalize day-of-week 7 → 0
+		if (parsed[4].values) {
+			parsed[4].values = parsed[4].values.map(function (v) { return v === 7 ? 0 : v; });
+			parsed[4].values = parsed[4].values.filter(function (v, i, a) { return a.indexOf(v) === i; });
+			parsed[4].values.sort(function (a, b) { return a - b; });
+		}
+
+		var html = '<div class="wpsn-cron-container">';
+
+		// Expression display with color-coded fields
+		html += '<div class="wpsn-cron-section">';
+		html += '<div class="wpsn-cron-expression">';
+		for (var i = 0; i < 5; i++) {
+			var errCls = parsed[i].error ? ' wpsn-cron-field-error' : '';
+			html += '<div class="wpsn-cron-field ' + fieldDefs[i].cls + errCls + '">';
+			html += '<div class="wpsn-cron-field-value">' + wpsn.htmlEncode(parts[i]) + '</div>';
+			html += '<div class="wpsn-cron-field-label">' + wpsn.htmlEncode(fieldDefs[i].label) + '</div>';
+			html += '</div>';
+		}
+		html += '</div></div>';
+
+		// Show field errors if any
+		if (hasError) {
+			html += '<div class="wpsn-cron-section">';
+			for (var i = 0; i < 5; i++) {
+				if (parsed[i].error) {
+					html += '<div class="wpsn-cron-error">' + wpsn.htmlEncode(fieldDefs[i].name) + ': ' + wpsn.htmlEncode(parsed[i].error) + '</div>';
+				}
+			}
+			html += '</div>';
+		}
+
+		if (!hasError) {
+			// Human-readable description
+			var description = wpsn.cronDescribe(parsed, parts);
+			html += '<div class="wpsn-cron-section">';
+			html += '<div class="wpsn-cron-section-title">Description</div>';
+			html += '<div class="wpsn-cron-description">' + wpsn.htmlEncode(description) + '</div>';
+			html += '</div>';
+
+			// Next runs
+			var nextRuns = wpsn.cronNextRuns(parsed, 5);
+			html += '<div class="wpsn-cron-section">';
+			html += '<div class="wpsn-cron-section-title">Next Runs</div>';
+			html += '<div class="wpsn-cron-next-runs">';
+			if (nextRuns.length === 0) {
+				html += '<div class="wpsn-cron-error">No upcoming executions found within 4 years.</div>';
+			} else {
+				for (var i = 0; i < nextRuns.length; i++) {
+					html += '<div class="wpsn-cron-next-run-item">' + wpsn.htmlEncode(nextRuns[i].toLocaleString()) + '</div>';
+				}
+			}
+			html += '</div></div>';
+
+			// Field reference table
+			var allowedLabels = ['0-59', '0-23', '1-31', '1-12', '0-7 (0 & 7 = Sun)'];
+			var specialValues = ['* , - /', '* , - /', '* , - /', '* , - / JAN-DEC', '* , - / SUN-SAT'];
+			html += '<div class="wpsn-cron-section">';
+			html += '<div class="wpsn-cron-section-title">Field Reference</div>';
+			html += '<table class="wpsn-cron-reference">';
+			html += '<tr><th>Field</th><th>Allowed</th><th>Special</th><th>Current</th></tr>';
+			for (var i = 0; i < 5; i++) {
+				html += '<tr>';
+				html += '<td class="' + fieldDefs[i].cls + '">' + wpsn.htmlEncode(fieldDefs[i].name) + '</td>';
+				html += '<td>' + wpsn.htmlEncode(allowedLabels[i]) + '</td>';
+				html += '<td>' + wpsn.htmlEncode(specialValues[i]) + '</td>';
+				html += '<td>' + wpsn.htmlEncode(parts[i]) + '</td>';
+				html += '</tr>';
+			}
+			html += '</table></div>';
+		}
+
+		html += '</div>';
+		noteFrame.html(html);
+	};
+
 	wpsn.renderMarkdown = function (note) {
 		let noteDiv = wpsn.getNoteDiv(note);
 		let noteFrame = $('.wpsn-frame', noteDiv);
@@ -6944,7 +7408,9 @@
 			sortedUnique: { name: 'Sorted & Unique', id: 3465946378, render: function (note) { wpsn.renderSortedUnique(note); }, description: 'Lines are sorted and duplicate lines removed and resulting text is rendered as is.' },
 			texteditor: { name: 'Text Editor', id: 6856399856, render: function (note) { wpsn.renderHTML(note); }, description: 'A text editor is provided to allow for text formatting. (Powered by <a href="http://www.tinymce.com">TinyMCE</a>)' },
 			checklist: { name: 'Checklist', id: 9486429094, render: async function (note) { await wpsn.renderChecklist(note); }, description: 'Renders note in checklist mode. Lines beginning with -, + or x are transformed into checklists. Renders into Markdown otherwise' },
-			diff: { name: 'Diff', id: 7823456789, render: async function (note) { await wpsn.renderDiff(note); }, description: 'Compare two texts side-by-side and view a unified diff of the changes.' }
+			diff: { name: 'Diff', id: 7823456789, render: async function (note) { await wpsn.renderDiff(note); }, description: 'Compare two texts side-by-side and view a unified diff of the changes.' },
+			jwt: { name: 'JWT Decoder', id: 5839274610, render: function (note) { wpsn.renderJWT(note); }, description: 'Paste a JWT token to decode and inspect its header, payload, and signature.' },
+			cron: { name: 'Cron', id: 4927381056, render: function (note) { wpsn.renderCron(note); }, description: 'Parse and explain cron schedule expressions. Shows human-readable description and next execution times.' }
 		},
 		load: function (note, menuButton) {
 			if (!note.htmlMode) { note.htmlMode = false; }
