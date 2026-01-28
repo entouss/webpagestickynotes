@@ -6130,6 +6130,315 @@
 		noteFrame.html(html);
 	};
 
+	// Base64 Encoder/Decoder Mode
+	wpsn.renderBase64 = function (note) {
+		var noteDiv = wpsn.getNoteDiv(note);
+		var noteFrame = $('#wpsn-frame-' + note.id);
+		var raw = (note.text || '').trim();
+
+		// Helper: UTF-8 aware Base64 encoding
+		function base64Encode(str) {
+			var bytes = new TextEncoder().encode(str);
+			var binary = '';
+			for (var i = 0; i < bytes.length; i++) {
+				binary += String.fromCharCode(bytes[i]);
+			}
+			return btoa(binary);
+		}
+
+		// Helper: UTF-8 aware Base64 decoding (handles URL-safe variant)
+		function base64Decode(str) {
+			// Handle URL-safe variant: replace - with +, _ with /
+			var base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+			// Add padding if missing
+			while (base64.length % 4) {
+				base64 += '=';
+			}
+			var binary = atob(base64);
+			var bytes = new Uint8Array(binary.length);
+			for (var i = 0; i < binary.length; i++) {
+				bytes[i] = binary.charCodeAt(i);
+			}
+			return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+		}
+
+		// Helper: Check if string looks like Base64
+		function isLikelyBase64(str) {
+			if (!str || str.length < 4) return false;
+			// Standard or URL-safe Base64 pattern (allow whitespace which we'll strip)
+			var cleaned = str.replace(/\s/g, '');
+			if (!/^[A-Za-z0-9+/\-_]*={0,2}$/.test(cleaned)) return false;
+			// Check length is reasonable for Base64 (multiple of 4 with padding)
+			var padded = cleaned.replace(/-/g, '+').replace(/_/g, '/');
+			while (padded.length % 4) padded += '=';
+			return padded.length % 4 === 0 && cleaned.length >= 4;
+		}
+
+		// Helper: Convert bytes to hex dump
+		function toHexDump(binary, maxBytes) {
+			maxBytes = maxBytes || 256;
+			var hex = '';
+			var ascii = '';
+			var lines = [];
+			for (var i = 0; i < Math.min(binary.length, maxBytes); i++) {
+				var byte = binary.charCodeAt(i);
+				hex += byte.toString(16).padStart(2, '0') + ' ';
+				ascii += (byte >= 32 && byte < 127) ? String.fromCharCode(byte) : '.';
+				if ((i + 1) % 16 === 0) {
+					lines.push(hex + ' | ' + ascii);
+					hex = '';
+					ascii = '';
+				}
+			}
+			if (hex) {
+				while (hex.length < 48) hex += '   ';
+				lines.push(hex + ' | ' + ascii);
+			}
+			if (binary.length > maxBytes) {
+				lines.push('... (' + (binary.length - maxBytes) + ' more bytes)');
+			}
+			return lines.join('\n');
+		}
+
+		// Empty input - show instructions
+		if (!raw) {
+			var instructionsHtml = '<div class="wpsn-base64-container">';
+			instructionsHtml += '<div class="wpsn-base64-section">';
+			instructionsHtml += '<div class="wpsn-base64-section-title">Base64 Encoder/Decoder</div>';
+			instructionsHtml += '<div class="wpsn-base64-info">';
+			instructionsHtml += 'Enter text to encode it to Base64, or paste Base64 to decode it.<br><br>';
+			instructionsHtml += '<strong>Features:</strong><br>';
+			instructionsHtml += '&bull; Auto-detects whether input is Base64 or plain text<br>';
+			instructionsHtml += '&bull; Supports UTF-8 characters (emoji, international text)<br>';
+			instructionsHtml += '&bull; Handles URL-safe Base64 (with - and _ instead of + and /)<br>';
+			instructionsHtml += '&bull; Shows hex dump for binary data';
+			instructionsHtml += '</div></div></div>';
+			noteFrame.html(instructionsHtml);
+			return;
+		}
+
+		var html = '<div class="wpsn-base64-container">';
+
+		// Try to detect if input is Base64 and decode it
+		var isBase64 = isLikelyBase64(raw);
+		var decoded = null;
+		var decodeError = null;
+		var isBinary = false;
+
+		if (isBase64) {
+			try {
+				var cleanedInput = raw.replace(/\s/g, '');
+				decoded = base64Decode(cleanedInput);
+			} catch (e) {
+				// Might be binary data or invalid Base64
+				try {
+					var cleanedInput = raw.replace(/\s/g, '');
+					var base64 = cleanedInput.replace(/-/g, '+').replace(/_/g, '/');
+					while (base64.length % 4) base64 += '=';
+					var binary = atob(base64);
+					isBinary = true;
+					decoded = binary;
+				} catch (e2) {
+					decodeError = e2.message;
+					isBase64 = false;
+				}
+			}
+		}
+
+		if (isBase64 && decoded !== null) {
+			// Input is Base64 - show decoded output prominently
+			html += '<div class="wpsn-base64-section">';
+			html += '<div class="wpsn-base64-section-title">Input (Base64)</div>';
+			html += '<div class="wpsn-base64-input">' + wpsn.htmlEncode(raw) + '</div>';
+			html += '</div>';
+
+			html += '<div class="wpsn-base64-section">';
+			html += '<div class="wpsn-base64-section-title wpsn-base64-decoded-title">\u25BC DECODED</div>';
+			if (isBinary) {
+				html += '<div class="wpsn-base64-output wpsn-base64-decoded">';
+				html += '<div class="wpsn-base64-info" style="margin-bottom:8px">Binary data (' + decoded.length + ' bytes) - showing hex dump:</div>';
+				html += '<pre class="wpsn-base64-hex">' + wpsn.htmlEncode(toHexDump(decoded)) + '</pre>';
+				html += '</div>';
+			} else {
+				html += '<div class="wpsn-base64-output wpsn-base64-decoded">' + wpsn.htmlEncode(decoded) + '</div>';
+			}
+			html += '</div>';
+
+			// Info section
+			var cleanedLen = raw.replace(/\s/g, '').length;
+			var decodedLen = isBinary ? decoded.length : new TextEncoder().encode(decoded).length;
+			html += '<div class="wpsn-base64-section">';
+			html += '<div class="wpsn-base64-info">';
+			html += cleanedLen + ' chars (Base64) \u2192 ' + decodedLen + ' bytes';
+			if (!isBinary) {
+				html += ' \u2192 ' + decoded.length + ' chars (UTF-8)';
+			}
+			var isUrlSafe = raw.indexOf('-') !== -1 || raw.indexOf('_') !== -1;
+			html += '<br>Mode: ' + (isUrlSafe ? 'URL-safe' : 'Standard') + ' Base64';
+			html += '</div></div>';
+
+		} else {
+			// Input is plain text - show encoded output
+			var encoded;
+			try {
+				encoded = base64Encode(raw);
+			} catch (e) {
+				html += '<div class="wpsn-base64-error">Encoding error: ' + wpsn.htmlEncode(e.message) + '</div>';
+				html += '</div>';
+				noteFrame.html(html);
+				return;
+			}
+
+			html += '<div class="wpsn-base64-section">';
+			html += '<div class="wpsn-base64-section-title">Input (Plain Text)</div>';
+			html += '<div class="wpsn-base64-input">' + wpsn.htmlEncode(raw) + '</div>';
+			html += '</div>';
+
+			html += '<div class="wpsn-base64-section">';
+			html += '<div class="wpsn-base64-section-title wpsn-base64-encoded-title">\u25B2 ENCODED</div>';
+			html += '<div class="wpsn-base64-output wpsn-base64-encoded">' + wpsn.htmlEncode(encoded) + '</div>';
+			html += '</div>';
+
+			// Also show URL-safe variant if different
+			var urlSafe = encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+			if (urlSafe !== encoded) {
+				html += '<div class="wpsn-base64-section">';
+				html += '<div class="wpsn-base64-section-title">URL-Safe Variant</div>';
+				html += '<div class="wpsn-base64-output wpsn-base64-encoded" style="opacity:0.8">' + wpsn.htmlEncode(urlSafe) + '</div>';
+				html += '</div>';
+			}
+
+			// Info section
+			var inputBytes = new TextEncoder().encode(raw).length;
+			html += '<div class="wpsn-base64-section">';
+			html += '<div class="wpsn-base64-info">';
+			html += raw.length + ' chars \u2192 ' + inputBytes + ' bytes (UTF-8) \u2192 ' + encoded.length + ' chars (Base64)';
+			html += '<br>Expansion: ' + (encoded.length / inputBytes * 100).toFixed(1) + '% (Base64 adds ~33% overhead)';
+			html += '</div></div>';
+		}
+
+		html += '</div>';
+		noteFrame.html(html);
+	};
+
+	// ######################### URL Encode/Decode Mode #########################
+
+	wpsn.renderURLEncode = function (note) {
+		var noteDiv = wpsn.getNoteDiv(note);
+		var noteFrame = $('.wpsn-frame', noteDiv);
+		var raw = (note.previewText || note.text || '').trim();
+
+		var html = '<div class="wpsn-urlencode-container">';
+
+		// Empty state
+		if (!raw) {
+			html += '<div class="wpsn-urlencode-section">';
+			html += '<div class="wpsn-urlencode-info">';
+			html += 'Enter text to URL encode, or paste URL-encoded text to decode.<br><br>';
+			html += '<strong>Examples:</strong><br>';
+			html += '&bull; Plain text: <code>Hello World!</code> &rarr; <code>Hello%20World%21</code><br>';
+			html += '&bull; URL-encoded: <code>Hello%20World</code> &rarr; <code>Hello World</code><br>';
+			html += '&bull; Plus signs: <code>Hello+World</code> &rarr; <code>Hello World</code>';
+			html += '</div></div>';
+			html += '</div>';
+			noteFrame.html(html);
+			return;
+		}
+
+		// Helper functions
+		function urlEncode(str) {
+			return encodeURIComponent(str);
+		}
+
+		function urlDecode(str) {
+			// Replace + with space (common in query strings)
+			return decodeURIComponent(str.replace(/\+/g, ' '));
+		}
+
+		function isLikelyURLEncoded(str) {
+			// Must contain at least one %XX pattern
+			return /%[0-9A-Fa-f]{2}/.test(str);
+		}
+
+		// Detect if input is URL-encoded
+		var isEncoded = isLikelyURLEncoded(raw);
+		var decoded = null;
+		var encoded = null;
+		var decodeError = null;
+		var encodeError = null;
+
+		if (isEncoded) {
+			// Try to decode
+			try {
+				decoded = urlDecode(raw);
+			} catch (e) {
+				decodeError = e.message;
+			}
+		}
+
+		// Always try to encode (for showing both directions)
+		try {
+			encoded = urlEncode(raw);
+		} catch (e) {
+			encodeError = e.message;
+		}
+
+		// Input section
+		html += '<div class="wpsn-urlencode-section">';
+		html += '<div class="wpsn-urlencode-section-title">Input</div>';
+		html += '<div class="wpsn-urlencode-input">' + wpsn.htmlEncode(raw) + '</div>';
+		html += '</div>';
+
+		if (isEncoded && decoded !== null) {
+			// Input was URL-encoded - show decoded prominently
+			html += '<div class="wpsn-urlencode-section">';
+			html += '<div class="wpsn-urlencode-section-title wpsn-urlencode-decoded-title">\u25BC DECODED</div>';
+			html += '<div class="wpsn-urlencode-output wpsn-urlencode-decoded">' + wpsn.htmlEncode(decoded) + '</div>';
+			html += '</div>';
+
+			// Info section
+			html += '<div class="wpsn-urlencode-section">';
+			html += '<div class="wpsn-urlencode-info">';
+			html += raw.length + ' chars (encoded) \u2192 ' + decoded.length + ' chars (decoded)';
+			html += '</div></div>';
+		} else if (isEncoded && decodeError) {
+			// Failed to decode
+			html += '<div class="wpsn-urlencode-error">Decode error: ' + wpsn.htmlEncode(decodeError) + '</div>';
+
+			// Show encoded version as fallback
+			if (encoded !== null) {
+				html += '<div class="wpsn-urlencode-section">';
+				html += '<div class="wpsn-urlencode-section-title wpsn-urlencode-encoded-title">\u25B2 ENCODED (treating as plain text)</div>';
+				html += '<div class="wpsn-urlencode-output wpsn-urlencode-encoded">' + wpsn.htmlEncode(encoded) + '</div>';
+				html += '</div>';
+			}
+		} else {
+			// Input is plain text - show encoded output
+			if (encodeError) {
+				html += '<div class="wpsn-urlencode-error">Encode error: ' + wpsn.htmlEncode(encodeError) + '</div>';
+			} else if (encoded !== null) {
+				html += '<div class="wpsn-urlencode-section">';
+				html += '<div class="wpsn-urlencode-section-title wpsn-urlencode-encoded-title">\u25B2 ENCODED</div>';
+				html += '<div class="wpsn-urlencode-output wpsn-urlencode-encoded">' + wpsn.htmlEncode(encoded) + '</div>';
+				html += '</div>';
+
+				// Info section
+				html += '<div class="wpsn-urlencode-section">';
+				html += '<div class="wpsn-urlencode-info">';
+				html += raw.length + ' chars \u2192 ' + encoded.length + ' chars';
+				if (encoded.length > raw.length) {
+					html += ' (expansion: +' + (encoded.length - raw.length) + ' chars)';
+				} else if (encoded.length === raw.length) {
+					html += ' (no special characters to encode)';
+				}
+				html += '</div></div>';
+			}
+		}
+
+		html += '</div>';
+		noteFrame.html(html);
+	};
+
 	wpsn.renderMarkdown = function (note) {
 		let noteDiv = wpsn.getNoteDiv(note);
 		let noteFrame = $('.wpsn-frame', noteDiv);
@@ -7410,7 +7719,9 @@
 			checklist: { name: 'Checklist', id: 9486429094, render: async function (note) { await wpsn.renderChecklist(note); }, description: 'Renders note in checklist mode. Lines beginning with -, + or x are transformed into checklists. Renders into Markdown otherwise' },
 			diff: { name: 'Diff', id: 7823456789, render: async function (note) { await wpsn.renderDiff(note); }, description: 'Compare two texts side-by-side and view a unified diff of the changes.' },
 			jwt: { name: 'JWT Decoder', id: 5839274610, render: function (note) { wpsn.renderJWT(note); }, description: 'Paste a JWT token to decode and inspect its header, payload, and signature.' },
-			cron: { name: 'Cron', id: 4927381056, render: function (note) { wpsn.renderCron(note); }, description: 'Parse and explain cron schedule expressions. Shows human-readable description and next execution times.' }
+			cron: { name: 'Cron', id: 4927381056, render: function (note) { wpsn.renderCron(note); }, description: 'Parse and explain cron schedule expressions. Shows human-readable description and next execution times.' },
+			base64: { name: 'Base64', id: 8374619502, render: function (note) { wpsn.renderBase64(note); }, description: 'Encode and decode Base64 strings. Auto-detects whether to encode or decode based on input.' },
+			urlencode: { name: 'URL Encode', id: 7294816350, render: function (note) { wpsn.renderURLEncode(note); }, description: 'Encode and decode URL strings. Auto-detects whether to encode or decode based on input.' }
 		},
 		load: function (note, menuButton) {
 			if (!note.htmlMode) { note.htmlMode = false; }
