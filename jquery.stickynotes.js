@@ -6439,6 +6439,476 @@
 		noteFrame.html(html);
 	};
 
+	wpsn.renderRegex = function (note) {
+		var noteDiv = wpsn.getNoteDiv(note);
+		var noteFrame = $('.wpsn-frame', noteDiv);
+		var raw = note.previewText || note.text || '';
+
+		// Parse input: split by --- separator
+		function parseRegexInput(input) {
+			var parts = input.split(/^---$/m);
+			var patternLine = (parts[0] || '').trim();
+			var testString = parts.length > 1 ? parts.slice(1).join('---').replace(/^\n/, '') : '';
+
+			// Parse /pattern/flags format
+			var match = patternLine.match(/^\/(.*)\/([gimsuvy]*)$/);
+			if (match) {
+				return { pattern: match[1], flags: match[2] || '', testString: testString };
+			}
+			// Plain pattern - default to global flag
+			return { pattern: patternLine, flags: 'g', testString: testString };
+		}
+
+		// Collect all matches with their details
+		function collectMatches(text, regex) {
+			var matches = [];
+			var match;
+			// Ensure global flag for iteration
+			var flags = regex.flags.includes('g') ? regex.flags : regex.flags + 'g';
+			var searchRegex = new RegExp(regex.source, flags);
+			var lastIndex = -1;
+
+			while ((match = searchRegex.exec(text)) !== null) {
+				// Prevent infinite loop on zero-length matches
+				if (match.index === lastIndex) {
+					searchRegex.lastIndex++;
+					continue;
+				}
+				lastIndex = match.index;
+
+				matches.push({
+					value: match[0],
+					index: match.index,
+					groups: match.slice(1),
+					namedGroups: match.groups || null
+				});
+
+				// If not global, only get first match
+				if (!regex.global) break;
+			}
+			return matches;
+		}
+
+		// Highlight matches in text
+		function highlightMatches(text, matches) {
+			if (matches.length === 0) {
+				return wpsn.htmlEncode(text);
+			}
+
+			var result = '';
+			var lastEnd = 0;
+			var colors = ['#c8e6c9', '#b3e5fc', '#ffe0b2', '#e1bee7', '#fff9c4', '#f8bbd9'];
+
+			for (var i = 0; i < matches.length; i++) {
+				var m = matches[i];
+				// Add text before match
+				result += wpsn.htmlEncode(text.substring(lastEnd, m.index));
+				// Add highlighted match
+				var colorIndex = i % colors.length;
+				result += '<mark class="wpsn-regex-match" style="background-color:' + colors[colorIndex] + '">' +
+					wpsn.htmlEncode(m.value) + '</mark>';
+				lastEnd = m.index + m.value.length;
+			}
+			// Add remaining text
+			result += wpsn.htmlEncode(text.substring(lastEnd));
+			return result;
+		}
+
+		var html = '<div class="wpsn-regex-container">';
+		var parsed = parseRegexInput(raw);
+
+		// Check if we have a pattern
+		if (!parsed.pattern) {
+			html += '<div class="wpsn-regex-instructions">';
+			html += '<div class="wpsn-regex-section-title">REGEX TESTER</div>';
+			html += '<div class="wpsn-regex-instruction-text">';
+			html += 'Enter a regex pattern and test string in this format:<br/><br/>';
+			html += '<code>/pattern/flags</code><br/>';
+			html += '<code>---</code><br/>';
+			html += '<code>test string to match</code><br/><br/>';
+			html += 'Example:<br/>';
+			html += '<code>/hello|world/gi</code><br/>';
+			html += '<code>---</code><br/>';
+			html += '<code>Hello World! Hello again!</code>';
+			html += '</div></div>';
+			html += '</div>';
+			noteFrame.html(html);
+			return;
+		}
+
+		// Display pattern section
+		html += '<div class="wpsn-regex-section">';
+		html += '<div class="wpsn-regex-section-title">PATTERN</div>';
+		html += '<div class="wpsn-regex-pattern">/' + wpsn.htmlEncode(parsed.pattern) + '/' + wpsn.htmlEncode(parsed.flags) + '</div>';
+		html += '</div>';
+
+		// Try to compile the regex
+		var regex;
+		var compileError = null;
+		try {
+			regex = new RegExp(parsed.pattern, parsed.flags || 'g');
+		} catch (e) {
+			compileError = e.message;
+		}
+
+		if (compileError) {
+			html += '<div class="wpsn-regex-error">\u26A0 Invalid regex: ' + wpsn.htmlEncode(compileError) + '</div>';
+			html += '</div>';
+			noteFrame.html(html);
+			return;
+		}
+
+		// Check if we have a test string
+		if (!parsed.testString) {
+			html += '<div class="wpsn-regex-section">';
+			html += '<div class="wpsn-regex-info">Add a test string after <code>---</code> separator to see matches.</div>';
+			html += '</div>';
+			html += '</div>';
+			noteFrame.html(html);
+			return;
+		}
+
+		// Execute regex and collect matches
+		var matches = collectMatches(parsed.testString, regex);
+
+		// Test string with highlighting
+		html += '<div class="wpsn-regex-section">';
+		html += '<div class="wpsn-regex-section-title">TEST STRING</div>';
+		var highlightedText = highlightMatches(parsed.testString, matches);
+		// Preserve line breaks
+		highlightedText = highlightedText.replace(/\n/g, '<br/>');
+		html += '<div class="wpsn-regex-test-string">' + highlightedText + '</div>';
+		html += '</div>';
+
+		// Matches section
+		html += '<div class="wpsn-regex-section">';
+		if (matches.length === 0) {
+			html += '<div class="wpsn-regex-section-title">MATCHES</div>';
+			html += '<div class="wpsn-regex-no-match">No matches found</div>';
+		} else {
+			html += '<div class="wpsn-regex-section-title">MATCHES (' + matches.length + ' found)</div>';
+			html += '<div class="wpsn-regex-matches">';
+
+			for (var i = 0; i < matches.length; i++) {
+				var m = matches[i];
+				html += '<div class="wpsn-regex-match-item">';
+				html += '<span class="wpsn-regex-match-index">[' + i + ']</span> ';
+				html += '<span class="wpsn-regex-match-value">"' + wpsn.htmlEncode(m.value) + '"</span>';
+				html += ' <span class="wpsn-regex-match-position">at index ' + m.index + '</span>';
+
+				// Show capture groups if any
+				if (m.groups && m.groups.length > 0) {
+					html += '<div class="wpsn-regex-groups">';
+					for (var g = 0; g < m.groups.length; g++) {
+						var groupValue = m.groups[g];
+						html += '<div class="wpsn-regex-group">';
+						html += '<span class="wpsn-regex-group-label">Group ' + (g + 1) + ':</span> ';
+						if (groupValue === undefined) {
+							html += '<span class="wpsn-regex-group-undefined">(not matched)</span>';
+						} else {
+							html += '<span class="wpsn-regex-group-value">"' + wpsn.htmlEncode(groupValue) + '"</span>';
+						}
+						html += '</div>';
+					}
+					html += '</div>';
+				}
+
+				// Show named groups if any
+				if (m.namedGroups) {
+					var namedKeys = Object.keys(m.namedGroups);
+					if (namedKeys.length > 0) {
+						html += '<div class="wpsn-regex-groups">';
+						for (var k = 0; k < namedKeys.length; k++) {
+							var key = namedKeys[k];
+							var namedValue = m.namedGroups[key];
+							html += '<div class="wpsn-regex-group">';
+							html += '<span class="wpsn-regex-group-label">' + wpsn.htmlEncode(key) + ':</span> ';
+							if (namedValue === undefined) {
+								html += '<span class="wpsn-regex-group-undefined">(not matched)</span>';
+							} else {
+								html += '<span class="wpsn-regex-group-value">"' + wpsn.htmlEncode(namedValue) + '"</span>';
+							}
+							html += '</div>';
+						}
+						html += '</div>';
+					}
+				}
+
+				html += '</div>';
+			}
+			html += '</div>';
+		}
+		html += '</div>';
+
+		// Info section
+		html += '<div class="wpsn-regex-section">';
+		html += '<div class="wpsn-regex-info">';
+		html += matches.length + ' match' + (matches.length !== 1 ? 'es' : '');
+
+		// Count capture groups from pattern
+		var groupCount = 0;
+		try {
+			// Count groups by matching against empty string and checking length
+			var testMatch = new RegExp(parsed.pattern, parsed.flags).exec('');
+			if (testMatch) {
+				groupCount = testMatch.length - 1;
+			} else if (matches.length > 0 && matches[0].groups) {
+				groupCount = matches[0].groups.length;
+			}
+		} catch (e) { }
+
+		if (groupCount > 0) {
+			html += ', ' + groupCount + ' capture group' + (groupCount !== 1 ? 's' : '');
+		}
+
+		// Show flags explanation
+		if (parsed.flags) {
+			var flagDescriptions = [];
+			if (parsed.flags.includes('g')) flagDescriptions.push('global');
+			if (parsed.flags.includes('i')) flagDescriptions.push('case-insensitive');
+			if (parsed.flags.includes('m')) flagDescriptions.push('multiline');
+			if (parsed.flags.includes('s')) flagDescriptions.push('dotAll');
+			if (parsed.flags.includes('u')) flagDescriptions.push('unicode');
+			if (parsed.flags.includes('y')) flagDescriptions.push('sticky');
+			if (parsed.flags.includes('v')) flagDescriptions.push('unicodeSets');
+			if (flagDescriptions.length > 0) {
+				html += ' | Flags: ' + flagDescriptions.join(', ');
+			}
+		}
+
+		html += '</div></div>';
+
+		html += '</div>';
+		noteFrame.html(html);
+	};
+
+	// Epoch Converter Mode - Convert between Unix timestamps and human-readable dates
+	wpsn.renderEpoch = function (note) {
+		var noteDiv = wpsn.getNoteDiv(note);
+		var noteFrame = $('.wpsn-frame', noteDiv);
+		var input = (note.previewText || note.text || '').trim();
+		var html = '<div class="wpsn-epoch-container">';
+
+		// Helper function to detect input type and unit
+		function detectInputType(str) {
+			var trimmed = str.trim();
+			if (!trimmed) {
+				return { type: 'empty' };
+			}
+			// Check if numeric (timestamp)
+			if (/^-?\d+$/.test(trimmed)) {
+				var num = parseInt(trimmed, 10);
+				var absNum = Math.abs(num);
+				var unit = 'seconds';
+				if (absNum >= 1e16) unit = 'nanoseconds';
+				else if (absNum >= 1e13) unit = 'microseconds';
+				else if (absNum >= 1e10) unit = 'milliseconds';
+				return { type: 'timestamp', value: num, unit: unit };
+			}
+			// Try to parse as date string
+			return { type: 'date', value: trimmed };
+		}
+
+		// Convert timestamp to DateTime based on unit
+		function timestampToDateTime(value, unit) {
+			var ms;
+			switch (unit) {
+				case 'seconds': ms = value * 1000; break;
+				case 'milliseconds': ms = value; break;
+				case 'microseconds': ms = value / 1000; break;
+				case 'nanoseconds': ms = value / 1000000; break;
+				default: ms = value * 1000;
+			}
+			return luxon.DateTime.fromMillis(ms);
+		}
+
+		// Format DateTime to various output formats
+		function formatDateTime(dt) {
+			return {
+				iso: dt.toISO(),
+				rfc2822: dt.toRFC2822(),
+				utc: dt.toUTC().toLocaleString(luxon.DateTime.DATETIME_FULL),
+				local: dt.toLocaleString(luxon.DateTime.DATETIME_FULL),
+				seconds: Math.floor(dt.toMillis() / 1000),
+				milliseconds: dt.toMillis(),
+				relative: dt.toRelative()
+			};
+		}
+
+		// Current time section
+		var now = luxon.DateTime.now();
+		html += '<div class="wpsn-epoch-section wpsn-epoch-current">';
+		html += '<div class="wpsn-epoch-section-title">Current Time</div>';
+		html += '<div class="wpsn-epoch-timestamp-value">' + Math.floor(now.toMillis() / 1000) + '</div>';
+		html += '<div class="wpsn-epoch-human-value">' + wpsn.htmlEncode(now.toLocaleString(luxon.DateTime.DATETIME_FULL)) + ' (Local)</div>';
+		html += '</div>';
+
+		var detected = detectInputType(input);
+
+		if (detected.type === 'empty') {
+			// Show instructions
+			html += '<div class="wpsn-epoch-section wpsn-epoch-instructions">';
+			html += '<div class="wpsn-epoch-section-title">Instructions</div>';
+			html += '<div class="wpsn-epoch-instruction-text">';
+			html += 'Enter a <strong>Unix timestamp</strong> or a <strong>human-readable date</strong> to convert.<br/><br/>';
+			html += '<strong>Examples:</strong><br/>';
+			html += '<code>1609459200</code> &rarr; Timestamp (seconds)<br/>';
+			html += '<code>1609459200000</code> &rarr; Timestamp (milliseconds)<br/>';
+			html += '<code>2021-01-01</code> &rarr; ISO date<br/>';
+			html += '<code>Jan 1, 2021 12:00 PM</code> &rarr; Human date<br/>';
+			html += '<code>-86400</code> &rarr; Pre-1970 date<br/><br/>';
+			html += '<strong>Auto-detection:</strong><br/>';
+			html += '&lt; 10 digits &rarr; seconds<br/>';
+			html += '10-12 digits &rarr; milliseconds<br/>';
+			html += '13-15 digits &rarr; microseconds<br/>';
+			html += '&ge; 16 digits &rarr; nanoseconds';
+			html += '</div></div>';
+		} else if (detected.type === 'timestamp') {
+			// Timestamp input - convert to human date
+			html += '<div class="wpsn-epoch-section wpsn-epoch-input">';
+			html += '<div class="wpsn-epoch-section-title">Input (Timestamp)</div>';
+			html += '<div class="wpsn-epoch-input-value">';
+			html += '<code>' + wpsn.htmlEncode(input) + '</code>';
+			html += ' <span class="wpsn-epoch-unit">(' + detected.unit + ')</span>';
+			html += '</div></div>';
+
+			var dt = timestampToDateTime(detected.value, detected.unit);
+
+			if (!dt.isValid) {
+				html += '<div class="wpsn-epoch-section">';
+				html += '<div class="wpsn-epoch-error">Invalid timestamp: ' + wpsn.htmlEncode(dt.invalidReason || 'Unknown error') + '</div>';
+				html += '</div>';
+			} else {
+				var formatted = formatDateTime(dt);
+
+				// Converted section
+				html += '<div class="wpsn-epoch-section wpsn-epoch-human">';
+				html += '<div class="wpsn-epoch-section-title">Converted</div>';
+				html += '<div class="wpsn-epoch-converted-utc">' + wpsn.htmlEncode(formatted.utc) + ' (UTC)</div>';
+				html += '<div class="wpsn-epoch-converted-local">' + wpsn.htmlEncode(formatted.local) + ' (Local)</div>';
+				html += '</div>';
+
+				// All formats section
+				html += '<div class="wpsn-epoch-section wpsn-epoch-formats">';
+				html += '<div class="wpsn-epoch-section-title">All Formats</div>';
+				html += '<div class="wpsn-epoch-format-row"><span class="wpsn-epoch-format-label">ISO 8601:</span> <code>' + wpsn.htmlEncode(formatted.iso) + '</code></div>';
+				html += '<div class="wpsn-epoch-format-row"><span class="wpsn-epoch-format-label">RFC 2822:</span> <code>' + wpsn.htmlEncode(formatted.rfc2822) + '</code></div>';
+				html += '<div class="wpsn-epoch-format-row"><span class="wpsn-epoch-format-label">Seconds:</span> <code>' + formatted.seconds + '</code></div>';
+				html += '<div class="wpsn-epoch-format-row"><span class="wpsn-epoch-format-label">Milliseconds:</span> <code>' + formatted.milliseconds + '</code></div>';
+				html += '</div>';
+
+				// Relative section
+				html += '<div class="wpsn-epoch-section wpsn-epoch-relative">';
+				html += '<div class="wpsn-epoch-section-title">Relative</div>';
+				html += '<div class="wpsn-epoch-relative-value">' + wpsn.htmlEncode(formatted.relative) + '</div>';
+				html += '</div>';
+			}
+		} else if (detected.type === 'date') {
+			// Date string input - convert to timestamp
+			html += '<div class="wpsn-epoch-section wpsn-epoch-input">';
+			html += '<div class="wpsn-epoch-section-title">Input (Date String)</div>';
+			html += '<div class="wpsn-epoch-input-value"><code>' + wpsn.htmlEncode(input) + '</code></div>';
+			html += '</div>';
+
+			// Try multiple parsing methods
+			var dt = null;
+			var parseMethod = '';
+
+			// Try ISO parsing first
+			dt = luxon.DateTime.fromISO(detected.value);
+			parseMethod = 'ISO 8601';
+
+			// Try RFC 2822
+			if (!dt.isValid) {
+				dt = luxon.DateTime.fromRFC2822(detected.value);
+				parseMethod = 'RFC 2822';
+			}
+
+			// Try HTTP date
+			if (!dt.isValid) {
+				dt = luxon.DateTime.fromHTTP(detected.value);
+				parseMethod = 'HTTP';
+			}
+
+			// Try SQL format
+			if (!dt.isValid) {
+				dt = luxon.DateTime.fromSQL(detected.value);
+				parseMethod = 'SQL';
+			}
+
+			// Try various common formats
+			if (!dt.isValid) {
+				var formats = [
+					{ fmt: 'MMM d, yyyy h:mm a', name: 'US format' },
+					{ fmt: 'MMM d, yyyy h:mm:ss a', name: 'US format with seconds' },
+					{ fmt: 'MMM d, yyyy', name: 'US date' },
+					{ fmt: 'MMMM d, yyyy', name: 'Full month date' },
+					{ fmt: 'd MMM yyyy', name: 'European format' },
+					{ fmt: 'dd/MM/yyyy', name: 'DD/MM/YYYY' },
+					{ fmt: 'MM/dd/yyyy', name: 'MM/DD/YYYY' },
+					{ fmt: 'yyyy/MM/dd', name: 'YYYY/MM/DD' },
+					{ fmt: 'd/M/yyyy', name: 'D/M/YYYY' },
+					{ fmt: 'M/d/yyyy', name: 'M/D/YYYY' }
+				];
+				for (var i = 0; i < formats.length; i++) {
+					dt = luxon.DateTime.fromFormat(detected.value, formats[i].fmt);
+					if (dt.isValid) {
+						parseMethod = formats[i].name;
+						break;
+					}
+				}
+			}
+
+			// Try JS Date as last resort
+			if (!dt.isValid) {
+				var jsDate = new Date(detected.value);
+				if (!isNaN(jsDate.getTime())) {
+					dt = luxon.DateTime.fromJSDate(jsDate);
+					parseMethod = 'JavaScript Date';
+				}
+			}
+
+			if (!dt || !dt.isValid) {
+				html += '<div class="wpsn-epoch-section">';
+				html += '<div class="wpsn-epoch-error">Could not parse date string. Try formats like:<br/>';
+				html += '<code>2021-01-01</code>, <code>Jan 1, 2021</code>, <code>01/01/2021</code></div>';
+				html += '</div>';
+			} else {
+				var formatted = formatDateTime(dt);
+
+				// Converted section
+				html += '<div class="wpsn-epoch-section wpsn-epoch-timestamp">';
+				html += '<div class="wpsn-epoch-section-title">Converted <span class="wpsn-epoch-parse-method">(parsed as ' + parseMethod + ')</span></div>';
+				html += '<div class="wpsn-epoch-converted-timestamp">' + formatted.seconds + ' <span class="wpsn-epoch-unit">(seconds)</span></div>';
+				html += '<div class="wpsn-epoch-converted-timestamp-ms">' + formatted.milliseconds + ' <span class="wpsn-epoch-unit">(milliseconds)</span></div>';
+				html += '</div>';
+
+				// Human readable section
+				html += '<div class="wpsn-epoch-section wpsn-epoch-human">';
+				html += '<div class="wpsn-epoch-section-title">Human Readable</div>';
+				html += '<div class="wpsn-epoch-converted-utc">' + wpsn.htmlEncode(formatted.utc) + ' (UTC)</div>';
+				html += '<div class="wpsn-epoch-converted-local">' + wpsn.htmlEncode(formatted.local) + ' (Local)</div>';
+				html += '</div>';
+
+				// All formats section
+				html += '<div class="wpsn-epoch-section wpsn-epoch-formats">';
+				html += '<div class="wpsn-epoch-section-title">All Formats</div>';
+				html += '<div class="wpsn-epoch-format-row"><span class="wpsn-epoch-format-label">ISO 8601:</span> <code>' + wpsn.htmlEncode(formatted.iso) + '</code></div>';
+				html += '<div class="wpsn-epoch-format-row"><span class="wpsn-epoch-format-label">RFC 2822:</span> <code>' + wpsn.htmlEncode(formatted.rfc2822) + '</code></div>';
+				html += '</div>';
+
+				// Relative section
+				html += '<div class="wpsn-epoch-section wpsn-epoch-relative">';
+				html += '<div class="wpsn-epoch-section-title">Relative</div>';
+				html += '<div class="wpsn-epoch-relative-value">' + wpsn.htmlEncode(formatted.relative) + '</div>';
+				html += '</div>';
+			}
+		}
+
+		html += '</div>';
+		noteFrame.html(html);
+	};
+
 	wpsn.renderMarkdown = function (note) {
 		let noteDiv = wpsn.getNoteDiv(note);
 		let noteFrame = $('.wpsn-frame', noteDiv);
@@ -7721,7 +8191,9 @@
 			jwt: { name: 'JWT Decoder', id: 5839274610, render: function (note) { wpsn.renderJWT(note); }, description: 'Paste a JWT token to decode and inspect its header, payload, and signature.' },
 			cron: { name: 'Cron', id: 4927381056, render: function (note) { wpsn.renderCron(note); }, description: 'Parse and explain cron schedule expressions. Shows human-readable description and next execution times.' },
 			base64: { name: 'Base64', id: 8374619502, render: function (note) { wpsn.renderBase64(note); }, description: 'Encode and decode Base64 strings. Auto-detects whether to encode or decode based on input.' },
-			urlencode: { name: 'URL Encode', id: 7294816350, render: function (note) { wpsn.renderURLEncode(note); }, description: 'Encode and decode URL strings. Auto-detects whether to encode or decode based on input.' }
+			urlencode: { name: 'URL Encode', id: 7294816350, render: function (note) { wpsn.renderURLEncode(note); }, description: 'Encode and decode URL strings. Auto-detects whether to encode or decode based on input.' },
+			regex: { name: 'Regex', id: 5827394061, render: function (note) { wpsn.renderRegex(note); }, description: 'Test regex patterns against text. Shows matches, capture groups, and highlights results.' },
+			epoch: { name: 'Epoch', id: 6192847350, render: function (note) { wpsn.renderEpoch(note); }, description: 'Convert between Unix timestamps and human-readable dates. Auto-detects input format and shows multiple timezone conversions.' }
 		},
 		load: function (note, menuButton) {
 			if (!note.htmlMode) { note.htmlMode = false; }

@@ -8902,3 +8902,309 @@ z-index: 1000 !important;
   margin: 4px 0;
 }
 
+/* Regex Mode Styles */
+.wpsn-regex-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 8px;
+}
+.wpsn-regex-section {
+  margin-bottom: 12px;
+}
+.wpsn-regex-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.wpsn-regex-pattern {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 14px;
+  background: #f3e5f5;
+  border-left: 4px solid #7b1fa2;
+  padding: 10px 12px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+.wpsn-regex-test-string {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  padding: 10px 12px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.wpsn-regex-match {
+  border-radius: 2px;
+  padding: 1px 2px;
+}
+.wpsn-regex-matches {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 8px 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.wpsn-regex-match-item {
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+}
+.wpsn-regex-match-item:last-child {
+  border-bottom: none;
+}
+.wpsn-regex-match-index {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 11px;
+  color: #7b1fa2;
+  font-weight: 600;
+}
+.wpsn-regex-match-value {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 13px;
+  color: #2e7d32;
+  font-weight: 500;
+}
+.wpsn-regex-match-position {
+  font-size: 11px;
+  color: #888;
+}
+.wpsn-regex-groups {
+  margin-left: 24px;
+  margin-top: 4px;
+}
+.wpsn-regex-group {
+  font-size: 12px;
+  padding: 2px 0;
+}
+.wpsn-regex-group-label {
+  color: #666;
+  font-weight: 500;
+}
+.wpsn-regex-group-value {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  color: #1565c0;
+}
+.wpsn-regex-group-undefined {
+  font-style: italic;
+  color: #999;
+}
+.wpsn-regex-no-match {
+  color: #888;
+  font-style: italic;
+  padding: 8px 0;
+}
+.wpsn-regex-info {
+  font-size: 11px;
+  color: #777;
+  padding: 6px 0;
+  line-height: 1.6;
+}
+.wpsn-regex-info code {
+  background: #f0f0f0;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 11px;
+}
+.wpsn-regex-error {
+  color: #d32f2f;
+  background: #ffeaea;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 8px;
+  margin: 8px 0;
+}
+.wpsn-regex-instructions {
+  padding: 8px 0;
+}
+.wpsn-regex-instruction-text {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.8;
+}
+.wpsn-regex-instruction-text code {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+/* Epoch Converter Mode Styles */
+.wpsn-epoch-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 8px;
+}
+.wpsn-epoch-section {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+}
+.wpsn-epoch-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.wpsn-epoch-current {
+  background: #e3f2fd;
+  border-left: 4px solid #1976d2;
+  border-color: #bbdefb;
+}
+.wpsn-epoch-current .wpsn-epoch-section-title {
+  color: #1565c0;
+}
+.wpsn-epoch-timestamp-value {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1976d2;
+}
+.wpsn-epoch-human-value {
+  font-size: 12px;
+  color: #555;
+  margin-top: 4px;
+}
+.wpsn-epoch-input {
+  background: #fff;
+}
+.wpsn-epoch-input-value {
+  font-size: 14px;
+}
+.wpsn-epoch-input-value code {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  background: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 14px;
+}
+.wpsn-epoch-unit {
+  font-size: 11px;
+  color: #888;
+  font-weight: 400;
+}
+.wpsn-epoch-timestamp {
+  background: #e3f2fd;
+  border-left: 4px solid #1976d2;
+  border-color: #bbdefb;
+}
+.wpsn-epoch-timestamp .wpsn-epoch-section-title {
+  color: #1565c0;
+}
+.wpsn-epoch-converted-timestamp {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1976d2;
+}
+.wpsn-epoch-converted-timestamp-ms {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 14px;
+  color: #1976d2;
+  margin-top: 4px;
+}
+.wpsn-epoch-human {
+  background: #e8f5e9;
+  border-left: 4px solid #2e7d32;
+  border-color: #c8e6c9;
+}
+.wpsn-epoch-human .wpsn-epoch-section-title {
+  color: #2e7d32;
+}
+.wpsn-epoch-converted-utc,
+.wpsn-epoch-converted-local {
+  font-size: 14px;
+  color: #2e7d32;
+  font-weight: 500;
+  padding: 2px 0;
+}
+.wpsn-epoch-formats {
+  background: #fff;
+}
+.wpsn-epoch-format-row {
+  padding: 4px 0;
+  font-size: 13px;
+}
+.wpsn-epoch-format-label {
+  color: #666;
+  font-weight: 500;
+  display: inline-block;
+  min-width: 90px;
+}
+.wpsn-epoch-format-row code {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+.wpsn-epoch-relative {
+  background: #fff8e1;
+  border-left: 4px solid #f9a825;
+  border-color: #ffecb3;
+}
+.wpsn-epoch-relative .wpsn-epoch-section-title {
+  color: #f57f17;
+}
+.wpsn-epoch-relative-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #f57f17;
+}
+.wpsn-epoch-parse-method {
+  font-size: 10px;
+  font-weight: 400;
+  color: #888;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.wpsn-epoch-error {
+  color: #d32f2f;
+  background: #ffeaea;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 8px;
+}
+.wpsn-epoch-error code {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  background: rgba(0,0,0,0.05);
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.wpsn-epoch-instructions {
+  background: #fff;
+}
+.wpsn-epoch-instruction-text {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.8;
+}
+.wpsn-epoch-instruction-text code {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+.wpsn-epoch-info {
+  font-size: 11px;
+  color: #777;
+  padding: 6px 0;
+  line-height: 1.6;
+}
+
